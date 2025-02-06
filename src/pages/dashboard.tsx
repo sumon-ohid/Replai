@@ -11,6 +11,18 @@ import {
   type Navigation,
 } from '@toolpad/core/AppProvider';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  useDisclosure,
+} from "@heroui/react";
 
 const NAVIGATION: Navigation = [
   {
@@ -40,7 +52,7 @@ const demoTheme = createTheme({
       palette: {
         background: {
           default: '#000000',
-            paper: '#000000',
+          paper: '#000000',
         },
       },
     },
@@ -56,6 +68,70 @@ const demoTheme = createTheme({
   },
 });
 
+function EmailList() {
+  const [emails, setEmails] = React.useState<any[]>([]);
+  const [selectedEmail, setSelectedEmail] = React.useState<any | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [backdrop, setBackdrop] = React.useState<"blur" | "transparent" | "opaque">("blur");
+
+  React.useEffect(() => {
+    fetch('http://localhost:3000/api/emails')
+      .then((response) => response.json())
+      .then((data) => setEmails(data))
+      .catch((error) => console.error('Error fetching emails:', error));
+  }, []);
+
+  const handleEmailClick = (email: any) => {
+    setSelectedEmail(email);
+    onOpen();
+  };
+
+  const handleClose = () => {
+    setSelectedEmail(null);
+    onClose();
+  };
+
+  const decodeBase64 = (str: string) => {
+    return decodeURIComponent(escape(window.atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
+  };
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h6">Inbox</Typography>
+      <List>
+        {emails.map((email: any) => (
+          <ListItem component="li" key={email.id} onClick={() => handleEmailClick(email)} className="cursor-pointer">
+            <ListItemText primary={email.payload.headers.find((header: any) => header.name === 'Subject').value} secondary={email.payload.headers.find((header: any) => header.name === 'From').value} />
+          </ListItem>
+        ))}
+      </List>
+      <Modal className='bg-black' backdrop={backdrop} isOpen={isOpen} onClose={handleClose}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">Email Details</ModalHeader>
+              <ModalBody>
+                {selectedEmail && (
+                  <div className="p-4">
+                    <Typography variant="h6">From: {selectedEmail.payload.headers.find((header: any) => header.name === 'From').value}</Typography>
+                    <Typography variant="h6">Subject: {selectedEmail.payload.headers.find((header: any) => header.name === 'Subject').value}</Typography>
+                    <Typography variant="body1">{decodeBase64(selectedEmail.payload.parts[0].body.data)}</Typography>
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={handleClose}>
+                  Close
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+}
+
 function DemoPageContent({ pathname }: { pathname: string }) {
   return (
     <Box
@@ -68,6 +144,7 @@ function DemoPageContent({ pathname }: { pathname: string }) {
       }}
     >
       <Typography>Dashboard content for {pathname}</Typography>
+      <EmailList />
     </Box>
   );
 }

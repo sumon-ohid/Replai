@@ -4,6 +4,7 @@ import {heroui} from "@heroui/theme"
 module.exports = {
   content: [
     "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
     './src/layouts/**/*.{js,ts,jsx,tsx,mdx}',
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

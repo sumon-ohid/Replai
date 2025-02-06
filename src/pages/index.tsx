@@ -1,21 +1,10 @@
 import { Link } from "@heroui/link";
 import { Snippet } from "@heroui/snippet";
 import { button as buttonStyles } from "@heroui/theme";
-import { useEffect, useState } from "react";
-
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
 
 export default function IndexPage() {
-  const [backendMessage, setBackendMessage] = useState("");
-
-  useEffect(() => {
-    fetch("http://localhost:3000/api/test")
-      .then((response) => response.json())
-      .then((data) => setBackendMessage(data.message))
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
-
   return (
     <DefaultLayout>
       <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
@@ -35,10 +24,10 @@ export default function IndexPage() {
           <Link
             isExternal
             className={buttonStyles({ variant: "bordered", radius: "full" })}
-            href={""}
+            href="http://localhost:3000/auth/google"
           >
             <img width="24" height="24" src="https://img.icons8.com/color/48/google-logo.png" alt="google-logo"/>
-            Contine with Google
+            Sign in with Google
           </Link>
         </div>
 
@@ -48,12 +37,6 @@ export default function IndexPage() {
               Smart replies, easy setup. get started in seconds 🚀{" "}
               {/* <Code color="primary">Email Required</Code> */}
             </span>
-          </Snippet>
-        </div>
-
-        <div className="mt-8">
-          <Snippet hideCopyButton hideSymbol variant="bordered">
-            <span>{backendMessage}</span>
           </Snippet>
         </div>
       </section>
