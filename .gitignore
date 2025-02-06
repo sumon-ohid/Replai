@@ -30,3 +30,5 @@ package-lock.json
 bun.lockb
 
 .env
+google-url-setup.js
+get-auth-url.js

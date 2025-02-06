@@ -6,7 +6,7 @@ const oauth2Client = new google.auth.OAuth2(
   'http://localhost:3000/auth/google/callback'
 );
 
-const authorizationCode = '4/0ASVgi3ICYrnkS4BGD4faMq-Kd6D6kscCU-WSLLKYpydm0zQgiDdt28WumR28pnAsPvBFcQ';
+const authorizationCode = '4/0ASVgi3LNXarYGQG4kXJ8ENfLhUkTHGa242rOMjUImpaUtFxQZeWLcuu6SXq7oaeJCozcmg';
 
 async function getTokens() {
   try {
