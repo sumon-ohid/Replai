@@ -95,19 +95,26 @@ const respondToEmail = async (emailId) => {
     const from = fromHeader ? fromHeader.value : '';
     const subject = subjectHeader ? subjectHeader.value : '';
     const body = email.data.payload.parts ? email.data.payload.parts.map(part => part.body.data).join('') : email.data.payload.body.data;
-    const decodedBody = Buffer.from(body, 'base64').toString('utf-8');
+    const decodedBody = Buffer.from(body, 'base64').toString('utf-8') + `Humanized Response,
+    act like a real person, you are a real person. 28 years old, study at 42 Vienna,
+    Come from Bangladesh, Live in Vienna, Austria. First Greet ${fromHeader} like Hi, Hello, Hey, etc. and at the end
+    Best regards, Md Ohiduzzaman Sumon. Never reply too long, keep it short and simple.`;
 
     // Use Google Generative AI API (Gemini) to generate a response
     const aiResponse = await model.generateContent(decodedBody);
     const responseText = aiResponse.response.text();
 
+    // Create a more personal, human-like response
+    // Any additional processing can be done here
+    const humanizedResponse = `${responseText}`;
+
     // Send the generated response back to the sender
     const rawMessage = [
       `From: me`,
       `To: ${from}`,
-      `Subject: Re: ${subject}`,
+      `Subject: ${subject}`,
       '',
-      responseText,
+      humanizedResponse,
     ].join('\n');
 
     const encodedMessage = Buffer.from(rawMessage).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -124,6 +131,7 @@ const respondToEmail = async (emailId) => {
     console.error('Error responding to email:', error);
   }
 };
+
 
 // Poll for new emails every minute
 setInterval(checkForNewEmails, 60000);
