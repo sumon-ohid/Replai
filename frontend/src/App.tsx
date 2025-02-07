@@ -5,6 +5,10 @@ import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import ProTip from './ProTip';
 import MarketingPage from './templates/marketing-page/MarketingPage';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import SignIn from './templates/sign-in/SignIn';
+import Dashboard from './templates/dashboard/Dashboard';
+import SignUp from './templates/sign-up/SignUp';
 
 function Copyright() {
   return (
@@ -26,8 +30,13 @@ function Copyright() {
 
 export default function App() {
   return (
-    <>
-    <MarketingPage />
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<MarketingPage />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
   );
 }

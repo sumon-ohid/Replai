@@ -20,12 +20,14 @@
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-router-dom": "^7.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "latest",
     "typescript": "latest",
     "vite": "latest"
