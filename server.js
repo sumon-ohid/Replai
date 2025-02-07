@@ -73,7 +73,7 @@ const checkForNewEmails = async () => {
       console.log(`New email from ${from} with subject "${subject}"`);
 
       // Wait for 10 seconds before responding
-      setTimeout(() => respondToEmail(message.id), 10000);
+      setTimeout(() => respondToEmail(message.id), 10000000); // change the time to 10000
     } else {
       console.log('No new emails found.');
     }
@@ -132,12 +132,93 @@ const respondToEmail = async (emailId) => {
   }
 };
 
+// Get last 100 emails
+app.get('/api/emails', async (req, res) => {
+  try {
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    // Get last 100 emails
+    const response = await gmail.users.messages.list({ userId: 'me', maxResults: 10 });
+
+    if (!response.data.messages) {
+      return res.json([]);
+    }
+
+    // Fetch details for each email
+    const emailDetails = await Promise.all(
+      response.data.messages.map(async (message) => {
+        const email = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id,
+        });
+
+        const headers = email.data.payload.headers;
+
+        const fromHeader = headers.find(header => header.name === 'From');
+        const subjectHeader = headers.find(header => header.name === 'Subject');
+        const dateHeader = headers.find(header => header.name === 'Date');
+
+        const from = fromHeader ? fromHeader.value : 'Unknown Sender';
+        const subject = subjectHeader ? subjectHeader.value : 'No Subject';
+        const date = dateHeader ? dateHeader.value : 'Unknown Date';
+        const picture = email.data.payload.parts ? email.data.payload.parts.map(part => part.body.data).join('') : email.data.payload.body.data;
+
+        // Extract body content
+        let body = '';
+        if (email.data.payload.parts) {
+          const textPart = email.data.payload.parts.find(part => part.mimeType === 'text/plain');
+          if (textPart && textPart.body && textPart.body.data) {
+            body = Buffer.from(textPart.body.data, 'base64').toString('utf-8');
+          }
+        } else if (email.data.payload.body && email.data.payload.body.data) {
+          body = Buffer.from(email.data.payload.body.data, 'base64').toString('utf-8');
+        }
+
+        return {
+          id: message.id,
+          from,
+          subject,
+          date,
+          picture: picture,
+          snippet: email.data.snippet, // Short preview text
+          body: body || 'No message content',
+          color: 'success',
+        };
+      })
+    );
+
+    res.json(emailDetails);
+  } catch (error) {
+    console.error('Error fetching emails:', error);
+    res.status(500).json({ error: 'Failed to fetch emails' });
+  }
+});
+
+
+app.get('/api/emails/latest', async (req, res) => {
+  try {
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const response = await gmail.users.messages.list({ userId: 'me', maxResults: 1 });
+    const latestEmailId = response.data.messages[0].id;
+    const email = await gmail.users.messages.get({ userId: 'me', id: latestEmailId });
+
+    res.json(email.data);
+  } catch (error) {
+    console.error('Error fetching latest email:', error);
+    res.status(500).json({ error: 'Failed to fetch latest email' });
+  }
+});
+
 
 // Poll for new emails every minute
 setInterval(checkForNewEmails, 60000);
 
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  // redirect to the localhost:5173/dashboard
+  res.redirect('http://localhost:5173/dashboard');
 });
 
 app.listen(port, () => {
