@@ -11,6 +11,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 const STORAGE_FILE = path.resolve('repliedEmails.json');
+const TOKENS_FILE = path.resolve('tokens.json');
 
 app.use(cors());
 app.use(express.json());
@@ -21,6 +22,12 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_SECRET,
   'http://localhost:3000/auth/google/callback'
 );
+
+const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.send'
+];
 
 // Initialize replied emails storage
 let repliedEmails = new Set();
@@ -48,16 +55,51 @@ async function saveRepliedEmails() {
   }
 }
 
-// Initialize Google Generative AI
+// Google Generative AI Setup
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-// Improved email checking logic
+// OAuth login endpoint
+app.get('/auth/google', (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+    prompt: 'consent'
+  });
+  res.redirect(authUrl);
+});
+
+// OAuth callback endpoint
+app.get('/auth/google/callback', async (req, res) => {
+  const { code } = req.query;
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // Save tokens securely
+    await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
+    res.send('Authentication successful! You can close this tab.');
+  } catch (error) {
+    console.error('Error authenticating:', error);
+    res.status(500).send('Authentication failed.');
+  }
+});
+
+// Load saved OAuth tokens
+async function loadOAuthTokens() {
+  try {
+    const tokens = JSON.parse(await fs.readFile(TOKENS_FILE, 'utf8'));
+    oauth2Client.setCredentials(tokens);
+  } catch (error) {
+    console.warn('No saved tokens found. Please authenticate via /auth/google');
+  }
+}
+
+// Function to check for new emails and reply
 const checkForNewEmails = async () => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
-    // Search for unread emails that haven't been replied to
+
     const res = await gmail.users.messages.list({
       userId: 'me',
       q: 'is:unread -in:chats -from:me',
@@ -73,15 +115,14 @@ const checkForNewEmails = async () => {
           id: message.id
         });
 
-        // Check if email is valid and from someone else
         const headers = email.data.payload.headers;
         const fromHeader = headers.find(h => h.name === 'From');
+
         if (!fromHeader?.value.includes(process.env.USER_EMAIL)) {
           await respondToEmail(message.id);
           repliedEmails.add(message.id);
           await saveRepliedEmails();
-          
-          // Mark email as read
+
           await gmail.users.messages.modify({
             userId: 'me',
             id: message.id,
@@ -95,7 +136,7 @@ const checkForNewEmails = async () => {
   }
 };
 
-// Enhanced email response function
+// Function to respond to an email
 const respondToEmail = async (emailId) => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -105,25 +146,25 @@ const respondToEmail = async (emailId) => {
       format: 'full'
     });
 
-    const { payload, snippet } = emailRes.data;
+    const { payload } = emailRes.data;
     const headers = payload.headers;
-    
+
     const fromHeader = headers.find(h => h.name === 'From');
     const subjectHeader = headers.find(h => h.name === 'Subject');
     const toHeader = headers.find(h => h.name === 'To');
-    
+
     const from = fromHeader?.value || '';
     const subject = subjectHeader?.value || 'Your email';
     const originalBody = getEmailBody(payload);
 
-    // Generate response
+    // Generate AI response
     const prompt = `Respond to this email briefly and naturally as a real person:
     From: ${from}
     Subject: ${subject}
     Body: ${originalBody}
 
     Guidelines:
-    - Keep response under 10 sentences
+    - Keep response short and simple
     - Use casual language
     - Sign with "Best regards, Md Ohiduzzaman Sumon"
     - Avoid markdown formatting`;
@@ -131,7 +172,7 @@ const respondToEmail = async (emailId) => {
     const aiRes = await model.generateContent(prompt);
     const responseText = aiRes.response.text();
 
-    // Create reply
+    // Create email reply
     const rawMessage = [
       `From: ${toHeader?.value}`,
       `To: ${from}`,
@@ -155,28 +196,29 @@ const respondToEmail = async (emailId) => {
     console.log(`Replied to email from ${from}`);
   } catch (error) {
     console.error('Error responding to email:', error);
-    repliedEmails.delete(emailId); // Remove from replied if failed
+    repliedEmails.delete(emailId);
   }
 };
 
-// Helper function to extract email body
+// Function to extract email body
 function getEmailBody(payload) {
   if (payload.parts) {
-    const textPart = payload.parts.find(
-      part => part.mimeType === 'text/plain'
-    );
-    return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
+    const textPart = payload.parts.find(part => part.mimeType === 'text/plain');
+    if (textPart && textPart.body.data) {
+      return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
+    }
   }
-  return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+  if (payload.body?.data) {
+    return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+  }
+  return '(No content found)';
 }
 
-// Server initialization
+// Initialize server
 async function initialize() {
   await loadRepliedEmails();
-  oauth2Client.setCredentials({
-    refresh_token: process.env.REFRESH_TOKEN
-  });
-  
+  await loadOAuthTokens();
+
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
     setInterval(checkForNewEmails, 60000); // Check every minute
@@ -184,6 +226,3 @@ async function initialize() {
 }
 
 initialize();
-
-// Remaining routes and middleware...
-// (Keep your existing routes but consider adding error handling)
