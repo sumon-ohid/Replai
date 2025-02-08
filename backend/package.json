@@ -1,0 +1,26 @@
+{
+  "name": "easy-email",
+  "version": "1.0.0",
+  "description": "A project for managing emails with Google APIs",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "clean": "rm -rf node_modules"
+  },
+  "dependencies": {
+    "@google-cloud/aiplatform": "^3.34.0",
+    "@google/generative-ai": "^0.21.0",
+    "axios": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "googleapis": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "latest"
+  },
+  "author": "Md Ohiduzzaman Sumon",
+  "license": "ISC"
+}

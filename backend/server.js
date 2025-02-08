@@ -3,224 +3,187 @@ import cors from 'cors';
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import fs from 'fs/promises';
+import path from 'path';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const STORAGE_FILE = path.resolve('repliedEmails.json');
 
 app.use(cors());
 app.use(express.json());
 
-// OAuth2 Client for Gmail API
+// OAuth2 Client setup
 const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
   'http://localhost:3000/auth/google/callback'
 );
 
-const refreshToken = process.env.REFRESH_TOKEN;
+// Initialize replied emails storage
+let repliedEmails = new Set();
 
-if (!refreshToken) {
-  console.error('Missing refresh token! Set it in the environment variables.');
-  process.exit(1);
+// Load existing replied emails
+async function loadRepliedEmails() {
+  try {
+    const data = await fs.readFile(STORAGE_FILE, 'utf-8');
+    repliedEmails = new Set(JSON.parse(data));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await fs.writeFile(STORAGE_FILE, '[]');
+    } else {
+      console.error('Error loading replied emails:', error);
+    }
+  }
 }
 
-oauth2Client.setCredentials({ refresh_token: refreshToken });
+// Save replied emails to file
+async function saveRepliedEmails() {
+  try {
+    await fs.writeFile(STORAGE_FILE, JSON.stringify([...repliedEmails]));
+  } catch (error) {
+    console.error('Error saving replied emails:', error);
+  }
+}
 
-// Initialize Google Generative AI (Gemini)
+// Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-app.get('/auth/google', (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send'],
-  });
-  res.redirect(url);
-});
-
-app.get('/auth/google/callback', async (req, res) => {
-  try {
-    const { code } = req.query;
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-    console.log('Tokens acquired:', tokens);
-    res.redirect('/');
-  } catch (error) {
-    console.error('Error in Google OAuth callback:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-});
-
-// Function to check for new emails and respond
+// Improved email checking logic
 const checkForNewEmails = async () => {
   try {
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    
+    // Search for unread emails that haven't been replied to
+    const res = await gmail.users.messages.list({
+      userId: 'me',
+      q: 'is:unread -in:chats -from:me',
+      maxResults: 5
+    });
 
-    const response = await gmail.users.messages.list({ userId: 'me', maxResults: 1 });
+    const messages = res.data.messages || [];
+    
+    for (const message of messages) {
+      if (!repliedEmails.has(message.id)) {
+        const email = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id
+        });
 
-    if (response.data.messages && response.data.messages.length > 0) {
-      const message = response.data.messages[0];
-      const email = await gmail.users.messages.get({ userId: 'me', id: message.id });
-      const headers = email.data.payload.headers;
-      const fromHeader = headers.find(header => header.name === 'From');
-      const subjectHeader = headers.find(header => header.name === 'Subject');
-      const from = fromHeader ? fromHeader.value : '';
-      const subject = subjectHeader ? subjectHeader.value : '';
-
-      console.log(`New email from ${from} with subject "${subject}"`);
-
-      // Wait for 10 seconds before responding
-      setTimeout(() => respondToEmail(message.id), 10000000); // change the time to 10000
-    } else {
-      console.log('No new emails found.');
+        // Check if email is valid and from someone else
+        const headers = email.data.payload.headers;
+        const fromHeader = headers.find(h => h.name === 'From');
+        if (!fromHeader?.value.includes(process.env.USER_EMAIL)) {
+          await respondToEmail(message.id);
+          repliedEmails.add(message.id);
+          await saveRepliedEmails();
+          
+          // Mark email as read
+          await gmail.users.messages.modify({
+            userId: 'me',
+            id: message.id,
+            requestBody: { removeLabelIds: ['UNREAD'] }
+          });
+        }
+      }
     }
   } catch (error) {
-    console.error('Error checking for new emails:', error);
+    console.error('Error checking emails:', error);
   }
 };
 
-// Function to respond to an email
+// Enhanced email response function
 const respondToEmail = async (emailId) => {
   try {
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const emailRes = await gmail.users.messages.get({
+      userId: 'me',
+      id: emailId,
+      format: 'full'
+    });
 
-    const email = await gmail.users.messages.get({ userId: 'me', id: emailId });
-    const headers = email.data.payload.headers;
-    const fromHeader = headers.find(header => header.name === 'From');
-    const subjectHeader = headers.find(header => header.name === 'Subject');
-    const from = fromHeader ? fromHeader.value : '';
-    const subject = subjectHeader ? subjectHeader.value : '';
-    const body = email.data.payload.parts ? email.data.payload.parts.map(part => part.body.data).join('') : email.data.payload.body.data;
-    const decodedBody = Buffer.from(body, 'base64').toString('utf-8') + `Humanized Response,
-    act like a real person, you are a real person. 28 years old, study at 42 Vienna,
-    Come from Bangladesh, Live in Vienna, Austria. First Greet ${fromHeader} like Hi, Hello, Hey, etc. and at the end
-    Best regards, Md Ohiduzzaman Sumon. Never reply too long, keep it short and simple.`;
+    const { payload, snippet } = emailRes.data;
+    const headers = payload.headers;
+    
+    const fromHeader = headers.find(h => h.name === 'From');
+    const subjectHeader = headers.find(h => h.name === 'Subject');
+    const toHeader = headers.find(h => h.name === 'To');
+    
+    const from = fromHeader?.value || '';
+    const subject = subjectHeader?.value || 'Your email';
+    const originalBody = getEmailBody(payload);
 
-    // Use Google Generative AI API (Gemini) to generate a response
-    const aiResponse = await model.generateContent(decodedBody);
-    const responseText = aiResponse.response.text();
+    // Generate response
+    const prompt = `Respond to this email briefly and naturally as a real person:
+    From: ${from}
+    Subject: ${subject}
+    Body: ${originalBody}
 
-    // Create a more personal, human-like response
-    // Any additional processing can be done here
-    const humanizedResponse = `${responseText}`;
+    Guidelines:
+    - Keep response under 10 sentences
+    - Use casual language
+    - Sign with "Best regards, Md Ohiduzzaman Sumon"
+    - Avoid markdown formatting`;
 
-    // Send the generated response back to the sender
+    const aiRes = await model.generateContent(prompt);
+    const responseText = aiRes.response.text();
+
+    // Create reply
     const rawMessage = [
-      `From: me`,
+      `From: ${toHeader?.value}`,
       `To: ${from}`,
-      `Subject: ${subject}`,
+      `Subject: Re: ${subject}`,
+      'Content-Type: text/plain; charset=utf-8',
       '',
-      humanizedResponse,
+      responseText
     ].join('\n');
 
-    const encodedMessage = Buffer.from(rawMessage).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
 
     await gmail.users.messages.send({
       userId: 'me',
-      requestBody: {
-        raw: encodedMessage,
-      },
+      requestBody: { raw: encodedMessage }
     });
 
-    console.log(`Responded to email from ${from}`);
+    console.log(`Replied to email from ${from}`);
   } catch (error) {
     console.error('Error responding to email:', error);
+    repliedEmails.delete(emailId); // Remove from replied if failed
   }
 };
 
-// Get last 100 emails
-app.get('/api/emails', async (req, res) => {
-  try {
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-
-    // Get last 100 emails
-    const response = await gmail.users.messages.list({ userId: 'me', maxResults: 10 });
-
-    if (!response.data.messages) {
-      return res.json([]);
-    }
-
-    // Fetch details for each email
-    const emailDetails = await Promise.all(
-      response.data.messages.map(async (message) => {
-        const email = await gmail.users.messages.get({
-          userId: 'me',
-          id: message.id,
-        });
-
-        const headers = email.data.payload.headers;
-
-        const fromHeader = headers.find(header => header.name === 'From');
-        const subjectHeader = headers.find(header => header.name === 'Subject');
-        const dateHeader = headers.find(header => header.name === 'Date');
-
-        const from = fromHeader ? fromHeader.value : 'Unknown Sender';
-        const subject = subjectHeader ? subjectHeader.value : 'No Subject';
-        const date = dateHeader ? dateHeader.value : 'Unknown Date';
-        const picture = email.data.payload.parts ? email.data.payload.parts.map(part => part.body.data).join('') : email.data.payload.body.data;
-
-        // Extract body content
-        let body = '';
-        if (email.data.payload.parts) {
-          const textPart = email.data.payload.parts.find(part => part.mimeType === 'text/plain');
-          if (textPart && textPart.body && textPart.body.data) {
-            body = Buffer.from(textPart.body.data, 'base64').toString('utf-8');
-          }
-        } else if (email.data.payload.body && email.data.payload.body.data) {
-          body = Buffer.from(email.data.payload.body.data, 'base64').toString('utf-8');
-        }
-
-        return {
-          id: message.id,
-          from,
-          subject,
-          date,
-          picture: picture,
-          snippet: email.data.snippet, // Short preview text
-          body: body || 'No message content',
-          color: 'success',
-        };
-      })
+// Helper function to extract email body
+function getEmailBody(payload) {
+  if (payload.parts) {
+    const textPart = payload.parts.find(
+      part => part.mimeType === 'text/plain'
     );
-
-    res.json(emailDetails);
-  } catch (error) {
-    console.error('Error fetching emails:', error);
-    res.status(500).json({ error: 'Failed to fetch emails' });
+    return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
   }
-});
+  return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+}
 
+// Server initialization
+async function initialize() {
+  await loadRepliedEmails();
+  oauth2Client.setCredentials({
+    refresh_token: process.env.REFRESH_TOKEN
+  });
+  
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+    setInterval(checkForNewEmails, 60000); // Check every minute
+  });
+}
 
-app.get('/api/emails/latest', async (req, res) => {
-  try {
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+initialize();
 
-    const response = await gmail.users.messages.list({ userId: 'me', maxResults: 1 });
-    const latestEmailId = response.data.messages[0].id;
-    const email = await gmail.users.messages.get({ userId: 'me', id: latestEmailId });
-
-    res.json(email.data);
-  } catch (error) {
-    console.error('Error fetching latest email:', error);
-    res.status(500).json({ error: 'Failed to fetch latest email' });
-  }
-});
-
-
-// Poll for new emails every minute
-setInterval(checkForNewEmails, 60000);
-
-app.get('/', (req, res) => {
-  // redirect to the localhost:5173/dashboard
-  res.redirect('http://localhost:5173/dashboard');
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+// Remaining routes and middleware...
+// (Keep your existing routes but consider adding error handling)

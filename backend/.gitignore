@@ -33,3 +33,4 @@ bun.lockb
 google-url-setup.js
 get-auth-url.js
 google-refresh-token.js
+repliedEmails.json
