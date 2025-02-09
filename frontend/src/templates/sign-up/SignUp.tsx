@@ -76,7 +76,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     const email = document.getElementById('email') as HTMLInputElement;
     const password = document.getElementById('password') as HTMLInputElement;
     const name = document.getElementById('name') as HTMLInputElement;
-
+    
     let isValid = true;
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
@@ -122,18 +122,17 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
         password: data.get('password') 
       });
       console.log(response.data.message);
-      <Alert variant="filled" severity="success">
-        {response.data.message}
-      </Alert>
+      setAlert({ severity: 'success', message: 'Registered successfully!' });
       navigate('/signin');
     } catch (error) {
-      <Alert variant="filled" severity="error">
-        {String(error)}
-      </Alert>
+      setAlert({ severity: 'error', message: 'Email exists, Please try again with another email.'});
+      setEmailError(true);
+      setPasswordErrorMessage('Email already exists.');
       console.error('Error registering user:', error);
     }
   };
 
+  const [alert, setAlert] = useState<{ severity: 'success' | 'error' | 'info', message: string } | null>(null);
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
@@ -148,6 +147,11 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
           >
             Sign up
           </Typography>
+          {alert && (
+            <Alert severity={alert.severity} onClose={() => setAlert(null)}>
+              {alert.message}
+            </Alert>
+          )}
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -217,7 +221,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign up with Google')}
+              onClick={() => setAlert({ severity: 'info', message: 'Sign up with Google' })}
               startIcon={<GoogleIcon />}
             >
               Sign up with Google
