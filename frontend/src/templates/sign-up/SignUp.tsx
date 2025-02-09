@@ -19,7 +19,7 @@ import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons
 import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AlertVariousStates from '../AlertVariousStates';
+import Alert from '@mui/material/Alert';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -122,11 +122,15 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
         password: data.get('password') 
       });
       console.log(response.data.message);
-      <AlertVariousStates alertMsg="User registered successfully" alertType="success" alertTitle="Success" />;
+      <Alert variant="filled" severity="success">
+        {response.data.message}
+      </Alert>
       navigate('/signin');
     } catch (error) {
+      <Alert variant="filled" severity="error">
+        {String(error)}
+      </Alert>
       console.error('Error registering user:', error);
-      <AlertVariousStates alertMsg="Error registering user" alertType="error" alertTitle="Error" />;
     }
   };
 

@@ -20,7 +20,7 @@ import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
 import axios from 'axios';
 import { useState } from 'react';
-import AlertVariousStates from '../AlertVariousStates';
+import Alert from '@mui/material/Alert';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -70,6 +70,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
   const [open, setOpen] = React.useState(false);
+  const [alert, setAlert] = React.useState<{ severity: 'success' | 'error', message: string } | null>(null);
   const navigate = useNavigate();
 
   const handleClickOpen = () => {
@@ -93,14 +94,11 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       const response = await axios.post<{ token: string }>('http://localhost:3000/api/auth/login', { email, password });
       const { token } = response.data;
       localStorage.setItem('token', token);
+      setAlert({ severity: 'success', message: 'Logged in successfully!' });
       navigate('/dashboard');
     } catch (error) {
       console.error('Error logging in:', error);
-      if ((error as any).response && (error as any).response.data && (error as any).response.data.error) {
-        AlertVariousStates({ alertMsg: (error as any).response.data.error, alertType: 'error', alertTitle: 'Error' });
-      } else {
-        AlertVariousStates({ alertMsg: 'Error logging in', alertType: 'error', alertTitle: 'Error' });
-      }
+      setAlert({ severity: 'error', message: 'Error logging in. Please try again.' });
     }
   };
 
@@ -145,6 +143,11 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
           >
             Sign in
           </Typography>
+          {alert && (
+            <Alert severity={alert.severity} onClose={() => setAlert(null)}>
+              {alert.message}
+            </Alert>
+          )}
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -218,18 +221,10 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Google')}
+              onClick={() => setAlert({ severity: 'success', message: 'Signed in with Google.' })}
               startIcon={<GoogleIcon />}
             >
               Sign in with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign in with Facebook
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
               Don&apos;t have an account?{' '}
