@@ -9,6 +9,8 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import visuallyHidden from '@mui/utils/visuallyHidden';
 import { styled } from '@mui/material/styles';
+import CustomizedTimeline from './Timeline';
+import Chip from '@mui/material/Chip';
 
 const StyledBox = styled('div')(({ theme }) => ({
   alignSelf: 'center',
@@ -86,7 +88,7 @@ export default function Hero() {
                 }),
               })}
             >
-              products
+            email agent
             </Typography>
           </Typography>
           <Typography
@@ -96,10 +98,11 @@ export default function Hero() {
               width: { sm: '100%', md: '80%' },
             }}
           >
-            Explore our cutting-edge dashboard, delivering high-quality solutions
-            tailored to your needs. Elevate your experience with top-tier features
-            and services.
+          No more frastration with your emails. If you are tired of managing your emails, we are here to help.
+          We will handle your emails so you can do things you love. Each email will be analized and replied using AI. 
+          Fast and easy.
           </Typography>
+          <CustomizedTimeline />
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
@@ -145,8 +148,9 @@ export default function Hero() {
             .
           </Typography>
         </Stack>
-        <StyledBox id="image" />
+        {/* <StyledBox id="image" /> */}
       </Container>
     </Box>
   );
 }
+

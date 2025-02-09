@@ -16,7 +16,6 @@ const TOKENS_FILE = path.resolve('tokens.json');
 app.use(cors());
 app.use(express.json());
 
-// OAuth2 Client setup
 const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
@@ -29,10 +28,8 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.send'
 ];
 
-// Initialize replied emails storage
 let repliedEmails = new Set();
 
-// Load existing replied emails
 async function loadRepliedEmails() {
   try {
     const data = await fs.readFile(STORAGE_FILE, 'utf-8');
@@ -46,7 +43,6 @@ async function loadRepliedEmails() {
   }
 }
 
-// Save replied emails to file
 async function saveRepliedEmails() {
   try {
     await fs.writeFile(STORAGE_FILE, JSON.stringify([...repliedEmails]));
@@ -55,11 +51,9 @@ async function saveRepliedEmails() {
   }
 }
 
-// Google Generative AI Setup
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-// OAuth login endpoint
 app.get('/auth/google', (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -69,14 +63,12 @@ app.get('/auth/google', (req, res) => {
   res.redirect(authUrl);
 });
 
-// OAuth callback endpoint
 app.get('/auth/google/callback', async (req, res) => {
   const { code } = req.query;
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Save tokens securely
     await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
     res.send('Authentication successful! You can close this tab.');
   } catch (error) {
@@ -85,7 +77,6 @@ app.get('/auth/google/callback', async (req, res) => {
   }
 });
 
-// Load saved OAuth tokens
 async function loadOAuthTokens() {
   try {
     const tokens = JSON.parse(await fs.readFile(TOKENS_FILE, 'utf8'));
@@ -95,7 +86,6 @@ async function loadOAuthTokens() {
   }
 }
 
-// Function to check for new emails and reply
 const checkForNewEmails = async () => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -107,7 +97,7 @@ const checkForNewEmails = async () => {
     });
 
     const messages = res.data.messages || [];
-    
+
     for (const message of messages) {
       if (!repliedEmails.has(message.id)) {
         const email = await gmail.users.messages.get({
@@ -118,8 +108,15 @@ const checkForNewEmails = async () => {
         const headers = email.data.payload.headers;
         const fromHeader = headers.find(h => h.name === 'From');
 
-        if (!fromHeader?.value.includes(process.env.USER_EMAIL)) {
-          await respondToEmail(message.id);
+        if (!fromHeader) continue;
+
+        const senderEmail = extractEmail(fromHeader.value);
+
+        if (
+          senderEmail &&
+          (senderEmail.endsWith('@gmail.com') || senderEmail.endsWith('@yahoo.com'))
+        ) {
+          await respondToEmail(message.id, senderEmail);
           repliedEmails.add(message.id);
           await saveRepliedEmails();
 
@@ -136,8 +133,7 @@ const checkForNewEmails = async () => {
   }
 };
 
-// Function to respond to an email
-const respondToEmail = async (emailId) => {
+const respondToEmail = async (emailId, senderEmail) => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     const emailRes = await gmail.users.messages.get({
@@ -149,17 +145,14 @@ const respondToEmail = async (emailId) => {
     const { payload } = emailRes.data;
     const headers = payload.headers;
 
-    const fromHeader = headers.find(h => h.name === 'From');
     const subjectHeader = headers.find(h => h.name === 'Subject');
     const toHeader = headers.find(h => h.name === 'To');
 
-    const from = fromHeader?.value || '';
     const subject = subjectHeader?.value || 'Your email';
     const originalBody = getEmailBody(payload);
 
-    // Generate AI response
     const prompt = `Respond to this email briefly and naturally as a real person:
-    From: ${from}
+    From: ${senderEmail}
     Subject: ${subject}
     Body: ${originalBody}
 
@@ -172,10 +165,9 @@ const respondToEmail = async (emailId) => {
     const aiRes = await model.generateContent(prompt);
     const responseText = aiRes.response.text();
 
-    // Create email reply
     const rawMessage = [
       `From: ${toHeader?.value}`,
-      `To: ${from}`,
+      `To: ${senderEmail}`,
       `Subject: Re: ${subject}`,
       'Content-Type: text/plain; charset=utf-8',
       '',
@@ -193,14 +185,18 @@ const respondToEmail = async (emailId) => {
       requestBody: { raw: encodedMessage }
     });
 
-    console.log(`Replied to email from ${from}`);
+    console.log(`Replied to email from ${senderEmail}`);
   } catch (error) {
     console.error('Error responding to email:', error);
     repliedEmails.delete(emailId);
   }
 };
 
-// Function to extract email body
+function extractEmail(fromHeaderValue) {
+  const match = fromHeaderValue.match(/<([^>]+)>/);
+  return match ? match[1] : fromHeaderValue;
+}
+
 function getEmailBody(payload) {
   if (payload.parts) {
     const textPart = payload.parts.find(part => part.mimeType === 'text/plain');
@@ -214,14 +210,13 @@ function getEmailBody(payload) {
   return '(No content found)';
 }
 
-// Initialize server
 async function initialize() {
   await loadRepliedEmails();
   await loadOAuthTokens();
 
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
-    setInterval(checkForNewEmails, 60000); // Check every minute
+    setInterval(checkForNewEmails, 60000);
   });
 }
 

@@ -71,7 +71,7 @@ export default function Highlights() {
           gap: { xs: 3, sm: 6 },
         }}
       >
-        <Box
+        {/* <Box
           sx={{
             width: { sm: '100%', md: '60%' },
             textAlign: { sm: 'left', md: 'center' },
@@ -85,7 +85,7 @@ export default function Highlights() {
             user-friendly design, and innovation. Enjoy reliable customer support and
             precision in every detail.
           </Typography>
-        </Box>
+        </Box> */}
         <Grid container spacing={2}>
           {items.map((item, index) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
