@@ -12,13 +12,17 @@
   "dependencies": {
     "@google-cloud/aiplatform": "^3.34.0",
     "@google/generative-ai": "^0.21.0",
-    "axios": "latest",
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
-    "googleapis": "latest"
+    "googleapis": "latest",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.10.0"
   },
   "devDependencies": {
+    "@types/axios": "^0.9.36",
     "nodemon": "latest"
   },
   "author": "Md Ohiduzzaman Sumon",

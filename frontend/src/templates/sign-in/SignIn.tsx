@@ -18,6 +18,9 @@ import { useNavigate } from 'react-router-dom';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import axios from 'axios';
+import { useState } from 'react';
+import AlertVariousStates from '../AlertVariousStates';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -67,6 +70,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
   const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -76,16 +80,28 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (emailError || passwordError) {
-      event.preventDefault();
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    const email = data.get('email') as string;
+    const password = data.get('password') as string;
+
+    try {
+      const response = await axios.post<{ token: string }>('http://localhost:3000/api/auth/login', { email, password });
+      const { token } = response.data;
+      localStorage.setItem('token', token);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error logging in:', error);
+      if ((error as any).response && (error as any).response.data && (error as any).response.data.error) {
+        AlertVariousStates({ alertMsg: (error as any).response.data.error, alertType: 'error', alertTitle: 'Error' });
+      } else {
+        AlertVariousStates({ alertMsg: 'Error logging in', alertType: 'error', alertTitle: 'Error' });
+      }
+    }
   };
 
   const validateInputs = () => {

@@ -16,6 +16,10 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import axios from 'axios';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AlertVariousStates from '../AlertVariousStates';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -60,12 +64,13 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignUp(props: { disableCustomTheme?: boolean }) {
-  const [emailError, setEmailError] = React.useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [nameError, setNameError] = React.useState(false);
-  const [nameErrorMessage, setNameErrorMessage] = React.useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorMessage, setEmailErrorMessage] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  const [nameError, setNameError] = useState(false);
+  const [nameErrorMessage, setNameErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
@@ -104,18 +109,25 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (nameError || emailError || passwordError) {
-      event.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validateInputs()) {
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
-      name: data.get('name'),
-      lastName: data.get('lastName'),
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    try {
+      const response = await axios.post<{ message: string }>('http://localhost:3000/api/auth/register', { 
+        name: data.get('name'), 
+        email: data.get('email'), 
+        password: data.get('password') 
+      });
+      console.log(response.data.message);
+      <AlertVariousStates alertMsg="User registered successfully" alertType="success" alertTitle="Success" />;
+      navigate('/signin');
+    } catch (error) {
+      console.error('Error registering user:', error);
+      <AlertVariousStates alertMsg="Error registering user" alertType="error" alertTitle="Error" />;
+    }
   };
 
   return (
@@ -163,7 +175,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 variant="outlined"
                 error={emailError}
                 helperText={emailErrorMessage}
-                color={passwordError ? 'error' : 'primary'}
+                color={emailError ? 'error' : 'primary'}
               />
             </FormControl>
             <FormControl>
@@ -190,7 +202,6 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
               type="submit"
               fullWidth
               variant="contained"
-              onClick={validateInputs}
             >
               Sign up
             </Button>
@@ -206,14 +217,6 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
               startIcon={<GoogleIcon />}
             >
               Sign up with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign up with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign up with Facebook
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}
