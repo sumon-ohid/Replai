@@ -24,7 +24,7 @@ export default function CustomizedTimeline() {
         <TimelineOppositeContent color="text.secondary">
         </TimelineOppositeContent>
         <TimelineSeparator>
-          <Chip label="Welcome" />
+          <Chip label="Welcome  🚀" />
           <TimelineConnector />
         </TimelineSeparator>
         <TimelineContent>
@@ -81,7 +81,7 @@ export default function CustomizedTimeline() {
           <TimelineDot color="warning">
             <TerminalIcon />
           </TimelineDot>
-          <TimelineConnector sx={{ bgcolor: 'secondary.main' }} />
+          <TimelineConnector/>
         </TimelineSeparator>
         <TimelineContent sx={{ py: '12px', px: 2 }}>
           <Typography variant="h6" component="span">
@@ -92,7 +92,7 @@ export default function CustomizedTimeline() {
       </TimelineItem>
       <TimelineItem>
         <TimelineSeparator>
-          <TimelineConnector sx={{ bgcolor: 'secondary.main' }} />
+          <TimelineConnector />
           <TimelineDot color="secondary">
             <RepeatIcon />
           </TimelineDot>
@@ -107,11 +107,10 @@ export default function CustomizedTimeline() {
       </TimelineItem>
       <TimelineItem>
         <TimelineSeparator>
-          <TimelineConnector sx={{ bgcolor: 'secondary.main' }} />
+          <TimelineConnector/>
           <TimelineDot color="success">
             <CheckCircleIcon />
           </TimelineDot>
-          <TimelineConnector />
         </TimelineSeparator>
         <TimelineContent sx={{ py: '22px', px: 2 }}>
           <Typography variant="h6" component="span">
@@ -120,12 +119,16 @@ export default function CustomizedTimeline() {
           <Typography>you are all set</Typography>
         </TimelineContent>
       </TimelineItem>
-      <Chip
-        label="🎉 Congratulations! You have successfully integrated AI email automation."
-        sx={{
-          mt: 1.5,
-        }}
-      />
+      <TimelineItem>
+        <TimelineOppositeContent color="text.secondary">
+        </TimelineOppositeContent>
+        <TimelineSeparator>
+          <TimelineConnector />
+          <Chip label="Congratulations  🎉 🎉" />
+        </TimelineSeparator>
+        <TimelineContent>
+        </TimelineContent>
+      </TimelineItem>
       </Timeline>
   );
 }
