@@ -78,7 +78,7 @@ export default function CustomizedTimeline() {
       <TimelineItem>
         <TimelineSeparator>
           <TimelineConnector />
-          <TimelineDot color="primary" variant="outlined">
+          <TimelineDot color="warning">
             <TerminalIcon />
           </TimelineDot>
           <TimelineConnector sx={{ bgcolor: 'secondary.main' }} />
