@@ -79,7 +79,7 @@ export function renderAvatar(
 }
 
 export const columns: GridColDef[] = [
-  { field: 'pageTitle', headerName: 'Page Title', flex: 1.5, minWidth: 200 },
+  { field: 'pageTitle', headerName: 'Subject', flex: 1.5, minWidth: 200 },
   {
     field: 'status',
     headerName: 'Status',
@@ -89,42 +89,19 @@ export const columns: GridColDef[] = [
   },
   {
     field: 'users',
-    headerName: 'Users',
+    headerName: 'Email',
     headerAlign: 'right',
     align: 'right',
     flex: 1,
     minWidth: 80,
   },
   {
-    field: 'eventCount',
-    headerName: 'Event Count',
-    headerAlign: 'right',
-    align: 'right',
-    flex: 1,
-    minWidth: 100,
-  },
-  {
-    field: 'viewsPerUser',
-    headerName: 'Views per User',
-    headerAlign: 'right',
-    align: 'right',
-    flex: 1,
-    minWidth: 120,
-  },
-  {
     field: 'averageTime',
-    headerName: 'Average Time',
+    headerName: 'Time',
     headerAlign: 'right',
     align: 'right',
     flex: 1,
     minWidth: 100,
-  },
-  {
-    field: 'conversions',
-    headerName: 'Daily Conversions',
-    flex: 1,
-    minWidth: 150,
-    renderCell: renderSparklineCell,
   },
 ];
 
