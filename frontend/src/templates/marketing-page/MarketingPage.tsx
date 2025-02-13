@@ -24,12 +24,12 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         {/* <Features /> */}
         {/* <Divider /> */}
         {/* <Testimonials /> */}
-        <Divider />
-        <Highlights />
-        <Divider />
+        {/* <Divider />
+        <Highlights /> */}
+        {/* <Divider />
         <Pricing />
-        <Divider />
-        <FAQ />
+        <Divider /> */}
+        {/* <FAQ /> */}
         <Divider />
         <Footer />
       </div>
