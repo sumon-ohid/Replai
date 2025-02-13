@@ -1,0 +1,173 @@
+import express from 'express';
+import { google } from 'googleapis';
+import fs from 'fs/promises';
+import path from 'path';
+import dotenv from 'dotenv';
+import SentEmail from '../models/SentEmail.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+dotenv.config();
+
+const router = express.Router();
+const oauth2Client = new google.auth.OAuth2(
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET,
+  'http://localhost:3000/api/emails/auth/google/callback'
+);
+
+const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+];
+
+
+const TOKENS_FILE = path.resolve('tokens.json');
+const repliedEmails = new Set();
+const userIntervals = new Map();
+
+dotenv.config();
+
+const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+// console.log('API key:', process.env.GENERATIVE_AI_API_KEY);
+
+router.get('/auth/google', (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+    prompt: 'consent'
+  });
+  res.redirect(authUrl);
+});
+
+const getUser = async (auth) => {
+  const oauth2 = google.oauth2({ version: 'v2', auth });
+  const res = await oauth2.userinfo.get();
+  return res.data.id;
+};
+
+router.get('/auth/google/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).send('Missing code parameter');
+
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
+    const userId = await getUser(oauth2Client);
+    await createEmailBot(tokens, userId);
+    res.send('Authentication and email bot creation successful!');
+  } catch (error) {
+    console.error('Error authenticating:', error);
+    res.status(500).send('Authentication failed.');
+  }
+});
+
+const createEmailBot = async (tokens, userId) => {
+  try {
+    oauth2Client.setCredentials(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const checkForNewEmails = async () => {
+      try {
+        const res = await gmail.users.messages.list({
+          userId: 'me',
+          q: 'is:unread -in:chats -from:me',
+          maxResults: 5
+        });
+        const messages = res.data.messages || [];
+        
+        for (const message of messages) {
+          if (!repliedEmails.has(message.id)) {
+            await respondToEmail(message.id, userId);
+            repliedEmails.add(message.id);
+            await gmail.users.messages.modify({
+              userId: 'me',
+              id: message.id,
+              requestBody: { removeLabelIds: ['UNREAD'] }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking emails:', error);
+      }
+    };
+
+    const respondToEmail = async (emailId, userId) => {
+      try {
+        const emailRes = await gmail.users.messages.get({ userId: 'me', id: emailId, format: 'full' });
+        const { payload } = emailRes.data;
+        const headers = payload.headers;
+        const fromHeader = headers.find(h => h.name === 'From');
+        const subjectHeader = headers.find(h => h.name === 'Subject');
+        const toHeader = headers.find(h => h.name === 'To');
+        const from = fromHeader?.value || '';
+        const subject = subjectHeader?.value || 'Your email';
+        const originalBody = getEmailBody(payload);
+
+        // Generate AI response
+        const prompt = `Respond to this email briefly and naturally as a real person:
+From: ${from}
+Subject: ${subject}
+Body: ${originalBody}
+
+Guidelines:
+- Keep response short and simple
+- Use casual language
+- Sign with "Best regards, Md Ohiduzzaman Sumon"
+- Avoid markdown formatting`;
+
+        const aiRes = await model.generateContent(prompt);
+        const responseText = aiRes.response.text();
+        const rawMessage = [
+          `From: ${toHeader?.value}`,
+          `To: ${from}`,
+          `Subject: ${subject}`,
+          'Content-Type: text/plain; charset=utf-8',
+          '',
+          responseText
+        ].join('\n');
+
+        const encodedMessage = Buffer.from(rawMessage)
+          .toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+
+        await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
+        console.log(`Replied to email from ${from}`);
+
+        const sentEmail = new SentEmail({ userId, from: toHeader?.value, to: from, subject: `Re: ${subject}`, body: responseText });
+        await sentEmail.save();
+      } catch (error) {
+        console.error('Error responding to email:', error);
+        repliedEmails.delete(emailId);
+      }
+    };
+
+    function getEmailBody(payload) {
+      if (payload.parts) {
+        const textPart = payload.parts.find(part => part.mimeType === 'text/plain');
+        if (textPart && textPart.body.data) {
+          return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
+        }
+      }
+      if (payload.body?.data) {
+        return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+      }
+      return '(No content found)';
+    }
+
+    const interval = setInterval(checkForNewEmails, 60000);
+    userIntervals.set(userId, interval);
+    console.log('Email bot created successfully!');
+  } catch (error) {
+    console.error('Error creating email bot:', error);
+    throw new Error('Error creating email bot.');
+  }
+};
+
+export default router;

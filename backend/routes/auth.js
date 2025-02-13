@@ -1,7 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import User from '../models/User.js'; // Adjust the import path as needed
+import Token from '../models/Token.js'; // Import the Token model
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -48,7 +49,47 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token });
   } catch (error) {
+    console.error('Error logging in:', error);
     res.status(500).json({ error: 'Error logging in' });
+  }
+});
+
+// Get authenticated user
+router.get('/user', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Error fetching user' });
+  }
+});
+
+// Logout
+router.post('/logout', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Add the token to a blacklist or remove it from the active tokens list
+    await Token.create({ token });
+
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Error logging out:', error);
+    res.status(500).json({ error: 'Error logging out' });
   }
 });
 

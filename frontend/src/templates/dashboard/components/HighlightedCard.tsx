@@ -7,10 +7,22 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import axios from 'axios';
+import { useAuth } from '../../../../context/AuthContext';
 
 export default function HighlightedCard() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const { user } = useAuth();
+
+  const handleCreateBot = async () => {
+    // if (!user) {
+    //   console.error('User not authenticated');
+    //   return;
+    // }
+    window.open('http://localhost:3000/api/emails/auth/google', '_blank');
+  };
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -22,10 +34,10 @@ export default function HighlightedCard() {
           gutterBottom
           sx={{ fontWeight: '600' }}
         >
-          Explore your data
+          AI Agent Creation
         </Typography>
         <Typography sx={{ color: 'text.secondary', mb: '8px' }}>
-          Uncover performance and visitor insights with our data wizardry.
+          Create an AI agent to automate your email responses.
         </Typography>
         <Button
           variant="contained"
@@ -33,8 +45,9 @@ export default function HighlightedCard() {
           color="primary"
           endIcon={<ChevronRightRoundedIcon />}
           fullWidth={isSmallScreen}
+          onClick={handleCreateBot}
         >
-          Get insights
+          Create Bot
         </Button>
       </CardContent>
     </Card>
