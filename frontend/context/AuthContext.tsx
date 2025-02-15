@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    fetchUser();
+    // fetchUser();
   }, []);
 
   const logout = async () => {
