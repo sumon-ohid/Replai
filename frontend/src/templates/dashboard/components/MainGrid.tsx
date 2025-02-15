@@ -15,7 +15,7 @@ import StatCard, { StatCardProps } from './StatCard';
 const data: StatCardProps[] = [
   {
     title: 'Email sent today',
-    value: '14k',
+    value: '14',
     interval: 'Last 30 days',
     trend: 'up',
     data: [
@@ -35,7 +35,7 @@ const data: StatCardProps[] = [
   },
   {
     title: 'Time saved',
-    value: '200k',
+    value: '20h',
     interval: 'Last 30 days',
     trend: 'neutral',
     data: [
