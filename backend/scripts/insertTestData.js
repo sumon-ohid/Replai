@@ -21,6 +21,34 @@ const testEmails = [
     subject: 'Test Email 2',
     body: 'This is a test email body 2.',
   },
+  {
+    userId: new mongoose.Types.ObjectId(),
+    from: 'ai@example.com',
+    to: 'user2@example.com',
+    subject: 'Test Email 2',
+    body: 'This is a test email body 2.',
+  },
+  {
+    userId: new mongoose.Types.ObjectId(),
+    from: 'ai@example.com',
+    to: 'user2@example.com',
+    subject: 'Test Email 2',
+    body: 'This is a test email body 2.',
+  },
+  {
+    userId: new mongoose.Types.ObjectId(),
+    from: 'ai@example.com',
+    to: 'user2@example.com',
+    subject: 'Test Email 2',
+    body: 'This is a test email body 2.',
+  },
+  {
+    userId: new mongoose.Types.ObjectId(),
+    from: 'ai@example.com',
+    to: 'user2@example.com',
+    subject: 'Test Email 2',
+    body: 'This is a test email body 2.',
+  },
 ];
 
 const insertTestData = async () => {

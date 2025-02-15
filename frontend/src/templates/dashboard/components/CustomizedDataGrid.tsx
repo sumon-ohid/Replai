@@ -10,6 +10,8 @@ export default function CustomizedDataGrid() {
     status: string;
     to: string;
     dateSent: string;
+    from: string;
+    content: string;
   }
 
   const [rows, setRows] = React.useState<EmailRow[]>([]);
@@ -24,7 +26,9 @@ export default function CustomizedDataGrid() {
           id: index + 1,
           subject: email.subject,
           status: 'Sent', // Adjust as needed
+          from: email.sender,
           to: email.receiver,
+          content: email.bodyPreview,
           dateSent: new Date(email.timeSent).toLocaleString(),
         }));
 

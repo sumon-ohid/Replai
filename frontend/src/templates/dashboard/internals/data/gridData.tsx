@@ -1,16 +1,21 @@
-import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
-import Chip from '@mui/material/Chip';
-import { GridCellParams, GridRowsProp, GridColDef, DataGrid } from '@mui/x-data-grid';
-import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
-import axios from 'axios';
+import * as React from "react";
+import Avatar from "@mui/material/Avatar";
+import Chip from "@mui/material/Chip";
+import {
+  GridCellParams,
+  GridRowsProp,
+  GridColDef,
+  DataGrid,
+} from "@mui/x-data-grid";
+import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
+import axios from "axios";
 
 type SparkLineData = number[];
 
 function getDaysInMonth(month: number, year: number) {
   const date = new Date(year, month, 0);
-  const monthName = date.toLocaleDateString('en-US', {
-    month: 'short',
+  const monthName = date.toLocaleDateString("en-US", {
+    month: "short",
   });
   const daysInMonth = date.getDate();
   const days = [];
@@ -31,7 +36,7 @@ function renderSparklineCell(params: GridCellParams<SparkLineData, any>) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+    <div style={{ display: "flex", alignItems: "left", height: "100%" }}>
       <SparkLineChart
         data={value}
         width={colDef.computedWidth || 100}
@@ -39,9 +44,9 @@ function renderSparklineCell(params: GridCellParams<SparkLineData, any>) {
         plotType="bar"
         showHighlight
         showTooltip
-        colors={['hsl(210, 98%, 42%)']}
+        colors={["hsl(210, 98%, 42%)"]}
         xAxis={{
-          scaleType: 'band',
+          scaleType: "band",
           data,
         }}
       />
@@ -49,29 +54,29 @@ function renderSparklineCell(params: GridCellParams<SparkLineData, any>) {
   );
 }
 
-function renderStatus(status: 'Sent' | 'Offline') {
-  const colors: { [index: string]: 'success' | 'default' } = {
-    Sent: 'success',
-    Offline: 'default',
+function renderStatus(status: "Sent" | "Offline") {
+  const colors: { [index: string]: "success" | "default" } = {
+    Sent: "success",
+    Offline: "default",
   };
 
   return <Chip label={status} color={colors[status]} size="small" />;
 }
 
 export function renderAvatar(
-  params: GridCellParams<{ name: string; color: string }, any, any>,
+  params: GridCellParams<{ name: string; color: string }, any, any>
 ) {
   if (params.value == null) {
-    return '';
+    return "";
   }
 
   return (
     <Avatar
       sx={{
         backgroundColor: params.value.color,
-        width: '24px',
-        height: '24px',
-        fontSize: '0.85rem',
+        width: "24px",
+        height: "24px",
+        fontSize: "0.85rem",
       }}
     >
       {params.value.name.toUpperCase().substring(0, 1)}
@@ -80,29 +85,52 @@ export function renderAvatar(
 }
 
 export const columns: GridColDef[] = [
-  { field: 'subject', headerName: 'Subject', flex: 1.5, minWidth: 200 },
   {
-    field: 'status',
-    headerName: 'Status',
-    flex: 0.5,
-    minWidth: 80,
+    field: "from",
+    headerName: "Sender",
+    headerAlign: "left",
+    align: "left",
+    flex: 1.5,
+    minWidth: 150,
+  },
+  {
+    field: "to",
+    headerName: "Receiver",
+    headerAlign: "left",
+    align: "left",
+    flex: 1.5,
+    minWidth: 150,
+  },
+  {
+    field: "subject",
+    headerName: "Subject",
+    headerAlign: "left",
+    align: "left",
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    field: "content",
+    headerName: "Content",
+    headerAlign: "left",
+    align: "left",
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    field: "status",
+    headerName: "Status",
+    flex: .4,
+    minWidth: 60,
     renderCell: (params) => renderStatus(params.value as any),
   },
   {
-    field: 'to',
-    headerName: 'To',
-    headerAlign: 'right',
-    align: 'right',
+    field: "dateSent",
+    headerName: "Date Sent",
+    headerAlign: "left",
+    align: "left",
     flex: 1,
-    minWidth: 80,
-  },
-  {
-    field: 'dateSent',
-    headerName: 'Date Sent',
-    headerAlign: 'right',
-    align: 'right',
-    flex: 1,
-    minWidth: 100,
+    minWidth: 180,
   },
 ];
 
@@ -112,20 +140,24 @@ export const EmailGrid = () => {
   React.useEffect(() => {
     const fetchEmails = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/emails/get-emails');
+        const response = await axios.get(
+          "http://localhost:3000/api/emails/get-emails"
+        );
         const emails = response.data as any[];
 
         const formattedEmails = emails.map((email: any, index: number) => ({
           id: index + 1,
+          from: email.sender,
           subject: email.subject,
-          status: 'Sent', // Adjust as needed
+          status: "Sent", // Adjust as needed
+          content: email.bodyPreview,
           to: email.receiver,
           dateSent: new Date(email.timeSent).toLocaleString(),
         }));
 
         setRows(formattedEmails);
       } catch (error) {
-        console.error('Error fetching emails:', error);
+        console.error("Error fetching emails:", error);
       }
     };
 
@@ -133,7 +165,7 @@ export const EmailGrid = () => {
   }, []);
 
   return (
-    <div style={{ height: 600, width: '100%' }}>
+    <div style={{ height: 600, width: "100%" }}>
       <DataGrid rows={rows} columns={columns} />
     </div>
   );

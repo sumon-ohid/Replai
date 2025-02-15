@@ -149,6 +149,7 @@ Guidelines:
         // Convert userId to ObjectId
         const objectIdUserId = new mongoose.Types.ObjectId(userId);
 
+        console.log('From:', toHeader?.value);
         // Save sent email to database
         const sentEmail = new SentEmail({ userId: objectIdUserId, from: toHeader?.value, to: from, subject: `${subject}`, body: responseText });
         await sentEmail.save();
