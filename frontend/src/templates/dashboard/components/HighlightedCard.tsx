@@ -14,14 +14,30 @@ export default function HighlightedCard() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   const handleCreateBot = async () => {
     // if (!user) {
     //   console.error('User not authenticated');
     //   return;
     // }
-    window.open('http://localhost:3000/api/emails/auth/google', '_blank');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found');
+      return;
+    }
+
+    try {
+      const response = await axios.get('http://localhost:3000/api/emails/auth/google', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const authUrl = (response.data as { authUrl: string }).authUrl;
+      window.open(authUrl, '_blank');
+    } catch (error) {
+      console.error('Error creating bot:', error);
+    }
   };
 
   return (

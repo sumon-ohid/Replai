@@ -4,8 +4,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import SentEmail from '../models/SentEmail.js';
+import getSentEmailModel from '../models/SentEmail.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import auth from '../middleware/auth.js'; // Import the auth middleware
 
 dotenv.config();
 
@@ -32,14 +33,20 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+let localUserId;
 
-router.get('/auth/google', (req, res) => {
+router.get('/auth/google', auth, (req, res) => { // Apply the auth middleware
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent'
   });
-  res.redirect(authUrl);
+
+  localUserId = req.user._id; // Get the local user ID from the authenticated user
+  // sent authUrl as json response
+  res.json({ authUrl });
+  
+  // res.redirect(authUrl);
 });
 
 const getUser = async (auth) => {
@@ -48,7 +55,7 @@ const getUser = async (auth) => {
   return res.data.id;
 };
 
-router.get('/auth/google/callback', async (req, res) => {
+router.get('/auth/google/callback', async (req, res) => { // Apply the auth middleware
   const { code } = req.query;
   if (!code) return res.status(400).send('Missing code parameter');
 
@@ -56,16 +63,18 @@ router.get('/auth/google/callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
     await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
-    const userId = await getUser(oauth2Client);
-    await createEmailBot(tokens, userId);
-    res.send('Authentication and email bot creation successful!');
+    const googleUserId = await getUser(oauth2Client);
+    await createEmailBot(tokens, googleUserId, localUserId);
+
+    // close current window
+    res.send('<script>window.close()</script>');
   } catch (error) {
     console.error('Error authenticating:', error);
     res.status(500).send('Authentication failed.');
   }
 });
 
-const createEmailBot = async (tokens, userId) => {
+const createEmailBot = async (tokens, googleUserId, localUserId) => {
   try {
     oauth2Client.setCredentials(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -81,7 +90,7 @@ const createEmailBot = async (tokens, userId) => {
         
         for (const message of messages) {
           if (!repliedEmails.has(message.id)) {
-            await respondToEmail(message.id, userId);
+            await respondToEmail(message.id, localUserId);
             repliedEmails.add(message.id);
             await gmail.users.messages.modify({
               userId: 'me',
@@ -95,7 +104,7 @@ const createEmailBot = async (tokens, userId) => {
       }
     };
 
-    const respondToEmail = async (emailId, userId) => {
+    const respondToEmail = async (emailId, localUserId) => {
       try {
         const emailRes = await gmail.users.messages.get({ userId: 'me', id: emailId, format: 'full' });
         const { payload } = emailRes.data;
@@ -139,19 +148,9 @@ Guidelines:
         await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
         console.log(`Replied to email from ${from}`);
 
-        console.log('User ID:', userId);
-         // Validate and convert userId to ObjectId
-         if (!mongoose.Types.ObjectId.isValid(userId)) {
-          console.warn('Invalid userId, generating a new ObjectId');
-          userId = new mongoose.Types.ObjectId();
-        }
-
-        // Convert userId to ObjectId
-        const objectIdUserId = new mongoose.Types.ObjectId(userId);
-
-        console.log('From:', toHeader?.value);
         // Save sent email to database
-        const sentEmail = new SentEmail({ userId: objectIdUserId, from: toHeader?.value, to: from, subject: `${subject}`, body: responseText });
+        const SentEmail = getSentEmailModel(localUserId);
+        const sentEmail = new SentEmail({ userId: localUserId, from: toHeader?.value, to: from, subject: `${subject}`, body: responseText });
         await sentEmail.save();
         console.log(`Saved email to database: ${sentEmail}`);
 
@@ -175,7 +174,7 @@ Guidelines:
     }
 
     const interval = setInterval(checkForNewEmails, 60000);
-    userIntervals.set(userId, interval);
+    userIntervals.set(googleUserId, interval);
     console.log('Email bot created successfully!');
   } catch (error) {
     console.error('Error creating email bot:', error);

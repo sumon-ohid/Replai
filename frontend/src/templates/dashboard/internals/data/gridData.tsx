@@ -140,9 +140,16 @@ export const EmailGrid = () => {
   React.useEffect(() => {
     const fetchEmails = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:3000/api/emails/get-emails"
-        );
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No token found in local storage");
+          return;
+        }
+        const response = await axios.get('http://localhost:3000/api/emails/get-emails', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const emails = response.data as any[];
 
         const formattedEmails = emails.map((email: any, index: number) => ({

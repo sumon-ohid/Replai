@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
 const sentEmailSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   from: { type: String, required: true },
   to: { type: String, required: true },
   subject: { type: String, required: true },
@@ -9,6 +8,12 @@ const sentEmailSchema = new mongoose.Schema({
   dateSent: { type: Date, default: Date.now },
 });
 
-const SentEmail = mongoose.model('SentEmail', sentEmailSchema);
+const getSentEmailModel = (userId) => {
+  const modelName = `SentEmail_${userId}`;
+  if (mongoose.models[modelName]) {
+    return mongoose.models[modelName];
+  }
+  return mongoose.model(modelName, sentEmailSchema);
+};
 
-export default SentEmail;
+export default getSentEmailModel;

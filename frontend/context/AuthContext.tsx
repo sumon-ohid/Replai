@@ -40,17 +40,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const token = localStorage.getItem('token'); // Get the token from local storage
     if (!token) {
       console.error('No token found');
+      localStorage.removeItem('token');
+      window.location.href = '/signin';
       return;
     }
 
     try {
       await axios.post('http://localhost:3000/api/auth/logout', {}, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+          Authorization: `Bearer ${token}`,
         },
       });
-      localStorage.removeItem('token'); // Remove the token from local storage
-      setUser(null); // Clear the user state
+      localStorage.removeItem('token');
+      setUser(null);
 
     } catch (error) {
       console.error('Error logging out:', error);
