@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import fs from 'fs/promises';
 import path from 'path';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import SentEmail from '../models/SentEmail.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -23,7 +24,6 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile'
 ];
 
-
 const TOKENS_FILE = path.resolve('tokens.json');
 const repliedEmails = new Set();
 const userIntervals = new Map();
@@ -32,7 +32,6 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-// console.log('API key:', process.env.GENERATIVE_AI_API_KEY);
 
 router.get('/auth/google', (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
@@ -140,8 +139,21 @@ Guidelines:
         await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
         console.log(`Replied to email from ${from}`);
 
-        const sentEmail = new SentEmail({ userId, from: toHeader?.value, to: from, subject: `Re: ${subject}`, body: responseText });
+        console.log('User ID:', userId);
+         // Validate and convert userId to ObjectId
+         if (!mongoose.Types.ObjectId.isValid(userId)) {
+          console.warn('Invalid userId, generating a new ObjectId');
+          userId = new mongoose.Types.ObjectId();
+        }
+
+        // Convert userId to ObjectId
+        const objectIdUserId = new mongoose.Types.ObjectId(userId);
+
+        // Save sent email to database
+        const sentEmail = new SentEmail({ userId: objectIdUserId, from: toHeader?.value, to: from, subject: `Re: ${subject}`, body: responseText });
         await sentEmail.save();
+        console.log(`Saved email to database: ${sentEmail}`);
+
       } catch (error) {
         console.error('Error responding to email:', error);
         repliedEmails.delete(emailId);

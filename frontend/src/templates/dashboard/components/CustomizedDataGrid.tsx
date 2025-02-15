@@ -1,11 +1,44 @@
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { columns, rows } from '../internals/data/gridData';
+import axios from 'axios';
+import { columns } from '../internals/data/gridData';
 
 export default function CustomizedDataGrid() {
+  interface EmailRow {
+    id: number;
+    subject: string;
+    status: string;
+    to: string;
+    dateSent: string;
+  }
+
+  const [rows, setRows] = React.useState<EmailRow[]>([]);
+
+  React.useEffect(() => {
+    const fetchEmails = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/emails/get-emails');
+        const emails: any[] = response.data as any[];
+
+        const formattedEmails = emails.map((email: any, index: number) => ({
+          id: index + 1,
+          subject: email.subject,
+          status: 'Sent', // Adjust as needed
+          to: email.receiver,
+          dateSent: new Date(email.timeSent).toLocaleString(),
+        }));
+
+        setRows(formattedEmails);
+      } catch (error) {
+        console.error('Error fetching emails:', error);
+      }
+    };
+
+    fetchEmails();
+  }, []);
+
   return (
     <DataGrid
-      // checkboxSelection
       rows={rows}
       columns={columns}
       getRowClassName={(params) =>
@@ -33,12 +66,6 @@ export default function CustomizedDataGrid() {
               variant: 'outlined',
               size: 'small',
               sx: { mt: 'auto' },
-            },
-            valueInputProps: {
-              InputComponentProps: {
-                variant: 'outlined',
-                size: 'small',
-              },
             },
           },
         },
