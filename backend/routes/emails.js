@@ -15,11 +15,11 @@ router.get('/get-emails', async (req, res) => {
     const emails = await SentEmail.find({}, 'subject from to dateSent body').sort({ dateSent: -1 });
 
     const formattedEmails = emails.map(email => ({
-      subject: email.subject.substring(0, 15) + '...', // Get first 15 chars from subject
+      subject: email.subject,
       sender: extractEmail(email.from),
       receiver: extractEmail(email.to),
       timeSent: email.dateSent,
-      bodyPreview: email.body.substring(0, 100) + '...', // Get first 100 chars from body
+      bodyPreview: email.body,
     }));
 
     res.json(formattedEmails);

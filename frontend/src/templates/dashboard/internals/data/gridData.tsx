@@ -90,7 +90,7 @@ export const columns: GridColDef[] = [
     headerName: "Sender",
     headerAlign: "left",
     align: "left",
-    flex: 1.5,
+    flex: 1.2,
     minWidth: 150,
   },
   {
