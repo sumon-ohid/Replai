@@ -42,28 +42,15 @@ export default function SideMenu() {
           p: 1.5,
         }}
       >
-        <SelectContent />
-      </Box>
-      <Divider />
-      <Box
-        sx={{
-          overflow: 'auto',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <MenuContent />
-        <CardAlert />
-      </Box>
-      <Stack
+        {/* <SelectContent /> */}
+        <Stack
         direction="row"
         sx={{
           p: 2,
           gap: 1,
           alignItems: 'center',
-          borderTop: '1px solid',
-          borderColor: 'divider',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 3,
         }}
       >
         <Avatar
@@ -82,6 +69,19 @@ export default function SideMenu() {
         </Box>
         <OptionsMenu />
       </Stack>
+      </Box>
+      <Divider />
+      <Box
+        sx={{
+          overflow: 'auto',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <MenuContent />
+        <CardAlert />
+      </Box>
     </Drawer>
   );
 }

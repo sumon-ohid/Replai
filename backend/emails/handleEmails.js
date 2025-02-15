@@ -150,7 +150,7 @@ Guidelines:
         const objectIdUserId = new mongoose.Types.ObjectId(userId);
 
         // Save sent email to database
-        const sentEmail = new SentEmail({ userId: objectIdUserId, from: toHeader?.value, to: from, subject: `Re: ${subject}`, body: responseText });
+        const sentEmail = new SentEmail({ userId: objectIdUserId, from: toHeader?.value, to: from, subject: `${subject}`, body: responseText });
         await sentEmail.save();
         console.log(`Saved email to database: ${sentEmail}`);
 

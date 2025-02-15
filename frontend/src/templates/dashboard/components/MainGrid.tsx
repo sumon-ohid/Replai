@@ -14,7 +14,7 @@ import StatCard, { StatCardProps } from './StatCard';
 
 const data: StatCardProps[] = [
   {
-    title: 'Users',
+    title: 'Email sent today',
     value: '14k',
     interval: 'Last 30 days',
     trend: 'up',
@@ -24,7 +24,7 @@ const data: StatCardProps[] = [
     ],
   },
   {
-    title: 'Conversions',
+    title: 'Total email sent',
     value: '325',
     interval: 'Last 30 days',
     trend: 'down',
@@ -34,7 +34,7 @@ const data: StatCardProps[] = [
     ],
   },
   {
-    title: 'Event count',
+    title: 'Time saved',
     value: '200k',
     interval: 'Last 30 days',
     trend: 'neutral',
@@ -58,14 +58,14 @@ export default function MainGrid() {
         columns={12}
         sx={{ mb: (theme) => theme.spacing(2) }}
       >
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <HighlightedCard />
+        </Grid>
         {data.map((card, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
             <StatCard {...card} />
           </Grid>
         ))}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <HighlightedCard />
-        </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           {/* <SessionsChart /> */}
         </Grid>
@@ -74,19 +74,20 @@ export default function MainGrid() {
         </Grid>
       </Grid>
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
-        Details
+        Emails Sent
       </Typography>
-      <Grid container spacing={2} columns={12}>
-        <Grid size={{ xs: 12, lg: 9 }}>
+      <Grid size={{ xs: 12, lg: 9 }}>
           <CustomizedDataGrid />
-        </Grid>
+      </Grid>
+      {/* <Grid container spacing={2} columns={12}>
         <Grid size={{ xs: 12, lg: 3 }}>
           <Stack gap={2} direction={{ xs: 'column', sm: 'row', lg: 'column' }}>
             <CustomizedTreeView />
             <ChartUserByCountry />
           </Stack>
         </Grid>
-      </Grid>
+        
+      </Grid> */}
       <Copyright sx={{ my: 4 }} />
     </Box>
   );
