@@ -54,7 +54,7 @@ function TabPanel({ children, value, index }: { children: React.ReactNode; value
 
 export default function DataTabs() {
   const [value, setValue] = React.useState(0);
-  const isSmallScreen = useMediaQuery("(max-width: 900px)");
+  const isSmallScreen = useMediaQuery("(max-width: 1000px)");
 
 interface TabPanelProps {
     children: React.ReactNode;
@@ -85,7 +85,7 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
           variant="scrollable"
           value={value}
           onChange={handleChange}
-          sx={{borderRight: isSmallScreen ? 0 : 1, borderBottom: isSmallScreen ? 1 : 0, borderColor: "divider", p: 1, width: isSmallScreen ? "100%" : 200 }}
+          sx={{ justifyContent: "center", borderRight: isSmallScreen ? 0 : 1, borderBottom: isSmallScreen ? 1 : 0, borderColor: "divider", p: 1, width: isSmallScreen ? "100%" : 200 }}
         >
           <StyledTab icon={<TextFieldsIcon />} label="Text" />
           <StyledTab icon={<UploadFileIcon />} label="File" />
@@ -100,6 +100,7 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         <TabPanel value={value} index={1}>
           <Box
             sx={{
+                width: isSmallScreen ? "100%" : 500,
               border: "2px dashed",
               borderColor: "divider",
               borderRadius: 2,
