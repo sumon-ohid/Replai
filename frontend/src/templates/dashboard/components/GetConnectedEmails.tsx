@@ -108,12 +108,13 @@ export default function GetConnectedEmails() {
         {connectedEmails.length > 0 ? (
           <div style={{ height: 400, width: '100%' }}>
             <DataGrid
-              rows={filteredEmails}
-              columns={columns}
-              paginationModel={{ pageSize: 5, page: 0 }}
-              pageSizeOptions={[5]}
-              disableRowSelectionOnClick
-            />
+                rows={filteredEmails}
+                columns={columns}
+                pagination
+                paginationMode="server"
+                rowCount={100}
+                disableRowSelectionOnClick
+              />
           </div>
         ) : (
           <Typography>No connected accounts</Typography>
