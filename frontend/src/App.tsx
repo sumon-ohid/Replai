@@ -37,7 +37,13 @@ export default function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/connected-emails" element={<EmailManager />} />
+        <Route path="/connected" element={<EmailManager />} />
+        <Route path="/data" element={<Dashboard />} />
+        <Route path="/blocklist" element={<Dashboard />} />
+        <Route path="/billing" element={<Dashboard />} />
+        <Route path="/settings" element={<Dashboard />} />
+        <Route path="/about" element={<Dashboard />} />
+        <Route path="/feedback" element={<Dashboard />} />
       </Routes>
     </Router>
   );

@@ -15,12 +15,16 @@ import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import HelpRoundedIcon from '@mui/icons-material/HelpRounded';
 import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import { useTheme } from '@mui/material/styles';
+import StorageIcon from '@mui/icons-material/Storage';
+import CancelScheduleSendIcon from '@mui/icons-material/CancelScheduleSend';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 
 const mainListItems = [
   { text: 'Home', icon: <HomeRoundedIcon />, path: '/dashboard' },
-  { text: 'Connected', icon: <AttachEmailIcon />, path: '/connected-emails' },
-  { text: 'Clients', icon: <PeopleRoundedIcon />, path: '/clients' },
-  { text: 'Tasks', icon: <AssignmentRoundedIcon />, path: '/tasks' },
+  { text: 'Connected', icon: <AttachEmailIcon />, path: '/connected' },
+  { text: 'Data', icon: <StorageIcon />, path: '/data' },
+  { text: 'Blocklist', icon: <CancelScheduleSendIcon />, path: '/blocklist' },
+  { text: 'Plan & Billing', icon: <CreditCardIcon />, path: '/billing' },
 ];
 
 const secondaryListItems = [
