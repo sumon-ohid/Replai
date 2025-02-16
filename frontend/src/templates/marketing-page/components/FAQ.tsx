@@ -65,7 +65,7 @@ export default function FAQ() {
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
               You can reach our customer support team by emailing&nbsp;
-              <Link href="mailto:support@email.com">support@email.com</Link>
+              <Link href="mailto:support@email-agent.com">support@email-agent.com</Link>
               &nbsp;or calling our toll-free number. We&apos;re here to assist you
               promptly.
             </Typography>
@@ -91,8 +91,8 @@ export default function FAQ() {
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
               Absolutely! We offer a hassle-free return policy. If you&apos;re not
-              completely satisfied, you can return the product within [number of
-              days] days for a full refund or exchange.
+              completely satisfied, you can return the product within 7 working
+              days days for a full refund or exchange.
             </Typography>
           </AccordionDetails>
         </Accordion>
@@ -140,10 +140,31 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              Yes, our product comes with a [length of warranty] warranty. It covers
-              defects in materials and workmanship. If you encounter any issues
-              covered by the warranty, please contact our customer support for
+              No, our product does not come with warranty, please contact our customer support for
               assistance.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion
+          expanded={expanded.includes('panel5')}
+          onChange={handleChange('panel5')}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel4d-content"
+            id="panel4d-header"
+          >
+            <Typography component="span" variant="subtitle2">
+              Which payment methods do you accept?
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography
+              variant="body2"
+              gutterBottom
+              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
+            >
+              We accept all major credit and debit cards, as well as PayPal and bank transfers.
             </Typography>
           </AccordionDetails>
         </Accordion>

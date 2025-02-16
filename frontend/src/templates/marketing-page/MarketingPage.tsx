@@ -26,19 +26,17 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
       <Hero />
       <div>
         {/* <LogoCollection /> */}
-        {/* <Features /> */}
         {/* <Divider /> */}
-        {/* <Testimonials /> */}
         {/* <Divider />
         <Highlights /> */}
-        {/* <Divider />
-        <Pricing />
-        <Divider /> */}
-        {/* <FAQ /> */}
         <AiCard />
         <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
           Powered by powerful AI
         </Typography>
+        {/* <Features /> */}
+        <Pricing />
+        {/* <Testimonials /> */}
+        <FAQ />
         {/* <Divider /> */}
         <Footer />
       </div>

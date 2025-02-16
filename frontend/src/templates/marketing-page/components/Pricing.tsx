@@ -17,8 +17,8 @@ const tiers = [
     title: 'Free',
     price: '0',
     description: [
-      '10 users included',
-      '2 GB of storage',
+      '1 email account',
+      '10 emails per month',
       'Help center access',
       'Email support',
     ],
@@ -29,10 +29,10 @@ const tiers = [
   {
     title: 'Professional',
     subheader: 'Recommended',
-    price: '15',
+    price: '4.99',
     description: [
-      '20 users included',
-      '10 GB of storage',
+      '5 email accounts',
+      '1000 emails per month',
       'Help center access',
       'Priority email support',
       'Dedicated team',
@@ -44,10 +44,10 @@ const tiers = [
   },
   {
     title: 'Enterprise',
-    price: '30',
+    price: '99.99',
     description: [
-      '50 users included',
-      '30 GB of storage',
+      'Unlimited email accounts',
+      'Unlimited emails per month',
       'Help center access',
       'Phone & email support',
     ],
