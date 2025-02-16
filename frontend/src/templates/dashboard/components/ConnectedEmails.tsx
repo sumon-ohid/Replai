@@ -41,7 +41,7 @@ export default function ConnectedEmails() {
           fullWidth={isSmallScreen}
           onClick={handleViewConnectedEmails}
         >
-          View Connected Emails
+          Connected Emails
         </Button>
       </CardContent>
     </Card>

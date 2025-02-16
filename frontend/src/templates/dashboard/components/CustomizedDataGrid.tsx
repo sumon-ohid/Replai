@@ -92,12 +92,12 @@ export default function CustomizedDataGrid() {
 
         const formattedEmails = emails.map((email: any, index: number) => ({
           id: index + 1,
-          subject: email.subject,
+          subject: email.subject || 'No subject',
           status: 'Sent', // Adjust as needed
-          from: email.sender,
-          to: email.receiver,
-          content: email.bodyPreview,
-          dateSent: new Date(email.timeSent).toLocaleString(),
+          from: email.sender || 'No sender',
+          to: email.receiver || 'No receiver',
+          content: email.bodyPreview || 'No content',
+          dateSent: new Date(email.timeSent).toLocaleString() || 'No date',
         }));
 
         setRows(formattedEmails);
@@ -125,6 +125,8 @@ export default function CustomizedDataGrid() {
       <DataGrid
         rows={rows}
         columns={columns}
+        pagination={true}
+        rowCount={rows.length}
         getRowClassName={(params) =>
           params.indexRelativeToCurrentPage % 2 === 0 ? 'even' : 'odd'
         }
