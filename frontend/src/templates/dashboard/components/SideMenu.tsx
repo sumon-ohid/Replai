@@ -10,6 +10,7 @@ import SelectContent from './SelectContent';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import OptionsMenu from './OptionsMenu';
+import axios from 'axios';
 
 const drawerWidth = 240;
 
@@ -25,6 +26,31 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
+  const [user, setUser] = React.useState({ name: '', email: '' });
+
+  React.useEffect(() => {
+    const fetchUserDetails = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      try {
+        const response = await axios.get('http://localhost:3000/api/user/me', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUser(response.data as { name: string; email: string });
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
+
   return (
     <Drawer
       variant="permanent"
@@ -44,31 +70,31 @@ export default function SideMenu() {
       >
         {/* <SelectContent /> */}
         <Stack
-        direction="row"
-        sx={{
-          p: 2,
-          gap: 1,
-          alignItems: 'center',
-          border: (theme) => `1px solid ${theme.palette.divider}`,
-          borderRadius: 3,
-        }}
-      >
-        <Avatar
-          sizes="small"
-          alt="Riley Carter"
-          src="/static/images/avatar/7.jpg"
-          sx={{ width: 36, height: 36 }}
-        />
-        <Box sx={{ mr: 'auto' }}>
-          <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-            Riley Carter
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            riley@email.com
-          </Typography>
-        </Box>
-        <OptionsMenu />
-      </Stack>
+          direction="row"
+          sx={{
+            p: 2,
+            gap: 1,
+            alignItems: 'center',
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: 3,
+          }}
+        >
+          <Avatar
+            sizes="small"
+            alt={user.name}
+            src="/static/images/avatar/7.jpg"
+            sx={{ width: 36, height: 36 }}
+          />
+          <Box sx={{ mr: 'auto' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
+              {user.name.substring(0, 15)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {user.email.substring(0, 15)}
+            </Typography>
+          </Box>
+          <OptionsMenu />
+        </Stack>
       </Box>
       <Divider />
       <Box

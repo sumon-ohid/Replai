@@ -8,6 +8,7 @@ import handleEmails from "./emails/handleEmails.js";
 import connectedEmails from "./emails/connectedEmails.js";
 import SentEmail from "./models/SentEmail.js";
 import emailsRouter from "./routes/emails.js";
+import user from "./user/user.js";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
 app.use("/api/emails", emailsRouter);
 app.use("/api/emails", connectedEmails);
+app.use("/api/user", user);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
