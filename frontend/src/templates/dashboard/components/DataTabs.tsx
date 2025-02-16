@@ -12,6 +12,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import { styled } from "@mui/material/styles";
 import { Divider, useMediaQuery } from "@mui/material";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   "& .MuiTabs-indicator": {
@@ -39,15 +40,21 @@ const StyledTab = styled(Tab)(({ theme }) => ({
   borderColor: "divider",
   position: "relative",
   justifyContent: "center",
-    alignItems: "center",
+  alignItems: "center",
 }));
 
-function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
+function TabPanel({
+  children,
+  value,
+  index,
+}: {
+  children: React.ReactNode;
+  value: number;
+  index: number;
+}) {
   return (
     <div role="tabpanel" hidden={value !== index}>
-      {value === index && (
-        <Box sx={{ p: 3, width: "100%" }}>{children}</Box>
-      )}
+      {value === index && <Box sx={{ p: 3, width: "100%" }}>{children}</Box>}
     </div>
   );
 }
@@ -56,18 +63,18 @@ export default function DataTabs() {
   const [value, setValue] = React.useState(0);
   const isSmallScreen = useMediaQuery("(max-width: 1000px)");
 
-interface TabPanelProps {
+  interface TabPanelProps {
     children: React.ReactNode;
     value: number;
     index: number;
-}
+  }
 
-const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-};
+  };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: 'column', m: 3, gap: 3 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", m: 3, gap: 3 }}>
       <Box
         sx={{
           display: "flex",
@@ -77,7 +84,7 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
           borderColor: "divider",
           borderRadius: 2,
           width: isSmallScreen ? "100%" : "auto",
-        //   gap: isSmallScreen ? 0 : 3,
+          //   gap: isSmallScreen ? 0 : 3,
         }}
       >
         <StyledTabs
@@ -85,7 +92,14 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
           variant="scrollable"
           value={value}
           onChange={handleChange}
-          sx={{ justifyContent: "center", borderRight: isSmallScreen ? 0 : 1, borderBottom: isSmallScreen ? 1 : 0, borderColor: "divider", p: 1, width: isSmallScreen ? "100%" : 200 }}
+          sx={{
+            justifyContent: "center",
+            borderRight: isSmallScreen ? 0 : 1,
+            borderBottom: isSmallScreen ? 1 : 0,
+            borderColor: "divider",
+            p: 1,
+            width: isSmallScreen ? "100%" : 200,
+          }}
         >
           <StyledTab icon={<TextFieldsIcon />} label="Text" />
           <StyledTab icon={<UploadFileIcon />} label="File" />
@@ -94,13 +108,52 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         </StyledTabs>
 
         <TabPanel value={value} index={0}>
-          <TextField label="Text Input" variant="outlined" fullWidth multiline sx={{ width: "100%" }} />
+          <Typography variant="h4" sx={{ ml: 2 }}>
+            Text data training
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
+            Enter the text data you want to use for training.
+          </Typography>
+          <Box
+            component="form"
+            sx={{
+              "& .MuiTextField-root": {
+                m: 1,
+                width: isSmallScreen ? "100%" : "400px",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                padding: 2,
+              },
+            }}
+            noValidate
+            autoComplete="off"
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <TextField
+                id="standard-multiline-flexible"
+                multiline
+                maxRows={8}
+                variant="standard"
+              />
+            </div>
+          </Box>
+          <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              endIcon={<ChevronRightRoundedIcon />}
+              fullWidth={isSmallScreen}
+              sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2 }}
+            >
+              Save Data
+        </Button>
         </TabPanel>
 
         <TabPanel value={value} index={1}>
           <Box
             sx={{
-                width: isSmallScreen ? "100%" : 500,
+              width: isSmallScreen ? "100%" : 500,
               border: "2px dashed",
               borderColor: "divider",
               borderRadius: 2,
@@ -109,11 +162,17 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
               "&:hover": { borderColor: "primary.main" },
             }}
           >
-            <UploadFileIcon sx={{ fontSize: 40, mb: 1, color: "text.secondary" }} />
+            <UploadFileIcon
+              sx={{ fontSize: 40, mb: 1, color: "text.secondary" }}
+            />
             <Typography variant="body1" sx={{ mb: 2 }}>
               Drag and drop files here
             </Typography>
-            <Button variant="contained" component="label" startIcon={<UploadFileIcon />}>
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<UploadFileIcon />}
+            >
               Browse Files
               <input type="file" hidden />
             </Button>
@@ -121,12 +180,28 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         </TabPanel>
 
         <TabPanel value={value} index={2}>
-          <TextField variant="outlined" fullWidth placeholder="https://example.com" sx={{ width: "100%" }} />
+          <TextField
+            variant="outlined"
+            fullWidth
+            placeholder="https://example.com"
+            sx={{ width: "100%" }}
+          />
         </TabPanel>
 
         <TabPanel value={value} index={3}>
-          <TextField label="Subject" variant="outlined" fullWidth sx={{ mb: 2 }} />
-          <TextField label="Email Content" variant="outlined" fullWidth multiline rows={4} />
+          <TextField
+            label="Subject"
+            variant="outlined"
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Email Content"
+            variant="outlined"
+            fullWidth
+            multiline
+            rows={4}
+          />
         </TabPanel>
       </Box>
 
@@ -143,15 +218,21 @@ const handleChange = (event: React.SyntheticEvent, newValue: number) => {
           width: "100%",
         }}
       >
-        <SettingsSuggestIcon sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
+        <SettingsSuggestIcon
+          sx={{ fontSize: 60, color: "primary.main", mb: 2 }}
+        />
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           AI Training Section
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            After providing data, train your AI model to improve its performance.
+          After providing data, train your AI model to improve its performance.
         </Typography>
         <Divider sx={{ width: "100%", my: 2 }} />
-        <Button variant="outlined" startIcon={<SettingsSuggestIcon />} sx={{ borderRadius: 2, px: 4, py: 1.5 }}>
+        <Button
+          variant="outlined"
+          startIcon={<SettingsSuggestIcon />}
+          sx={{ borderRadius: 2, px: 4, py: 1.5 }}
+        >
           Train AI Model
         </Button>
       </Box>
