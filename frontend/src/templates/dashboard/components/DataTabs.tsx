@@ -13,6 +13,10 @@ import { styled } from "@mui/material/styles";
 import { Divider, useMediaQuery } from "@mui/material";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import Input from "@mui/material/Input";
+import InputLabel from "@mui/material/InputLabel";
+import InputAdornment from "@mui/material/InputAdornment";
+import FormControl from "@mui/material/FormControl";
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   "& .MuiTabs-indicator": {
@@ -168,6 +172,9 @@ export default function DataTabs() {
             <Typography variant="body1" sx={{ mb: 2 }}>
               Drag and drop files here
             </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Supported formats: PDF, DOCX, TXT (Max 25MB)
+            </Typography>
             <Button
               variant="contained"
               component="label"
@@ -177,15 +184,60 @@ export default function DataTabs() {
               <input type="file" hidden />
             </Button>
           </Box>
+          <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              endIcon={<ChevronRightRoundedIcon />}
+              fullWidth={isSmallScreen}
+              sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2, mt: 2 }}
+            >
+              Save Data
+        </Button>
         </TabPanel>
 
+        {/* <TabPanel value={value} index={2}>
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            <LanguageIcon sx={{ color: "text.secondary", mr: 1 }} />
+            Website data training
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column"}}>
+            <TextField fullWidth variant="outlined" label="www.example.com" id="fullWidth" />
+          </Box>
+          <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              endIcon={<ChevronRightRoundedIcon />}
+              fullWidth={isSmallScreen}
+              sx={{ borderRadius: 2, px: 4, py: 1.5 }}
+            >
+              Extract Data
+        </Button>
+        </TabPanel> */}
+
         <TabPanel value={value} index={2}>
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Website data training
+          </Typography>
           <TextField
             variant="outlined"
             fullWidth
             placeholder="https://example.com"
-            sx={{ width: "100%" }}
+            sx={{ mb: 3 }}
+            InputProps={{
+              startAdornment: <LanguageIcon sx={{ color: 'action.active', mr: 1 }} />,
+              sx: { borderRadius: 2 }
+            }}
           />
+          <Button 
+            variant="contained" 
+            size="large"
+            startIcon={<LanguageIcon />}
+            sx={{ borderRadius: 2 }}
+          >
+            Analyze Website
+          </Button>
         </TabPanel>
 
         <TabPanel value={value} index={3}>
