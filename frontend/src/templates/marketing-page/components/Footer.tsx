@@ -12,6 +12,7 @@ import FacebookIcon from "@mui/icons-material/GitHub";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import TwitterIcon from "@mui/icons-material/X";
 import SitemarkIcon from "./SitemarkIcon";
+import Card from "@mui/material/Card";
 
 function Copyright() {
   return (
@@ -28,7 +29,8 @@ function Copyright() {
 
 export default function Footer() {
   return (
-    <Container
+    <Card
+      variant="outlined"
       sx={{
         display: "flex",
         flexDirection: "row",
@@ -36,17 +38,19 @@ export default function Footer() {
         gap: { xs: 4, sm: 2 },
         py: { xs: 2, sm: 2 },
         fontSize: "0.25rem",
-        justifyContent: "space-between",
+        // justifyContent: "space-between",
         textAlign: { sm: "center", md: "left" },
+        m: 1.5,
+        justifyContent: "center",
       }}
     >
-      <Link color="text.secondary" variant="body2" href="#">
+      {/* <Link color="text.secondary" variant="body2" href="#">
         Privacy Policy
       </Link>
       <Link color="text.secondary" variant="body2" href="#">
         Terms of Service
-      </Link>
+      </Link> */}
       <Copyright />
-    </Container>
+    </Card>
   );
 }

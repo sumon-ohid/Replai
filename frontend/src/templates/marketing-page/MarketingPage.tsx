@@ -11,6 +11,11 @@ import Features from './components/Features';
 import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
+import './style.css';
+import CardAlert from '../dashboard/components/CardAlert';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import AiCard from './components/AiCard';
 
 export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
   return (
@@ -30,7 +35,11 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         <Pricing />
         <Divider /> */}
         {/* <FAQ /> */}
-        <Divider />
+        <AiCard />
+        <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
+          Powered by powerful AI
+        </Typography>
+        {/* <Divider /> */}
         <Footer />
       </div>
     </AppTheme>
