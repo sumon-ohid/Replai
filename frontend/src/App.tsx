@@ -10,6 +10,7 @@ import SignIn from './templates/sign-in/SignIn';
 import Dashboard from './templates/dashboard/Dashboard';
 import EmailManager from './templates/dashboard/EmailManager';
 import SignUp from './templates/sign-up/SignUp';
+import DataManager from './templates/dashboard/DataManager';
 
 function Copyright() {
   return (
@@ -38,7 +39,7 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/connected" element={<EmailManager />} />
-        <Route path="/data" element={<Dashboard />} />
+        <Route path="/data" element={<DataManager />} />
         <Route path="/blocklist" element={<Dashboard />} />
         <Route path="/billing" element={<Dashboard />} />
         <Route path="/settings" element={<Dashboard />} />
