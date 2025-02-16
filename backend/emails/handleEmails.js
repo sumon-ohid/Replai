@@ -5,6 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import getSentEmailModel from '../models/SentEmail.js';
+import User from '../models/User.js'; // Import the User model
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import auth from '../middleware/auth.js'; // Import the auth middleware
 
@@ -52,7 +53,7 @@ router.get('/auth/google', auth, (req, res) => { // Apply the auth middleware
 const getUser = async (auth) => {
   const oauth2 = google.oauth2({ version: 'v2', auth });
   const res = await oauth2.userinfo.get();
-  return res.data.id;
+  return res.data;
 };
 
 router.get('/auth/google/callback', async (req, res) => { // Apply the auth middleware
@@ -63,7 +64,15 @@ router.get('/auth/google/callback', async (req, res) => { // Apply the auth midd
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
     await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
-    const googleUserId = await getUser(oauth2Client);
+    const googleUser = await getUser(oauth2Client);
+    const googleUserId = googleUser.id;
+    const googleUserEmail = googleUser.email;
+
+    // Save the connected email to the user's document
+    await User.findByIdAndUpdate(localUserId, {
+      $addToSet: { connectedEmails: { email: googleUserEmail, provider: 'google' } }
+    });
+
     await createEmailBot(tokens, googleUserId, localUserId);
 
     // close current window

@@ -8,6 +8,7 @@ import ChartUserByCountry from './ChartUserByCountry';
 import CustomizedTreeView from './CustomizedTreeView';
 import CustomizedDataGrid from './CustomizedDataGrid';
 import HighlightedCard from './HighlightedCard';
+import ConnectedEmails from './ConnectedEmails';
 import PageViewsBarChart from './PageViewsBarChart';
 import SessionsChart from './SessionsChart';
 import StatCard, { StatCardProps } from './StatCard';
@@ -33,16 +34,16 @@ const data: StatCardProps[] = [
       780, 800, 760, 380, 740, 660, 620, 840, 500, 520, 480, 400, 360, 300, 220,
     ],
   },
-  {
-    title: 'Time saved',
-    value: '20h',
-    interval: 'Last 30 days',
-    trend: 'neutral',
-    data: [
-      500, 400, 510, 530, 520, 600, 530, 520, 510, 730, 520, 510, 530, 620, 510, 530,
-      520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
-    ],
-  },
+  // {
+  //   title: 'Time saved',
+  //   value: '20h',
+  //   interval: 'Last 30 days',
+  //   trend: 'neutral',
+  //   data: [
+  //     500, 400, 510, 530, 520, 600, 530, 520, 510, 730, 520, 510, 530, 620, 510, 530,
+  //     520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
+  //   ],
+  // },
 ];
 
 export default function MainGrid() {
@@ -60,6 +61,9 @@ export default function MainGrid() {
       >
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <HighlightedCard />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <ConnectedEmails />
         </Grid>
         {data.map((card, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>

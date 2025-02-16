@@ -27,7 +27,7 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({ open, onClose, em
   if (!email) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog open={open} onClose={onClose}  fullWidth>
       <DialogContent>
         <Card sx={{ maxWidth: 600, margin: 'auto', mt: 4 }}>
         <CardContent>

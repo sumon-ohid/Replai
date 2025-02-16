@@ -8,6 +8,7 @@ import MarketingPage from './templates/marketing-page/MarketingPage';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import SignIn from './templates/sign-in/SignIn';
 import Dashboard from './templates/dashboard/Dashboard';
+import EmailManager from './templates/dashboard/EmailManager';
 import SignUp from './templates/sign-up/SignUp';
 
 function Copyright() {
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/connected-emails" element={<EmailManager />} />
       </Routes>
     </Router>
   );
