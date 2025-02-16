@@ -11,6 +11,9 @@ import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import OptionsMenu from './OptionsMenu';
 import axios from 'axios';
+import { useAuth } from '../../../../context/AuthContext';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Tooltip from '@mui/material/Tooltip';
 
 const drawerWidth = 240;
 
@@ -25,8 +28,15 @@ const Drawer = styled(MuiDrawer)({
   },
 });
 
+interface User {
+  name: string;
+  email: string;
+  profilePicture?: string;
+}
+
 export default function SideMenu() {
-  const [user, setUser] = React.useState({ name: '', email: '' });
+  const [user, setUser] = React.useState<User>({ name: '', email: '' });
+  const { logout } = useAuth();
 
   React.useEffect(() => {
     const fetchUserDetails = async () => {
@@ -42,7 +52,7 @@ export default function SideMenu() {
             Authorization: `Bearer ${token}`
           }
         });
-        setUser(response.data as { name: string; email: string });
+        setUser(response.data as User);
       } catch (error) {
         console.error('Error fetching user details:', error);
       }
@@ -82,7 +92,7 @@ export default function SideMenu() {
           <Avatar
             sizes="small"
             alt={user.name}
-            src="/static/images/avatar/7.jpg"
+            src={user.profilePicture || '/static/images/avatar/default.jpg'}
             sx={{ width: 36, height: 36 }}
           />
           <Box sx={{ mr: 'auto' }}>
@@ -94,6 +104,12 @@ export default function SideMenu() {
             </Typography>
           </Box>
           <OptionsMenu />
+          {/* <Tooltip title="logout" placement="top">
+            <LogoutIcon
+              sx={{ cursor: 'pointer', height: 20, width: 20, border: '1px solid', borderRadius: '20%', padding: .2 }}
+              onClick={logout}
+            />
+          </Tooltip> */}
         </Stack>
       </Box>
       <Divider />
