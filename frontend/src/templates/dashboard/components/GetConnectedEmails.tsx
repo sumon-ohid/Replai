@@ -40,7 +40,7 @@ export default function GetConnectedEmails() {
           Authorization: `Bearer ${token}`
         }
       });
-      const emails = response.data.map((email: EmailAccount, index: number) => ({ ...email, id: index }));
+      const emails = (response.data as EmailAccount[]).map((email: EmailAccount, index: number) => ({ ...email, id: index }));
       setConnectedEmails(emails);
     } catch (error) {
       console.error('Error fetching connected emails:', error);

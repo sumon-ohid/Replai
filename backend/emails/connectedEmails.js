@@ -23,4 +23,21 @@ router.get('/connected', auth, async (req, res) => {
   }
 });
 
+// Endpoint to delete a connected email account
+router.delete('/connected/:email', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const email = req.params.email;
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { connectedEmails: { email } }
+    });
+
+    res.send('Email deleted successfully');
+  } catch (error) {
+    console.error('Error deleting email:', error);
+    res.status(500).send('Error deleting email');
+  }
+});
+
 export default router;
