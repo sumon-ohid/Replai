@@ -223,10 +223,9 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     <TextField placeholder="Card Number" variant="outlined" fullWidth />
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <TextField
-                        placeholder="Expiry Date"
+                        placeholder="Expiry Date MM/YY"
                         variant="outlined"
                         fullWidth
-                        placeholder="MM/YY"
                       />
                       <TextField placeholder="CVV" variant="outlined" fullWidth />
                     </Box>
