@@ -18,13 +18,9 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from './theme/customizations';
+import BlockListData from './components/BlockListData';
 import { Typography } from '@mui/material';
-import  GetConnectedEmails from './components/GetConnectedEmails';
-import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
-import axios from 'axios';
-import { DataGrid } from '@mui/x-data-grid';
-import DataTabs from './components/DataTabs';
+import { Alert } from '@mui/material';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -33,7 +29,7 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function Dashboard(props: { disableCustomTheme?: boolean }) {
+export default function BlockList(props: { disableCustomTheme?: boolean }) {
 
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
@@ -61,7 +57,13 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
           >
             <Header />
           </Stack>
-          <DataTabs />
+          <Typography variant="h4" align="left" mt={3} ml={3}>
+            Block List
+          </Typography>
+          <Typography variant="body1" align="left" mt={1} ml={3}>
+            Add email addresses or domains to block.
+          </Typography>
+          <BlockListData />
         </Box>
       </Box>
     </AppTheme>
