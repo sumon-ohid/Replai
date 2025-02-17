@@ -12,6 +12,7 @@ import EmailManager from './templates/dashboard/EmailManager';
 import SignUp from './templates/sign-up/SignUp';
 import DataManager from './templates/dashboard/DataManager';
 import BlockList from './templates/dashboard/BlockList';
+import PlanBillingManagement from './templates/dashboard/PlanManager';
 
 function Copyright() {
   return (
@@ -42,7 +43,7 @@ export default function App() {
         <Route path="/connected" element={<EmailManager />} />
         <Route path="/data" element={<DataManager />} />
         <Route path="/blocklist" element={<BlockList />} />
-        <Route path="/billing" element={<Dashboard />} />
+        <Route path="/billing" element={<PlanBillingManagement />} />
         <Route path="/settings" element={<Dashboard />} />
         <Route path="/about" element={<Dashboard />} />
         <Route path="/feedback" element={<Dashboard />} />
