@@ -25,7 +25,7 @@ export default function NavbarBreadcrumbs() {
       aria-label="breadcrumb"
       separator={<NavigateNextRoundedIcon fontSize="small" />}
     >
-      <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }}>
         <Typography variant="body1">Dashboard</Typography>
       </Link>
       {pathnames.map((value, index) => {

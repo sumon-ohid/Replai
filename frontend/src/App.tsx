@@ -14,6 +14,8 @@ import DataManager from './templates/dashboard/DataManager';
 import BlockList from './templates/dashboard/BlockList';
 import PlanBillingManagement from './templates/dashboard/PlanManager';
 import SettingsPage from './templates/dashboard/SettingsPage';
+import AboutPage from './templates/dashboard/AboutPage';
+import FeedbackPage from './templates/dashboard/FeedbackPage';
 
 function Copyright() {
   return (
@@ -46,8 +48,8 @@ export default function App() {
         <Route path="/blocklist" element={<BlockList />} />
         <Route path="/billing" element={<PlanBillingManagement />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/about" element={<Dashboard />} />
-        <Route path="/feedback" element={<Dashboard />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
       </Routes>
     </Router>
   );
