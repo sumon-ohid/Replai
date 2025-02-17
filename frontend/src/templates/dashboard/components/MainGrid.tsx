@@ -8,6 +8,7 @@ import ConnectedEmails from './ConnectedEmails';
 import CustomizedDataGrid from './CustomizedDataGrid';
 import StatCard, { StatCardProps } from './StatCard';
 import axios from 'axios';
+import Footer from '../../marketing-page/components/Footer';
 
 export default function MainGrid() {
   const [data, setData] = React.useState<StatCardProps[]>([]);
@@ -85,7 +86,7 @@ export default function MainGrid() {
         </Grid>
         
       </Grid> */}
-      <Copyright sx={{ my: 4 }} />
+      {/* <Copyright sx={{ my: 4 }} /> */}
     </Box>
   );
 }

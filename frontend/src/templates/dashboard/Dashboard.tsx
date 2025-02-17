@@ -18,6 +18,7 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from './theme/customizations';
+import Footer from '../marketing-page/components/Footer';
 
 const xThemeComponents = {
   ...chartsCustomizations,
