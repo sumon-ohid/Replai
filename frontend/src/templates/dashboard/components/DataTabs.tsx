@@ -17,6 +17,7 @@ import Input from "@mui/material/Input";
 import InputLabel from "@mui/material/InputLabel";
 import InputAdornment from "@mui/material/InputAdornment";
 import FormControl from "@mui/material/FormControl";
+import Alert from "@mui/material/Alert";
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   "& .MuiTabs-indicator": {
@@ -241,19 +242,12 @@ export default function DataTabs() {
         </TabPanel>
 
         <TabPanel value={value} index={3}>
-          <TextField
-            label="Subject"
-            variant="outlined"
-            fullWidth
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Email Content"
-            variant="outlined"
-            fullWidth
-            multiline
-            rows={4}
-          />
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Email data training
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Comming Soon...
+          </Typography>
         </TabPanel>
       </Box>
 
@@ -277,8 +271,11 @@ export default function DataTabs() {
           AI Training Section
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          After providing data, train your AI model to improve its performance.
+          After providing data, train your AI model to update data and improve its performance.
         </Typography>
+        <Alert variant="outlined" severity="info">
+          AI Model is not trained yet. Please train the model to use it.
+        </Alert>
         <Divider sx={{ width: "100%", my: 2 }} />
         <Button
           variant="outlined"
