@@ -15,7 +15,7 @@ export default function ConnectedEmails() {
   const navigate = useNavigate();
 
   const handleViewConnectedEmails = () => {
-    navigate('/connected-emails');
+    navigate('/connected');
   };
 
   return (
