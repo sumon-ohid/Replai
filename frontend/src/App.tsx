@@ -1,11 +1,6 @@
 import * as React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
-import ProTip from './ProTip';
-import MarketingPage from './templates/marketing-page/MarketingPage';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import MarketingPage from './templates/marketing-page/MarketingPage';
 import SignIn from './templates/sign-in/SignIn';
 import Dashboard from './templates/dashboard/Dashboard';
 import EmailManager from './templates/dashboard/EmailManager';
@@ -16,24 +11,7 @@ import PlanBillingManagement from './templates/dashboard/PlanManager';
 import SettingsPage from './templates/dashboard/SettingsPage';
 import AboutPage from './templates/dashboard/AboutPage';
 import FeedbackPage from './templates/dashboard/FeedbackPage';
-
-function Copyright() {
-  return (
-    <Typography
-      variant="body2"
-      align="center"
-      sx={{
-        color: 'text.secondary',
-      }}
-    >
-      {'Copyright © '}
-      <Link color="inherit" href="">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}.
-    </Typography>
-  );
-}
+import NotFoundPage from './templates/not-found/NotFoundPage';
 
 export default function App() {
   return (
@@ -50,6 +28,7 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
