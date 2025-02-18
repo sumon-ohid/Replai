@@ -140,6 +140,10 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
           }
         }
 
+        // Fetch the user's name
+        const user = await User.findById(localUserId);
+        const userName = user ? user.name : 'Your good friend';
+
         // Generate AI response
         const prompt = `Respond to this email briefly and naturally as a real person:
 From: ${from}
@@ -149,7 +153,7 @@ Body: ${originalBody}
 Guidelines:
 - Keep response short and simple
 - Use casual language
-- Sign with "Best regards, Md Ohiduzzaman Sumon"
+- Sign with "Best regards, ${userName}"
 - Avoid markdown formatting`;
 
         const aiRes = await model.generateContent(prompt);

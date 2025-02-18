@@ -158,7 +158,8 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     <Box>
                       <Typography variant="subtitle1" gutterBottom>
                         Signature
-                        <Tooltip title="Your signature will be used for emails responses. (eg: Best Regards John Doe)" placement="right">
+                        <Tooltip title="Your signature will be used for emails responses. (eg: Best Regards John Doe).
+                            If no signature provided your Full Name will be used." placement="right">
                           <Info sx={{ ml: 1, fontSize: 18, color: 'text.secondary' }} />
                         </Tooltip>
                       </Typography>
