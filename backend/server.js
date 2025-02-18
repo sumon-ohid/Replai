@@ -25,11 +25,23 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Could not connect to MongoDB", err));
 
-const corsOptions = {
-  origin: "http://localhost:5173",
-};
+const allowedOrigins = [
+  "http://localhost:5173", // For local development
+  "https://email-agent.up.railway.app", // For production
+];
 
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // for cookies or sessions
+  })
+);
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
