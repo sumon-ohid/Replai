@@ -10,6 +10,8 @@ import StatCard, { StatCardProps } from './StatCard';
 import axios from 'axios';
 import Footer from '../../marketing-page/components/Footer';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 export default function MainGrid() {
   const [data, setData] = React.useState<StatCardProps[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -21,7 +23,7 @@ export default function MainGrid() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get<StatCardProps[]>('http://localhost:3000/api/emails/stats', {
+      const response = await axios.get<StatCardProps[]>(`${apiBaseUrl}/api/emails/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

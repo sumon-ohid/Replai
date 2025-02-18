@@ -21,6 +21,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -116,7 +118,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     }
     const data = new FormData(event.currentTarget);
     try {
-      const response = await axios.post<{ message: string }>('http://localhost:3000/api/auth/register', { 
+      const response = await axios.post<{ message: string }>(`${apiBaseUrl}/api/auth/register`, { 
         name: data.get('name'), 
         email: data.get('email'), 
         password: data.get('password') 

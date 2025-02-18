@@ -23,6 +23,8 @@ import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import { useAuth } from '../../AuthContext';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -92,7 +94,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     const password = data.get('password') as string;
 
     try {
-      const response = await axios.post<{ token: string }>('http://localhost:3000/api/auth/login', { email, password });
+      const response = await axios.post<{ token: string }>(`${apiBaseUrl}/api/auth/login`, { email, password });
       const { token } = response.data;
       localStorage.setItem('token', token);
       setAlert({ severity: 'success', message: 'Logged in successfully!' });

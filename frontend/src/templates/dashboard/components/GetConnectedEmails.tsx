@@ -11,6 +11,8 @@ import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import axios from 'axios';
 import { useAuth } from '../../../../context/AuthContext';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 interface EmailAccount {
   id: number;
   email: string;
@@ -35,7 +37,7 @@ export default function GetConnectedEmails() {
     setError(null);
 
     try {
-      const response = await axios.get('http://localhost:3000/api/emails/connected', {
+      const response = await axios.get(`${apiBaseUrl}/api/emails/connected`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -58,7 +60,7 @@ export default function GetConnectedEmails() {
     }
 
     try {
-      await axios.delete(`http://localhost:3000/api/emails/connected/${email}`, {
+      await axios.delete(`${apiBaseUrl}/api/emails/connected/${email}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

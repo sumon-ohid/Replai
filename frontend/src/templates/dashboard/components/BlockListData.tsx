@@ -16,6 +16,8 @@ import {
 import { Delete, Add, Info } from "@mui/icons-material";
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 export default function BlockListData() {
   const [entries, setEntries] = React.useState<string[]>([]);
   const [newEntry, setNewEntry] = React.useState("");
@@ -26,7 +28,7 @@ export default function BlockListData() {
     const fetchBlockList = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:3000/api/blocklist', {
+        const response = await axios.get(`${apiBaseUrl}/api/blocklist`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -59,7 +61,7 @@ export default function BlockListData() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/blocklist', 
+      await axios.post(`${apiBaseUrl}/api/blocklist`, 
         { entry: newEntry },
         {
           headers: {
@@ -78,7 +80,7 @@ export default function BlockListData() {
   const handleDeleteEntry = async (entryToDelete: string) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete('http://localhost:3000/api/blocklist', {
+      await axios.delete(`${apiBaseUrl}/api/blocklist`, {
         headers: {
           Authorization: `Bearer ${token}`
         },

@@ -6,17 +6,19 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import getSentEmailModel from '../models/SentEmail.js';
 import User from '../models/User.js';
-import BlockList from '../models/BlockList.js'; // Import the BlockList model
+import BlockList from '../models/BlockList.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import auth from '../middleware/auth.js';
 
 dotenv.config();
 
+const apiBaseUrl = process.env.VITE_API_BASE_URL;
+
 const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  'http://localhost:3000/api/emails/auth/google/callback'
+  `${apiBaseUrl}/api/emails/auth/google/callback`
 );
 
 const SCOPES = [
@@ -30,8 +32,6 @@ const SCOPES = [
 const TOKENS_FILE = path.resolve('tokens.json');
 const repliedEmails = new Set();
 const userIntervals = new Map();
-
-dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });

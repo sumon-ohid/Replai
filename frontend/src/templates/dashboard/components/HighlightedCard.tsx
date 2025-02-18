@@ -10,6 +10,8 @@ import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
 import { useAuth } from '../../../../context/AuthContext';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 export default function HighlightedCard() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -28,7 +30,7 @@ export default function HighlightedCard() {
     }
 
     try {
-      const response = await axios.get('http://localhost:3000/api/emails/auth/google', {
+      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/google`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

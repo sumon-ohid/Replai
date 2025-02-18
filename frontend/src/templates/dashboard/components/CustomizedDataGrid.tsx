@@ -6,6 +6,8 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { Container } from '@mui/system';
 import { Card, CardContent, CardActions, Divider } from '@mui/material';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 interface EmailRow {
   id: number;
   subject: string;
@@ -83,7 +85,7 @@ export default function CustomizedDataGrid() {
           console.error('No token found');
           return;
         }
-        const response = await axios.get('http://localhost:3000/api/emails/get-emails', {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/get-emails`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

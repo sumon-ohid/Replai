@@ -15,6 +15,8 @@ import { useAuth } from '../../../../context/AuthContext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Tooltip from '@mui/material/Tooltip';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 const drawerWidth = 240;
 
 const Drawer = styled(MuiDrawer)({
@@ -47,7 +49,7 @@ export default function SideMenu() {
       }
 
       try {
-        const response = await axios.get('http://localhost:3000/api/user/me', {
+        const response = await axios.get(`${apiBaseUrl}/api/user/me`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

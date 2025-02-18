@@ -1,5 +1,6 @@
 import * as React from 'react';
 import axios from 'axios';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
-      const response = await axios.post<{ token: string }>('http://localhost:3000/api/auth/login', credentials);
+      const response = await axios.post<{ token: string }>(`${apiBaseUrl}/api/auth/login`, credentials);
       if (response.status === 200) {
         setIsAuthenticated(true);
         localStorage.setItem('token', response.data.token);
@@ -35,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await axios.get('http://localhost:3000/api/auth/status', {
+        const response = await axios.get(`${apiBaseUrl}/api/auth/status`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

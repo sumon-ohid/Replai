@@ -24,6 +24,8 @@ import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 const xThemeComponents = {
   ...chartsCustomizations,
   ...dataGridCustomizations,
@@ -45,7 +47,7 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
         }
     
         try {
-          const response = await axios.get('http://localhost:3000/api/emails/auth/google', {
+          const response = await axios.get(`${apiBaseUrl}/api/emails/auth/google`, {
             headers: {
               Authorization: `Bearer ${token}`
             }

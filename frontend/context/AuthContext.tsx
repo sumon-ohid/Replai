@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import axios from 'axios';
 import { User, AuthContextType } from './types';
 import { useNavigate } from 'react-router-dom';
-
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw new Error('No token found');
         }
 
-        const response = await axios.get<User>('http://localhost:3000/api/auth/user', {
+        const response = await axios.get<User>(`${apiBaseUrl}/api/auth/user`, {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      // await axios.post('http://localhost:3000/api/auth/logout', {}, {
+      // await axios.post('${apiBaseUrl}/api/auth/logout', {}, {
       //   headers: {
       //     Authorization: `Bearer ${token}`,
       //   },

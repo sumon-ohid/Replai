@@ -10,6 +10,8 @@ import {
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import axios from "axios";
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 type SparkLineData = number[];
 
 function getDaysInMonth(month: number, year: number) {
@@ -145,7 +147,7 @@ export const EmailGrid = () => {
           console.error("No token found in local storage");
           return;
         }
-        const response = await axios.get('http://localhost:3000/api/emails/get-emails', {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/get-emails`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
