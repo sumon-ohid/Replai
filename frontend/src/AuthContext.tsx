@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('token');
+    window.location.href = '/';
   };
 
   const checkAuthStatus = async () => {
