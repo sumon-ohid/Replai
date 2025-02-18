@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   TextField,
-  Chip,
   Stack,
   useMediaQuery,
   Typography,
@@ -15,12 +14,26 @@ import {
   alpha,
 } from "@mui/material";
 import { Delete, Add, Info } from "@mui/icons-material";
+import axios from 'axios';
 
 export default function BlockListData() {
   const [entries, setEntries] = React.useState<string[]>([]);
   const [newEntry, setNewEntry] = React.useState("");
   const [error, setError] = React.useState("");
   const isSmallScreen = useMediaQuery("(max-width: 600px)");
+
+  React.useEffect(() => {
+    const fetchBlockList = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/blocklist');
+        setEntries(response.data as string[]);
+      } catch (error) {
+        console.error('Error fetching block list:', error);
+      }
+    };
+
+    fetchBlockList();
+  }, []);
 
   const validateEntry = (entry: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,19 +45,30 @@ export default function BlockListData() {
     return null;
   };
 
-  const handleAddEntry = () => {
+  const handleAddEntry = async () => {
     const validationError = validateEntry(newEntry);
     if (validationError) {
       setError(validationError);
       return;
     }
-    setEntries([...entries, newEntry]);
-    setNewEntry("");
-    setError("");
+
+    try {
+      await axios.post('http://localhost:3000/api/blocklist', { entry: newEntry });
+      setEntries([...entries, newEntry]);
+      setNewEntry("");
+      setError("");
+    } catch (error) {
+      console.error('Error adding new entry:', error);
+    }
   };
 
-  const handleDeleteEntry = (entryToDelete: string) => {
-    setEntries(entries.filter((entry) => entry !== entryToDelete));
+  const handleDeleteEntry = async (entryToDelete: string) => {
+    try {
+      await axios.delete('http://localhost:3000/api/blocklist', { data: { entry: entryToDelete } });
+      setEntries(entries.filter((entry) => entry !== entryToDelete));
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+    }
   };
 
   return (
@@ -89,7 +113,6 @@ export default function BlockListData() {
             variant="contained"
             startIcon={<Add />}
             onClick={handleAddEntry}
-            // disabled={!!error || !newEntry}
             sx={{
               borderRadius: 50,
               px: 4,

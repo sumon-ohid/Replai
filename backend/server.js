@@ -10,6 +10,7 @@ import SentEmail from "./models/SentEmail.js";
 import emailsRouter from "./routes/emails.js";
 import user from "./user/user.js";
 import stats from "./emails/stats.js";
+import blocklist from "./routes/blocklist.js";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use("/api/emails", emailsRouter);
 app.use("/api/emails", connectedEmails);
 app.use("/api/user", user);
 app.use("/api/emails", stats);
+app.use("/api/blocklist", blocklist);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
