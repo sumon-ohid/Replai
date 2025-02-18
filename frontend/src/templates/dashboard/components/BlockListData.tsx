@@ -25,7 +25,12 @@ export default function BlockListData() {
   React.useEffect(() => {
     const fetchBlockList = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/blocklist');
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:3000/api/blocklist', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         setEntries(response.data as string[]);
       } catch (error) {
         console.error('Error fetching block list:', error);
@@ -53,7 +58,15 @@ export default function BlockListData() {
     }
 
     try {
-      await axios.post('http://localhost:3000/api/blocklist', { entry: newEntry });
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:3000/api/blocklist', 
+        { entry: newEntry },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       setEntries([...entries, newEntry]);
       setNewEntry("");
       setError("");
@@ -64,7 +77,13 @@ export default function BlockListData() {
 
   const handleDeleteEntry = async (entryToDelete: string) => {
     try {
-      await axios.delete('http://localhost:3000/api/blocklist', { data: { entry: entryToDelete } });
+      const token = localStorage.getItem('token');
+      await axios.delete('http://localhost:3000/api/blocklist', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        data: { entry: entryToDelete }
+      });
       setEntries(entries.filter((entry) => entry !== entryToDelete));
     } catch (error) {
       console.error('Error deleting entry:', error);
