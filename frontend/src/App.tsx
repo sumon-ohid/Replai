@@ -12,24 +12,28 @@ import SettingsPage from './templates/dashboard/SettingsPage';
 import AboutPage from './templates/dashboard/AboutPage';
 import FeedbackPage from './templates/dashboard/FeedbackPage';
 import NotFoundPage from './templates/not-found/NotFoundPage';
+import { AuthProvider } from './AuthContext';
+import ProtectedRoute from './ProtectedRoute';
 
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<MarketingPage />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/connected" element={<EmailManager />} />
-        <Route path="/data" element={<DataManager />} />
-        <Route path="/blocklist" element={<BlockList />} />
-        <Route path="/billing" element={<PlanBillingManagement />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<MarketingPage />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
+          <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
+          <Route path="/blocklist" element={<ProtectedRoute><BlockList /></ProtectedRoute>} />
+          <Route path="/billing" element={<ProtectedRoute><PlanBillingManagement /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }

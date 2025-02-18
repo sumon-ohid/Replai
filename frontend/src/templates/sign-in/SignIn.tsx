@@ -21,6 +21,7 @@ import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons
 import axios from 'axios';
 import { useState } from 'react';
 import Alert from '@mui/material/Alert';
+import { useAuth } from '../../AuthContext';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -129,6 +130,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
@@ -174,6 +178,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 fullWidth
                 variant="outlined"
                 color={emailError ? 'error' : 'primary'}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </FormControl>
             <FormControl>
@@ -191,6 +196,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 fullWidth
                 variant="outlined"
                 color={passwordError ? 'error' : 'primary'}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </FormControl>
             <FormControlLabel

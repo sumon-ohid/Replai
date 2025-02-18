@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js'; // Adjust the import path as needed
 import Token from '../models/Token.js'; // Import the Token model
 import dotenv from 'dotenv';
+import auth from '../middleware/auth.js';
 
 dotenv.config();
 
@@ -91,6 +92,12 @@ router.post('/logout', async (req, res) => {
     console.error('Error logging out:', error);
     res.status(500).json({ error: 'Error logging out' });
   }
+});
+
+
+// Endpoint to check authentication status
+router.get('/status', auth, (req, res) => {
+  res.status(200).send({ authenticated: true });
 });
 
 export default router;
