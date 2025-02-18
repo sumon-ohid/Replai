@@ -5,9 +5,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import getSentEmailModel from '../models/SentEmail.js';
-import User from '../models/User.js'; // Import the User model
+import User from '../models/User.js';
+import BlockList from '../models/BlockList.js'; // Import the BlockList model
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import auth from '../middleware/auth.js'; // Import the auth middleware
+import auth from '../middleware/auth.js';
 
 dotenv.config();
 
@@ -36,18 +37,15 @@ const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 let localUserId;
 
-router.get('/auth/google', auth, (req, res) => { // Apply the auth middleware
+router.get('/auth/google', auth, (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent'
   });
 
-  localUserId = req.user._id; // Get the local user ID from the authenticated user
-  // sent authUrl as json response
+  localUserId = req.user._id;
   res.json({ authUrl });
-  
-  // res.redirect(authUrl);
 });
 
 const getUser = async (auth) => {
@@ -56,7 +54,7 @@ const getUser = async (auth) => {
   return res.data;
 };
 
-router.get('/auth/google/callback', async (req, res) => { // Apply the auth middleware
+router.get('/auth/google/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send('Missing code parameter');
 
@@ -68,14 +66,12 @@ router.get('/auth/google/callback', async (req, res) => { // Apply the auth midd
     const googleUserId = googleUser.id;
     const googleUserEmail = googleUser.email;
 
-    // Save the connected email to the user's document
     await User.findByIdAndUpdate(localUserId, {
       $addToSet: { connectedEmails: { email: googleUserEmail, provider: 'google' } }
     });
 
     await createEmailBot(tokens, googleUserId, localUserId);
 
-    // close current window
     res.send('<script>window.close()</script>');
   } catch (error) {
     console.error('Error authenticating:', error);
@@ -125,6 +121,25 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
         const subject = subjectHeader?.value || 'Your email';
         const originalBody = getEmailBody(payload);
 
+        // Check if the email or domain is in the block list
+        const blockList = await BlockList.findOne({ userId: localUserId });
+
+        if (blockList) {
+          const blockedEmails = blockList.entries.map(entry => entry.toLowerCase()); // Normalize
+          const emailMatch = from.match(/<([^<>]+)>/);
+          const fromEmail = emailMatch ? emailMatch[1] : from;
+          const fromDomain = fromEmail.includes('@') ? fromEmail.split('@')[1].toLowerCase() : null;
+
+          // Check if full email, domain, or subdomain match
+          if (
+            blockedEmails.includes(fromEmail.toLowerCase()) ||
+            (fromDomain && blockedEmails.some(blocked => fromDomain === blocked || fromDomain.endsWith(`.${blocked}`)))
+          ) {
+            console.log(`Email from ${fromEmail} is in the block list. Skipping reply.`);
+            return;
+          }
+        }
+
         // Generate AI response
         const prompt = `Respond to this email briefly and naturally as a real person:
 From: ${from}
@@ -161,7 +176,7 @@ Guidelines:
         const SentEmail = getSentEmailModel(localUserId);
         const sentEmail = new SentEmail({ userId: localUserId, from: toHeader?.value, to: from, subject: `${subject}`, body: responseText });
         await sentEmail.save();
-        console.log(`Saved email to database: ${sentEmail}`);
+        // console.log(`Saved email to database: ${sentEmail}`);
 
       } catch (error) {
         console.error('Error responding to email:', error);
