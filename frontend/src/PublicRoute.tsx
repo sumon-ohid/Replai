@@ -4,9 +4,7 @@ import { useAuth } from "./AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Typography } from "@mui/material";
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, checkAuthStatus } = useAuth();
   const [loading, setLoading] = React.useState(true);
 
@@ -30,28 +28,28 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
           height: "100vh",
         }}
       >
-      <div className="animate-pulse flex flex-col items-center gap-4 w-60">
+        <div className="animate-pulse flex flex-col items-center gap-4 w-60">
         <div>
-          <div className="w-48 h-6 bg-slate-400 rounded-md"></div>
-          <div className="w-28 h-4 bg-slate-400 mx-auto mt-3 rounded-md"></div>
+            <div className="w-48 h-6 bg-slate-400 rounded-md"></div>
+            <div className="w-28 h-4 bg-slate-400 mx-auto mt-3 rounded-md"></div>
         </div>
         <div className="h-7 bg-slate-400 w-full rounded-md"></div>
         <div className="h-7 bg-slate-400 w-full rounded-md"></div>
         <div className="h-7 bg-slate-400 w-full rounded-md"></div>
         <div className="h-7 bg-slate-400 w-1/2 rounded-md"></div>
-      <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" gutterBottom>
           Loading...
-      </Typography>
-      </div>
+        </Typography>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;

@@ -14,6 +14,7 @@ import FeedbackPage from './templates/dashboard/FeedbackPage';
 import NotFoundPage from './templates/not-found/NotFoundPage';
 import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
+import PublicRoute from './PublicRoute';
 
 export default function App() {
   return (
@@ -21,8 +22,8 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<MarketingPage />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
+          <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
           <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
