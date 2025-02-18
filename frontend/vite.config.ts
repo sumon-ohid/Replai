@@ -5,6 +5,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['divine-forgiveness-production.up.railway.app'],
+    allowedHosts: ['email-agent.up.railway.app'],
   },
 });
