@@ -82,7 +82,7 @@ export default function BlockListData() {
         headers: {
           Authorization: `Bearer ${token}`
         },
-        data: { entry: entryToDelete }
+        params: { entry: entryToDelete }
       });
       setEntries(entries.filter((entry) => entry !== entryToDelete));
     } catch (error) {

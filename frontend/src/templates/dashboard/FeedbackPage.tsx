@@ -133,9 +133,9 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                         <textarea
                           name="textarea"
                           id="textarea"
-                          rows="6"
-                          cols="65"
-                          required=""
+                          rows={6}
+                          cols={65}
+                          required
                           style={{
                             width: "100%",
                             height: "100%",

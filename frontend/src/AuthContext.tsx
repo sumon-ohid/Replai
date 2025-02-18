@@ -15,7 +15,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', credentials);
+      const response = await axios.post<{ token: string }>('http://localhost:3000/api/auth/login', credentials);
       if (response.status === 200) {
         setIsAuthenticated(true);
         localStorage.setItem('token', response.data.token);
