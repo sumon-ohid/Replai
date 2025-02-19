@@ -6,16 +6,12 @@ import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import SelectContent from './SelectContent';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import OptionsMenu from './OptionsMenu';
-import axios from 'axios';
-import { useAuth } from '../../../../context/AuthContext';
+import { useAuth } from '../../../AuthContext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Tooltip from '@mui/material/Tooltip';
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const drawerWidth = 240;
 
@@ -30,38 +26,8 @@ const Drawer = styled(MuiDrawer)({
   },
 });
 
-interface User {
-  name: string;
-  email: string;
-  profilePicture?: string;
-}
-
 export default function SideMenu() {
-  const [user, setUser] = React.useState<User>({ name: '', email: '' });
-  const { logout } = useAuth();
-
-  React.useEffect(() => {
-    const fetchUserDetails = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found');
-        return;
-      }
-
-      try {
-        const response = await axios.get(`${apiBaseUrl}/api/user/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setUser(response.data as User);
-      } catch (error) {
-        console.error('Error fetching user details:', error);
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
+  const { user, logout } = useAuth();
 
   return (
     <Drawer
@@ -80,7 +46,6 @@ export default function SideMenu() {
           p: 1.5,
         }}
       >
-        {/* <SelectContent /> */}
         <Stack
           direction="row"
           sx={{
@@ -93,25 +58,19 @@ export default function SideMenu() {
         >
           <Avatar
             sizes="small"
-            alt={user.name}
-            src={user.profilePicture || '/static/images/avatar/default.jpg'}
+            alt={user?.name || 'User'}
+            src={user?.profilePicture || ''}
             sx={{ width: 36, height: 36 }}
           />
           <Box sx={{ mr: 'auto' }}>
             <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-              {user.name.substring(0, 15)}
+              {user?.name?.substring(0, 15) || 'User'}
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {user.email.substring(0, 15)}
+              {user?.email?.substring(0, 15) || 'user@example.com'}
             </Typography>
           </Box>
           <OptionsMenu />
-          {/* <Tooltip title="logout" placement="top">
-            <LogoutIcon
-              sx={{ cursor: 'pointer', height: 20, width: 20, border: '1px solid', borderRadius: '20%', padding: .2 }}
-              onClick={logout}
-            />
-          </Tooltip> */}
         </Stack>
       </Box>
       <Divider />

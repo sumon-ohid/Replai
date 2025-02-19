@@ -9,12 +9,12 @@ interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
-  updateProfilePicture: (profilePicture: string) => Promise<void>;
+  updateProfilePicture: (profilePicture: File) => Promise<void>;
 }
 
 interface User {
   name: string;
-  avatar: string;
+  profilePicture: string;
   email: string;
 }
 
@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem('token');
+    window.location.href = '/';
   };
 
   const checkAuthStatus = async () => {
@@ -85,13 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfilePicture = async (profilePicture: string) => {
+  const updateProfilePicture = async (profilePicture: File) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await axios.patch(`${apiBaseUrl}/api/user/me/profile-picture`, { profilePicture }, {
+        const formData = new FormData();
+        formData.append('profilePicture', profilePicture);
+
+        const response = await axios.patch(`${apiBaseUrl}/api/user/me/profile-picture`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
           },
         });
         if (response.status === 200) {

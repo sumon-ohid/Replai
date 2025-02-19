@@ -1,6 +1,10 @@
 import express from 'express';
 import auth from '../middleware/auth.js';
 import User from '../models/User.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
 
@@ -8,7 +12,7 @@ const router = express.Router();
 router.get('/me', auth, async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId).select('name email');
+    const user = await User.findById(userId).select('name email profilePicture');
 
     if (!user) {
       return res.status(404).send('User not found');
@@ -21,16 +25,33 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '../uploads/profile-pictures');
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.user._id}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const upload = multer({ storage });
 
 // Endpoint to update profile picture
-router.patch('/me/profile-picture', auth, async (req, res) => {
+router.patch('/me/profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).send();
     }
 
-    user.profilePicture = req.body.profilePicture;
+    user.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
     await user.save();
     res.send(user);
   } catch (error) {

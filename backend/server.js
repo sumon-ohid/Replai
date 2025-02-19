@@ -12,7 +12,12 @@ import user from "./user/user.js";
 import stats from "./emails/stats.js";
 import blocklist from "./routes/blocklist.js";
 import bodyParser from "body-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -50,7 +55,12 @@ app.use(
 // Increase payload size limit
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
 app.use(express.json());
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
 app.use("/api/emails", emailsRouter);

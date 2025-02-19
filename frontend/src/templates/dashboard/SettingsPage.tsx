@@ -76,7 +76,7 @@ function a11yProps(index: number) {
 export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
   const { user, updateProfilePicture } = useAuth();
-  const [profilePicture, setProfilePicture] = useState(user?.avatar || '');
+  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -85,13 +85,8 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        setProfilePicture(base64String);
-        await updateProfilePicture(base64String);
-      };
-      reader.readAsDataURL(file);
+      setProfilePicture(URL.createObjectURL(file));
+      await updateProfilePicture(file);
     }
   };
 
