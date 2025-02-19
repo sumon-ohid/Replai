@@ -32,6 +32,7 @@ const allowedOrigins = [
   "https://email-agent.up.railway.app", // For production
 ];
 
+app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -44,7 +45,6 @@ app.use(
     credentials: true, // for cookies or sessions
   })
 );
-app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
 app.use("/api/emails", emailsRouter);

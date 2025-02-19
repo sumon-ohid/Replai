@@ -61,7 +61,7 @@ router.get('/auth/google/callback', async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
+    // await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
     const googleUser = await getUser(oauth2Client);
     const googleUserId = googleUser.id;
     const googleUserEmail = googleUser.email;
