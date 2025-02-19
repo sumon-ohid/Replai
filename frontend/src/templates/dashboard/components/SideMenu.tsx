@@ -64,7 +64,7 @@ export default function SideMenu() {
           />
           <Box sx={{ mr: 'auto' }}>
             <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-              {user?.name?.substring(0, 15) || 'User'}
+              {user?.name?.substring(0, 12) || 'User'}
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {user?.email?.substring(0, 15) || 'user@example.com'}
