@@ -11,15 +11,48 @@ import MenuButton from './MenuButton';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import { useAuth } from '../../../../context/AuthContext';
+import axios from 'axios';
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 interface SideMenuMobileProps {
   open: boolean | undefined;
   toggleDrawer: (newOpen: boolean) => () => void;
 }
 
-export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
+interface User {
+  name: string;
+  email: string;
+  profilePicture?: string;
+}
 
+
+export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
   const { logout } = useAuth();
+  const [user, setUser] = React.useState<User>({ name: '', email: '', profilePicture: '' });
+
+  React.useEffect(() => {
+    const fetchUserDetails = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${apiBaseUrl}/api/user/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUser(response.data as User);
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
 
   return (
     <Drawer
@@ -47,12 +80,12 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
           >
             <Avatar
               sizes="small"
-              alt="Riley Carter"
-              src="/static/images/avatar/7.jpg"
+              alt={user?.name || 'User'}
+              src={user?.profilePicture || ''}
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">
-              Riley Carter
+              {user?.name || 'User'}
             </Typography>
           </Stack>
           <MenuButton showBadge>
