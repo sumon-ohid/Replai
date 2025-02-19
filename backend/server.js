@@ -53,6 +53,6 @@ app.use("/api/user", user);
 app.use("/api/emails", stats);
 app.use("/api/blocklist", blocklist);
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${port}`);
 });
