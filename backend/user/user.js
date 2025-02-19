@@ -21,4 +21,21 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+
+// Endpoint to update profile picture
+router.patch('/me/profile-picture', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).send();
+    }
+
+    user.profilePicture = req.body.profilePicture;
+    await user.save();
+    res.send(user);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
 export default router;
