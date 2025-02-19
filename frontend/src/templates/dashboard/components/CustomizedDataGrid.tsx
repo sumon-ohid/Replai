@@ -26,11 +26,12 @@ interface EmailDetailsModalProps {
 
 const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({ open, onClose, email }) => {
   const theme = useTheme();
+  const isDarkMode = localStorage.getItem("mui-mode") === "dark";
   if (!email) return null;
 
   return (
-    <Dialog open={open} onClose={onClose}  fullWidth>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} fullWidth>
+      <DialogContent sx={{ backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
         <Card sx={{ maxWidth: 600, margin: 'auto', mt: 4 }}>
         <CardContent>
           <Typography variant="h6">Subject: {email.subject}</Typography>
@@ -65,7 +66,7 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({ open, onClose, em
         </CardContent>
       </Card>
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'center' }}>
+      <DialogActions sx={{ justifyContent: 'center', backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
         <Button onClick={onClose} color="primary" variant="contained" size="small">Close</Button>
       </DialogActions>
     </Dialog>
