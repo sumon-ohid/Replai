@@ -13,6 +13,7 @@ import auth from '../middleware/auth.js';
 dotenv.config();
 
 const apiBaseUrl = process.env.VITE_API_BASE_URL;
+const dashboardUrl = process.env.DASHBOARD_URL;
 
 const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
@@ -72,7 +73,7 @@ router.get('/auth/google/callback', async (req, res) => {
 
     await createEmailBot(tokens, googleUserId, localUserId);
 
-    res.send('<script>window.close()</script>');
+    res.redirect(dashboardUrl);
   } catch (error) {
     console.error('Error authenticating:', error);
     res.status(500).send('Authentication failed.');

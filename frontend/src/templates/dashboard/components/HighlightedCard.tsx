@@ -35,7 +35,7 @@ export default function HighlightedCard() {
         }
       });
       const authUrl = (response.data as { authUrl: string }).authUrl;
-      window.open(authUrl, '_blank');
+      window.location.href = authUrl;
     } catch (error) {
       console.error('Error creating bot:', error);
     }
