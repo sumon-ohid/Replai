@@ -37,6 +37,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import PaymentIcon from '@mui/icons-material/Payment';
 import Info from '@mui/icons-material/Info';
 import { Tooltip } from '@mui/material';
+import { useAuth } from '../../AuthContext';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -74,9 +75,24 @@ function a11yProps(index: number) {
 
 export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
+  const { user, updateProfilePicture } = useAuth();
+  const [profilePicture, setProfilePicture] = useState(user?.avatar || '');
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        setProfilePicture(base64String);
+        await updateProfilePicture(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -150,9 +166,10 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     <TextField placeholder='Full name' variant="outlined" fullWidth />
                     <TextField placeholder='Email address' variant="outlined" fullWidth />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ width: 56, height: 56 }} />
-                      <Button variant="outlined" startIcon={<PhotoCameraIcon />}>
+                      <Avatar sx={{ width: 56, height: 56 }} src={profilePicture} />
+                      <Button variant="outlined" component="label" startIcon={<PhotoCameraIcon />}>
                         Change Profile Picture
+                        <input type="file" hidden accept="image/*" onChange={handleProfilePictureChange} />
                       </Button>
                     </Box>
                     <Box>

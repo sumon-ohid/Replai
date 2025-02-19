@@ -11,6 +11,8 @@ import emailsRouter from "./routes/emails.js";
 import user from "./user/user.js";
 import stats from "./emails/stats.js";
 import blocklist from "./routes/blocklist.js";
+import bodyParser from "body-parser";
+
 
 dotenv.config();
 
@@ -32,7 +34,6 @@ const allowedOrigins = [
   "https://email-agent.up.railway.app", // For production
 ];
 
-app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -45,6 +46,11 @@ app.use(
     credentials: true, // for cookies or sessions
   })
 );
+
+// Increase payload size limit
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
 app.use("/api/emails", emailsRouter);
