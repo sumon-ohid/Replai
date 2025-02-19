@@ -28,7 +28,8 @@ import {
   Button,
   TextField,
   Avatar,
-  Divider
+  Divider,
+  Alert
 } from '@mui/material';
 import Footer from '../marketing-page/components/Footer';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -77,6 +78,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
   const { user, updateProfilePicture } = useAuth();
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -88,6 +90,15 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
       setProfilePicture(URL.createObjectURL(file));
       await updateProfilePicture(file);
     }
+  };
+
+  const handleProfileChange = () => {
+    setAlertVisible(true);
+    window.setTimeout(() => {
+      setAlertVisible(false);
+      window.location.reload();
+    }
+    , 2000);
   };
 
   return (
@@ -185,9 +196,10 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                         Update Signature
                       </Button>
                     </Box>
-                    <Button variant="contained" color="primary">
+                    <Button variant="contained" color="primary" onClick={handleProfileChange}>
                       Save Profile
                     </Button>
+                    {alertVisible && <Alert severity="success">Profile updated successfully</Alert>}
                   </Stack>
                 </CardContent>
               </Card>
