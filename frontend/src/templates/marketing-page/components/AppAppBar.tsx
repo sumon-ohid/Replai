@@ -14,6 +14,9 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
 import Sitemark from './SitemarkIcon';
 import { useNavigate } from 'react-router-dom';
+import Typography from '@mui/material/Typography';
+import { Card } from '@mui/material';
+import SitemarkIcon from './SitemarkIcon';
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: 'flex',
@@ -124,12 +127,16 @@ export default function AppAppBar() {
                   </IconButton>
                 </Box>
 
-                <MenuItem>Features</MenuItem>
-                <MenuItem>Testimonials</MenuItem>
-                <MenuItem>Highlights</MenuItem>
-                <MenuItem>Pricing</MenuItem>
-                <MenuItem>FAQ</MenuItem>
-                <MenuItem>Blog</MenuItem>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Card variant="outlined" sx={{ borderRadius: 6 }}>
+                    <SitemarkIcon />
+                  </Card>
+                  <Card variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="body1" align="center">
+                      If you already have an account, sign in to access your dashboard.
+                    </Typography>
+                  </Card>
+                </Box>
                 <Divider sx={{ my: 3 }} />
                 <MenuItem>
                   <Button onClick={handleSignUpClick} color="primary" variant="contained" fullWidth>

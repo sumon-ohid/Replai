@@ -95,7 +95,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">
-              {user?.name || 'User'}
+              {user?.name.substring(0, 12) || 'User'}
             </Typography>
           </Stack>
           <MenuButton showBadge>
