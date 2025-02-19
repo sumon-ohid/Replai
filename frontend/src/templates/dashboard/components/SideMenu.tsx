@@ -59,7 +59,7 @@ export default function SideMenu() {
           <Avatar
             sizes="small"
             alt={user?.name || 'User'}
-            src={`http://localhost:3000${user?.profilePicture}` || ''}
+            src={`http://localhost:3000${user?.profilePicture}` || `https://easy-email-production.up.railway.app${user?.profilePicture}`}
             sx={{ width: 36, height: 36 }}
           />
           <Box sx={{ mr: 'auto' }}>
