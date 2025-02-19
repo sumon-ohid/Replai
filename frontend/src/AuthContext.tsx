@@ -100,7 +100,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         });
         if (response.status === 200) {
-          setUser(response.data as User);
+          const data = response.data as User;
+          const updatedUser = { ...user, profilePicture: `http://localhost:3000/${data.profilePicture}` } as User;
+          setUser(updatedUser);
         }
       }
     } catch (error) {

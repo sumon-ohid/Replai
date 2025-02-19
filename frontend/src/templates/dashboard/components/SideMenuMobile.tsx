@@ -91,7 +91,7 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
             <Avatar
               sizes="small"
               alt={user?.name || 'User'}
-              src={user?.profilePicture || ''}
+              src={user?.profilePicture ? `http://localhost:3000${user.profilePicture}` : ''}
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">

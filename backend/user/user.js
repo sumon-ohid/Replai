@@ -53,6 +53,7 @@ router.patch('/me/profile-picture', auth, upload.single('profilePicture'), async
 
     user.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
     await user.save();
+    // console.log('Profile picture updated:', user.profilePicture);
     res.send(user);
   } catch (error) {
     res.status(400).send(error);
