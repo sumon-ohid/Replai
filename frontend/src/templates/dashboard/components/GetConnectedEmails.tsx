@@ -9,7 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import TextField from '@mui/material/TextField';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import axios from 'axios';
-import { useAuth } from '../../../../context/AuthContext';
+import { useAuth } from '../../../AuthContext';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 

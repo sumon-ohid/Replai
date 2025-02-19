@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.href = '/';
   };
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = React.useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -66,9 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Auth status check failed:', error);
       setIsAuthenticated(false);
     }
-  };
+  }, []);
 
-  const fetchUserData = async () => {
+  const fetchUserData = React.useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Fetching user data failed:', error);
     }
-  };
+  }, []);
 
   const updateProfilePicture = async (profilePicture: File) => {
     try {
@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   React.useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout, checkAuthStatus, updateProfilePicture }}>

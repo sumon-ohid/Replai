@@ -10,7 +10,7 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import MenuButton from './MenuButton';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
-import { useAuth } from '../../../../context/AuthContext';
+import { useAuth } from '../../../AuthContext';
 import axios from 'axios';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -26,7 +26,6 @@ interface User {
   profilePicture?: string;
 }
 
-
 export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
   const { logout } = useAuth();
   const [user, setUser] = React.useState<User>({ name: '', email: '', profilePicture: '' });
@@ -40,12 +39,23 @@ export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobilePro
       }
 
       try {
-        const response = await axios.get(`${apiBaseUrl}/api/user/me`, {
+        const userDetailsResponse = await axios.get(`${apiBaseUrl}/api/user/me`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        setUser(response.data as User);
+
+        const profilePictureResponse = await axios.get(`${apiBaseUrl}/api/user/me/profile-picture`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        setUser({
+          name: (userDetailsResponse.data as { name: string }).name,
+          email: (userDetailsResponse.data as { email: string }).email,
+          profilePicture: (profilePictureResponse.data as { profilePicture: string }).profilePicture
+        });
       } catch (error) {
         console.error('Error fetching user details:', error);
       }

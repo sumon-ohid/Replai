@@ -8,7 +8,6 @@ import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
-import { useAuth } from '../../../../context/AuthContext';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 

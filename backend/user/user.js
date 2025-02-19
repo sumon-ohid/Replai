@@ -59,4 +59,21 @@ router.patch('/me/profile-picture', auth, upload.single('profilePicture'), async
   }
 });
 
+// Endpoint to get user profile picture
+router.get('/me/profile-picture', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('profilePicture');
+
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    res.json({ profilePicture: user.profilePicture });
+  } catch (error) {
+    console.error('Error fetching profile picture:', error);
+    res.status(500).send('Error fetching profile picture');
+  }
+});
+
 export default router;
