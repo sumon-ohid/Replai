@@ -34,7 +34,7 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
           Powered by powerful AI
         </Typography>
         {/* <Features /> */}
-        <Pricing />
+        {/* <Pricing /> */}
         {/* <Testimonials /> */}
         <FAQ />
         {/* <Divider /> */}
