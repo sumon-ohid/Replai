@@ -14,7 +14,9 @@ import { Divider, useMediaQuery } from "@mui/material";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Alert from "@mui/material/Alert";
-import axios from 'axios';
+import axios from "axios";
+import CircularProgress from "@mui/material/CircularProgress";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -66,17 +68,33 @@ function TabPanel({
 export default function DataTabs() {
   const [value, setValue] = React.useState(0);
   const isSmallScreen = useMediaQuery("(max-width: 1000px)");
-  const [textData, setTextData] = React.useState('');
+  const [textData, setTextData] = React.useState("");
   const [alertVisible, setAlertVisible] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [dataPrompt, setDataPrompt] = React.useState('');
+  const [error, setError] = React.useState("");
+  const [dataPrompt, setDataPrompt] = React.useState("");
+  const [isTraining, setIsTraining] = React.useState(false);
+  const [trainingCompleted, setTrainingCompleted] = React.useState(false);
+
+  const handleTrainAI = async () => {
+    setIsTraining(true);
+    setTrainingCompleted(false);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setTrainingCompleted(true);
+    } catch (error) {
+      console.error("Error training AI:", error);
+    } finally {
+      setIsTraining(false);
+    }
+  };
 
   React.useEffect(() => {
     const fetchDataPrompt = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.error('No token found');
+          console.error("No token found");
           return;
         }
 
@@ -90,7 +108,7 @@ export default function DataTabs() {
           setDataPrompt((response.data as { text: string }).text);
         }
       } catch (error) {
-        console.error('Error fetching data prompt:', error);
+        console.error("Error fetching data prompt:", error);
       }
     };
 
@@ -107,37 +125,41 @@ export default function DataTabs() {
 
   const handleSaveData = async () => {
     if (!textData) {
-      setError('Text data cannot be empty.');
+      setError("Text data cannot be empty.");
       return;
     }
 
     if (textData.length > 1000) {
-      setError('Text data cannot exceed 1000 characters.');
+      setError("Text data cannot exceed 1000 characters.");
       return;
     }
 
-    setError('');
+    setError("");
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        console.error('No token found');
+        console.error("No token found");
         return;
       }
 
-      const response = await axios.post(`${apiBaseUrl}/api/data/save-text`, { text: textData }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.post(
+        `${apiBaseUrl}/api/data/save-text`,
+        { text: textData },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.status === 201) {
         setAlertVisible(true);
         setTimeout(() => setAlertVisible(false), 3000);
       }
     } catch (error) {
-      console.error('Error saving text data:', error);
-      setError('Error saving text data.');
+      console.error("Error saving text data:", error);
+      setError("Error saving text data.");
     }
   };
 
@@ -179,10 +201,19 @@ export default function DataTabs() {
             Text data training
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-            Enter the text data you want to use for training. Maximum 1000 characters.
+            Enter the text data you want to use for training. Maximum 1000
+            characters.
           </Typography>
-          {alertVisible && <Alert severity="success" sx={{ mt: 2, ml: 1 }}>Data saved successfully</Alert>}
-          {error && <Alert severity="error" sx={{ mt: 2, ml: 1 }}>{error}</Alert>}
+          {alertVisible && (
+            <Alert severity="success" sx={{ mt: 2, ml: 1 }}>
+              Data saved successfully
+            </Alert>
+          )}
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, ml: 1 }}>
+              {error}
+            </Alert>
+          )}
           <Box
             component="form"
             sx={{
@@ -260,7 +291,13 @@ export default function DataTabs() {
             color="primary"
             endIcon={<ChevronRightRoundedIcon />}
             fullWidth={isSmallScreen}
-            sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2, mt: 2 }}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              py: 1.5,
+              ml: isSmallScreen ? 1 : 2,
+              mt: 2,
+            }}
           >
             Save Data
           </Button>
@@ -276,12 +313,14 @@ export default function DataTabs() {
             placeholder="https://example.com"
             sx={{ mb: 3 }}
             InputProps={{
-              startAdornment: <LanguageIcon sx={{ color: 'action.active', mr: 1 }} />,
-              sx: { borderRadius: 2 }
+              startAdornment: (
+                <LanguageIcon sx={{ color: "action.active", mr: 1 }} />
+              ),
+              sx: { borderRadius: 2 },
             }}
           />
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             size="large"
             startIcon={<LanguageIcon />}
             sx={{ borderRadius: 2 }}
@@ -313,25 +352,40 @@ export default function DataTabs() {
           width: "100%",
         }}
       >
-        <SettingsSuggestIcon
-          sx={{ fontSize: 60, color: "primary.main", mb: 2 }}
-        />
+        {isTraining ? (
+          <CircularProgress size={60} sx={{ color: "primary.main", mb: 2 }} />
+        ) : trainingCompleted ? (
+          <CheckCircleIcon sx={{ fontSize: 60, color: "green", mb: 2 }} />
+        ) : (
+          <SettingsSuggestIcon
+            sx={{ fontSize: 60, color: "primary.main", mb: 2 }}
+          />
+        )}
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           AI Training Section
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          After providing data, train your AI model to update data and improve its performance.
+          After providing data, train your AI model to update data and improve
+          its performance.
         </Typography>
-        <Alert variant="outlined" severity="info">
-          AI Model is not trained yet. Please train the model to use it.
-        </Alert>
+        {trainingCompleted ? (
+          <Alert variant="outlined" severity="success">
+            AI Model trained successfully with new data!
+          </Alert>
+        ) : (
+          <Alert variant="outlined" severity="info">
+            AI Model is not trained yet. Please train the model to use it.
+          </Alert>
+        )}
         <Divider sx={{ width: "100%", my: 2 }} />
         <Button
           variant="outlined"
           startIcon={<SettingsSuggestIcon />}
           sx={{ borderRadius: 2, px: 4, py: 1.5 }}
+          onClick={handleTrainAI}
+          disabled={isTraining}
         >
-          Train AI Model
+          {isTraining ? "Training..." : "Train AI Model"}
         </Button>
       </Box>
     </Box>
