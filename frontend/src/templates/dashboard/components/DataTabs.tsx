@@ -13,11 +13,10 @@ import { styled } from "@mui/material/styles";
 import { Divider, useMediaQuery } from "@mui/material";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Input from "@mui/material/Input";
-import InputLabel from "@mui/material/InputLabel";
-import InputAdornment from "@mui/material/InputAdornment";
-import FormControl from "@mui/material/FormControl";
 import Alert from "@mui/material/Alert";
+import axios from 'axios';
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   "& .MuiTabs-indicator": {
@@ -67,15 +66,79 @@ function TabPanel({
 export default function DataTabs() {
   const [value, setValue] = React.useState(0);
   const isSmallScreen = useMediaQuery("(max-width: 1000px)");
+  const [textData, setTextData] = React.useState('');
+  const [alertVisible, setAlertVisible] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [dataPrompt, setDataPrompt] = React.useState('');
 
-  interface TabPanelProps {
-    children: React.ReactNode;
-    value: number;
-    index: number;
-  }
+  React.useEffect(() => {
+    const fetchDataPrompt = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          return;
+        }
+
+        const response = await axios.get(`${apiBaseUrl}/api/data/get-text`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 200) {
+          setDataPrompt((response.data as { text: string }).text);
+        }
+      } catch (error) {
+        console.error('Error fetching data prompt:', error);
+      }
+    };
+
+    fetchDataPrompt();
+  }, []);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+  };
+
+  const handleTextDataChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTextData(event.target.value);
+  };
+
+  const handleSaveData = async () => {
+    if (!textData) {
+      setError('Text data cannot be empty.');
+      return;
+    }
+
+    if (textData.length > 1000) {
+      setError('Text data cannot exceed 1000 characters.');
+      return;
+    }
+
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      const response = await axios.post(`${apiBaseUrl}/api/data/save-text`, { text: textData }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 201) {
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving text data:', error);
+      setError('Error saving text data.');
+    }
   };
 
   return (
@@ -89,7 +152,6 @@ export default function DataTabs() {
           borderColor: "divider",
           borderRadius: 2,
           width: isSmallScreen ? "100%" : "auto",
-          //   gap: isSmallScreen ? 0 : 3,
         }}
       >
         <StyledTabs
@@ -117,8 +179,10 @@ export default function DataTabs() {
             Text data training
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-            Enter the text data you want to use for training.
+            Enter the text data you want to use for training. Maximum 1000 characters.
           </Typography>
+          {alertVisible && <Alert severity="success" sx={{ mt: 2, ml: 1 }}>Data saved successfully</Alert>}
+          {error && <Alert severity="error" sx={{ mt: 2, ml: 1 }}>{error}</Alert>}
           <Box
             component="form"
             sx={{
@@ -136,23 +200,28 @@ export default function DataTabs() {
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
               <TextField
+                required
                 id="standard-multiline-flexible"
                 multiline
                 maxRows={8}
                 variant="standard"
+                value={textData}
+                onChange={handleTextDataChange}
+                placeholder={dataPrompt}
               />
             </div>
           </Box>
           <Button
-              variant="contained"
-              size="small"
-              color="primary"
-              endIcon={<ChevronRightRoundedIcon />}
-              fullWidth={isSmallScreen}
-              sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2 }}
-            >
-              Save Data
-        </Button>
+            variant="contained"
+            size="small"
+            color="primary"
+            endIcon={<ChevronRightRoundedIcon />}
+            fullWidth={isSmallScreen}
+            sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2 }}
+            onClick={handleSaveData}
+          >
+            Save Data
+          </Button>
         </TabPanel>
 
         <TabPanel value={value} index={1}>
@@ -186,36 +255,16 @@ export default function DataTabs() {
             </Button>
           </Box>
           <Button
-              variant="contained"
-              size="small"
-              color="primary"
-              endIcon={<ChevronRightRoundedIcon />}
-              fullWidth={isSmallScreen}
-              sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2, mt: 2 }}
-            >
-              Save Data
-        </Button>
+            variant="contained"
+            size="small"
+            color="primary"
+            endIcon={<ChevronRightRoundedIcon />}
+            fullWidth={isSmallScreen}
+            sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2, mt: 2 }}
+          >
+            Save Data
+          </Button>
         </TabPanel>
-
-        {/* <TabPanel value={value} index={2}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            <LanguageIcon sx={{ color: "text.secondary", mr: 1 }} />
-            Website data training
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column"}}>
-            <TextField fullWidth variant="outlined" label="www.example.com" id="fullWidth" />
-          </Box>
-          <Button
-              variant="contained"
-              size="small"
-              color="primary"
-              endIcon={<ChevronRightRoundedIcon />}
-              fullWidth={isSmallScreen}
-              sx={{ borderRadius: 2, px: 4, py: 1.5 }}
-            >
-              Extract Data
-        </Button>
-        </TabPanel> */}
 
         <TabPanel value={value} index={2}>
           <Typography variant="h5" sx={{ mb: 2 }}>
@@ -246,7 +295,7 @@ export default function DataTabs() {
             Email data training
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Comming Soon...
+            Coming Soon...
           </Typography>
         </TabPanel>
       </Box>

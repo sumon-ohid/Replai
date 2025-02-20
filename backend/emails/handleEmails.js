@@ -9,6 +9,7 @@ import User from '../models/User.js';
 import BlockList from '../models/BlockList.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import auth from '../middleware/auth.js';
+import TextData from '../models/TextData.js';
 
 dotenv.config();
 
@@ -62,7 +63,6 @@ router.get('/auth/google/callback', async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    // await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens));
     const googleUser = await getUser(oauth2Client);
     const googleUserId = googleUser.id;
     const googleUserEmail = googleUser.email;
@@ -93,10 +93,15 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
           maxResults: 5
         });
         const messages = res.data.messages || [];
-        
+
+        // user custom data to generate response router.get('/get-text', async (req, res)
+        const userPrompt = await TextData.findOne({ userId: localUserId });
+        console.log (`Prompt1: ${userPrompt.text}`);
+
+
         for (const message of messages) {
           if (!repliedEmails.has(message.id)) {
-            await respondToEmail(message.id, localUserId);
+            await respondToEmail(message.id, localUserId, userPrompt?.text);
             repliedEmails.add(message.id);
             await gmail.users.messages.modify({
               userId: 'me',
@@ -110,7 +115,7 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
       }
     };
 
-    const respondToEmail = async (emailId, localUserId) => {
+    const respondToEmail = async (emailId, localUserId, userPrompt = '') => {
       try {
         const emailRes = await gmail.users.messages.get({ userId: 'me', id: emailId, format: 'full' });
         const { payload } = emailRes.data;
@@ -142,11 +147,11 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
         }
 
         // Fetch the user's name
-        const user = await User.findById(localUserId);
-        const userName = user ? user.name : 'Your good friend';
+        const user = await User.findById({ userId: localUserId });
+        const userName = user ? user.name : '';
 
         // Generate AI response
-        const prompt = `Respond to this email briefly and naturally as a real person:
+        const defaultPrompt = `Respond to this email briefly and naturally as a real person:
 From: ${from}
 Subject: ${subject}
 Body: ${originalBody}
@@ -156,6 +161,14 @@ Guidelines:
 - Use casual language
 - Sign with "Best regards, ${userName}"
 - Avoid markdown formatting`;
+
+        const prompt = userPrompt;
+        if (!prompt) {
+          console.log('No prompt found. Using default prompt.');
+          prompt = defaultPrompt;
+        }
+
+        console.log (`Prompt2: ${userPrompt}`);
 
         const aiRes = await model.generateContent(prompt);
         const responseText = aiRes.response.text();
