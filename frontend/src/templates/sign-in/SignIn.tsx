@@ -132,6 +132,31 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      const response = await axios.get<{ authUrl: string }>(`${apiBaseUrl}/api/auth/login/google`);
+      const { authUrl } = response.data;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error initiating Google sign-in:', error);
+      setAlert({ severity: 'error', message: 'Error initiating Google sign-in. Please try again.' });
+    }
+  };
+
+  React.useEffect(() => {
+    const handleGoogleCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        localStorage.setItem('token', token);
+        setAlert({ severity: 'success', message: 'Logged in successfully!' });
+        navigate('/dashboard');
+      }
+    };
+
+    handleGoogleCallback();
+  }, [navigate]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -229,7 +254,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => setAlert({ severity: 'success', message: 'Signed in with Google.' })}
+              onClick={handleGoogleSignIn}
               startIcon={<GoogleIcon />}
             >
               Sign in with Google
