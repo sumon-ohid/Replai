@@ -134,6 +134,31 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    try {
+      const response = await axios.get<{ authUrl: string }>(`${apiBaseUrl}/api/auth/login/google`);
+      const { authUrl } = response.data;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error initiating Google sign-up:', error);
+      setAlert({ severity: 'error', message: 'Error initiating Google sign-up. Please try again.' });
+    }
+  };
+
+  React.useEffect(() => {
+    const handleGoogleCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        localStorage.setItem('token', token);
+        setAlert({ severity: 'success', message: 'Signed up successfully!' });
+        navigate('/dashboard');
+      }
+    };
+
+    handleGoogleCallback();
+  }, [navigate]);
+
   const [alert, setAlert] = useState<{ severity: 'success' | 'error' | 'info', message: string } | null>(null);
   return (
     <AppTheme {...props}>
@@ -223,7 +248,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => setAlert({ severity: 'info', message: 'Sign up with Google' })}
+              onClick={handleGoogleSignUp}
               startIcon={<GoogleIcon />}
             >
               Sign up with Google
