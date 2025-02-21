@@ -9,3 +9,6 @@ db.users.deleteMany({})
 
 // Delete particular user
 db.users.deleteOne({ email: "user@example.com" })
+
+// To remove section
+db.collectionName.drop()
