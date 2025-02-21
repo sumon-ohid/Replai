@@ -97,7 +97,64 @@ router.get('/verify-email', async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    res.status(200).json({ message: 'Email verified successfully!' });
+    // res.status(200).json({ message: 'Email verified successfully!' });
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verified</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            max-width: 400px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .success-icon {
+            color: #28a745;
+            font-size: 50px;
+            margin-bottom: 10px;
+          }
+          .message {
+            font-size: 18px;
+            color: #333;
+          }
+          .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background 0.3s ease-in-out;
+          }
+          .btn:hover {
+            background-color: #218838;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success-icon">✅</div>
+          <h2>Email Verified Successfully!</h2>
+          <p class="message">Your email has been successfully verified. You can now log in to your account.</p>
+          <a href="https://email-agent.up.railway.app/signin" class="btn">Go to Login</a>
+        </div>
+      </body>
+      </html>
+    `);
   } catch (error) {
     console.error('Error verifying email:', error);
     res.status(500).json({ message: 'Error verifying email.' });
