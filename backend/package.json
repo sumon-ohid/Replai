@@ -24,11 +24,13 @@
     "mongoose": "^8.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "pdf-parser": "^1.0.5"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
-    "nodemon": "latest"
+    "nodemon": "latest",
+    "pdf-parse": "^1.1.1"
   },
   "author": "Md Ohiduzzaman Sumon",
   "license": "ISC"

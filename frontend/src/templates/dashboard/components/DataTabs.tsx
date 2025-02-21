@@ -74,6 +74,7 @@ export default function DataTabs() {
   const [dataPrompt, setDataPrompt] = React.useState("");
   const [isTraining, setIsTraining] = React.useState(false);
   const [trainingCompleted, setTrainingCompleted] = React.useState(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 
   const handleTrainAI = async () => {
     setIsTraining(true);
@@ -123,14 +124,22 @@ export default function DataTabs() {
     setTextData(event.target.value);
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
   const handleSaveData = async () => {
     if (!textData) {
       setError("Text data cannot be empty.");
+      setTimeout(() => setError(""), 3000);
       return;
     }
 
     if (textData.length > 1000) {
       setError("Text data cannot exceed 1000 characters.");
+      setTimeout(() => setError(""), 3000);
       return;
     }
 
@@ -160,6 +169,42 @@ export default function DataTabs() {
     } catch (error) {
       console.error("Error saving text data:", error);
       setError("Error saving text data.");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const handleUploadFile = async () => {
+    if (!selectedFile) {
+      setError("No file selected.");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.post(`${apiBaseUrl}/api/data/upload-file`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status === 201) {
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setError("Error uploading file.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -256,6 +301,16 @@ export default function DataTabs() {
         </TabPanel>
 
         <TabPanel value={value} index={1}>
+          {alertVisible && (
+              <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
+                Data saved successfully
+              </Alert>
+            )}
+            {error && (
+              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+                {error}
+              </Alert>
+            )}
           <Box
             sx={{
               width: isSmallScreen ? "100%" : 500,
@@ -274,7 +329,7 @@ export default function DataTabs() {
               Drag and drop files here
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Supported formats: PDF, DOCX, TXT (Max 25MB)
+              Supported formats: PDF (Max 4MB)
             </Typography>
             <Button
               variant="contained"
@@ -282,7 +337,7 @@ export default function DataTabs() {
               startIcon={<UploadFileIcon />}
             >
               Browse Files
-              <input type="file" hidden />
+              <input type="file" hidden onChange={handleFileChange} />
             </Button>
           </Box>
           <Button
@@ -298,6 +353,7 @@ export default function DataTabs() {
               ml: isSmallScreen ? 1 : 2,
               mt: 2,
             }}
+            onClick={handleUploadFile}
           >
             Save Data
           </Button>

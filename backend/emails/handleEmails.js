@@ -99,7 +99,7 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
 
         for (const message of messages) {
           if (!repliedEmails.has(message.id)) {
-            await respondToEmail(message.id, localUserId, userPrompt?.text);
+            await respondToEmail(message.id, localUserId, userPrompt?.text + userPrompt?.fileData );
             repliedEmails.add(message.id);
             await gmail.users.messages.modify({
               userId: 'me',
@@ -160,13 +160,16 @@ Guidelines:
 - Sign with "Best regards, ${userName}"
 - Avoid markdown formatting`;
 
-        let prompt = userPrompt;
+        let prompt = userPrompt + defaultPrompt;
+
+        // Limit prompt to 500 characters take last 500 characters
+        if (prompt.length > 500)
+          prompt = prompt.slice(prompt.length - 500);
+
         if (!prompt) {
           console.log('No prompt found. Using default prompt.');
           prompt = defaultPrompt;
         }
-
-        console.log (`Prompt2: ${userPrompt}`);
 
         const aiRes = await model.generateContent(prompt);
         const responseText = aiRes.response.text();

@@ -8,7 +8,9 @@ const textDataSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true,
+  },
+  fileData: {
+    type: String,
   },
   createdAt: {
     type: Date,
