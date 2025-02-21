@@ -124,8 +124,9 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
         password: data.get('password') 
       });
       console.log(response.data.message);
-      setAlert({ severity: 'success', message: 'Registered successfully!' });
-      navigate('/signin');
+      // setAlert({ severity: 'success', message: 'Registered successfully!' });
+      // navigate('/signin');
+      setAlert({ severity: 'success', message: 'Registered successfully! Please check your email to verify your account.' });
     } catch (error) {
       setAlert({ severity: 'error', message: 'Email exists, Please try again with another email.'});
       setEmailError(true);

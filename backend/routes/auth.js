@@ -5,10 +5,20 @@ import User from '../models/User.js'; // Adjust the import path as needed
 import Token from '../models/Token.js'; // Import the Token model
 import dotenv from 'dotenv';
 import auth from '../middleware/auth.js';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
 const router = express.Router();
+
+const transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
 
 // Register
 router.post('/register', async (req, res) => {
@@ -28,10 +38,56 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
-    res.status(201).json({ message: 'User registered successfully' });
+    // res.status(201).json({ message: 'User registered successfully' });
+
+    // This is for email verification
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const verificationLink = `${process.env.VITE_API_BASE_URL}/verify-email?token=${token}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: 'Email Verification',
+      text: `Please verify your email by clicking on the following link: ${verificationLink}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).json({ message: 'Error sending verification email.' });
+      }
+      res.status(200).json({ message: 'Registered successfully! Please check your email to verify your account.' });
+    });
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).json({ error: 'Error registering user' });
+  }
+});
+
+// Send verification email
+router.get('/verify-email', async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ message: 'Missing token parameter' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    res.status(200).json({ message: 'Email verified successfully!' });
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    res.status(500).json({ message: 'Error verifying email.' });
   }
 });
 
