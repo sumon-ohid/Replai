@@ -209,6 +209,68 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
+// Resend verification email
+router.post('/resend-verification', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    const verificationLink = `${process.env.VITE_API_BASE_URL}/api/auth/verify-email?token=${token}`;
+
+    const { name } = user.name;
+
+    const emailHTML = `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
+        <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+        <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
+        <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
+        <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
+        <p style="color: #777; margin-top: 20px;">If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
+        <p style="background-color: #f4f4f4; padding: 10px; word-break: break-all; border-radius: 5px;">${verificationLink}</p>
+        <p style="color: #999; font-size: 14px;">This link will expire in 1 hour.</p>
+        <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
+        <p style="color: #777;">Please do not reply this email.</p>
+        <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
+        <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
+        support@email-agent.com" style="color: #007bff; text-decoration: none;">support@email-agent.com</a></p>
+        <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
+        <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
+        <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
+      </div>
+    `;
+
+
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Verify Your Email - Email Agent",
+      html: emailHTML,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).json({ message: 'Error sending verification email.' });
+      }
+      res.status(200).json({ message: 'Verification email resent successfully!' });
+    });
+  } catch (error) {
+    console.error('Error resending verification email:', error);
+    res.status(500).json({ message: 'Error resending verification email.' });
+  }
+});
+
 // Get authenticated user
 router.get("/user", async (req, res) => {
   try {

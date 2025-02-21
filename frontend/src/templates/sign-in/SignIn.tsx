@@ -74,6 +74,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
   const [open, setOpen] = React.useState(false);
   const [alert, setAlert] = React.useState<{ severity: 'success' | 'error', message: string } | null>(null);
+  const [showResendButton, setShowResendButton] = React.useState(false); // Add state for resend button
   const navigate = useNavigate();
 
   const handleClickOpen = () => {
@@ -101,11 +102,13 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       navigate('/dashboard');
     } catch (error) {
       console.error('Error logging in:', error);
-      setAlert({ severity: 'error', message: (error as any).response?.data?.message });
+      const errorMessage = (error as any).response?.data?.message;
+      setAlert({ severity: 'error', message: errorMessage });
 
       // Show resend email verification link if user is not verified
-      // Impement this feature in the future
-
+      if (errorMessage === 'Please verify your email to login') {
+        setShowResendButton(true);
+      }
     }
   };
 
@@ -144,6 +147,18 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     } catch (error) {
       console.error('Error initiating Google sign-in:', error);
       setAlert({ severity: 'error', message: 'Error initiating Google sign-in. Please try again.' });
+    }
+  };
+
+  const handleResendEmail = async () => {
+    const email = (document.getElementById('email') as HTMLInputElement).value;
+    try {
+      await axios.post(`${apiBaseUrl}/api/auth/resend-verification`, { email });
+      setAlert({ severity: 'success', message: 'Verification email resent successfully!' });
+      setShowResendButton(false);
+    } catch (error) {
+      console.error('Error resending verification email:', error);
+      setAlert({ severity: 'error', message: 'Error resending verification email. Please try again.' });
     }
   };
 
@@ -253,6 +268,16 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               Forgot your password?
             </Link>
           </Box>
+          {showResendButton && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleResendEmail}
+              sx={{ mt: 2 }}
+            >
+              Resend Email Confirmation
+            </Button>
+          )}
           <Divider>or</Divider>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Button
