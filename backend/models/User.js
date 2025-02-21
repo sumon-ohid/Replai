@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  urls: [
+    {
+      url: { type: String, required: true },
+      charCount: { type: Number, required: true },
+    },
+  ],
 });
 
 const User = mongoose.model('User', userSchema);

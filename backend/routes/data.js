@@ -1,50 +1,54 @@
-import express from 'express';
-import auth from '../middleware/auth.js';
-import TextData from '../models/TextData.js';
-import User from '../models/User.js';
-import fs from 'fs';
-import dotenv from 'dotenv';
-import multer from 'multer';
-import { promisify } from 'util';
-import axios from 'axios';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import express from "express";
+import auth from "../middleware/auth.js";
+import TextData from "../models/TextData.js";
+import User from "../models/User.js";
+import fs from "fs";
+import dotenv from "dotenv";
+import multer from "multer";
+import { promisify } from "util";
+import axios from "axios";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import * as cheerio from "cheerio";
+import { load } from "cheerio";
 
 dotenv.config();
 
 const router = express.Router();
 
-const upload = multer({ dest: 'uploads/files' });
+const upload = multer({ dest: "uploads/files" });
 
 const readFileAsync = promisify(fs.readFile);
 
 const extractTextFromPDF = async (filePath) => {
   const data = new Uint8Array(fs.readFileSync(filePath));
   const pdfDocument = await getDocument({ data }).promise;
-  let extractedText = '';
+  let extractedText = "";
 
   for (let i = 1; i <= pdfDocument.numPages; i++) {
     const page = await pdfDocument.getPage(i);
     const textContent = await page.getTextContent();
-    const text = textContent.items.map((item) => item.str).join(' ');
-    extractedText += text + '\n';
+    const text = textContent.items.map((item) => item.str).join(" ");
+    extractedText += text + "\n";
   }
 
   return extractedText;
 };
 
 // Endpoint to save text data
-router.post('/save-text', auth, async (req, res) => {
+router.post("/save-text", auth, async (req, res) => {
   try {
     const { text } = req.body;
     const userId = req.user._id;
-    if (!text) return res.status(400).send('Text is required');
-    if (!userId) return res.status(400).send('User ID is required');
-    if (typeof text !== 'string') return res.status(400).send('Text must be a string');
-    if (text.length > 1000) return res.status(400).send('Text is too long (max 1000 characters)');
+    if (!text) return res.status(400).send("Text is required");
+    if (!userId) return res.status(400).send("User ID is required");
+    if (typeof text !== "string")
+      return res.status(400).send("Text must be a string");
+    if (text.length > 1000)
+      return res.status(400).send("Text is too long (max 1000 characters)");
 
     // Remove existing text data for the user
     await TextData.deleteMany({ userId });
-    
+
     const newTextData = new TextData({
       userId,
       text,
@@ -53,113 +57,155 @@ router.post('/save-text', auth, async (req, res) => {
     await newTextData.save();
     res.status(201).send(newTextData);
   } catch (error) {
-    console.error('Error saving text data:', error);
-    res.status(500).send('Error saving text data');
+    console.error("Error saving text data:", error);
+    res.status(500).send("Error saving text data");
   }
 });
 
 // Endpoint to get text data
-router.get('/get-text', auth, async (req, res) => {
+router.get("/get-text", auth, async (req, res) => {
   try {
     const userId = req.user._id;
-    if (!userId) return res.status(400).send('User ID is required');
+    if (!userId) return res.status(400).send("User ID is required");
 
     const textData = await TextData.findOne({ userId });
     res.send(textData);
   } catch (error) {
-    console.error('Error getting text data:', error);
-    res.status(500).send('Error getting text data');
+    console.error("Error getting text data:", error);
+    res.status(500).send("Error getting text data");
   }
 });
 
 // Upload file
-router.post('/upload-file', auth, upload.single('file'), async (req, res) => {
+router.post("/upload-file", auth, upload.single("file"), async (req, res) => {
   const userId = req.user._id;
   const filePath = req.file.path;
 
   // if no file uploaded
   if (!req.file) {
-    return res.status(400).json({ message: 'File must be provided' });
+    return res.status(400).json({ message: "File must be provided" });
   }
 
   // if not pdf file
-  if (req.file.mimetype !== 'application/pdf') {
-    return res.status(400).json({ message: 'File must be a PDF' });
+  if (req.file.mimetype !== "application/pdf") {
+    return res.status(400).json({ message: "File must be a PDF" });
   }
 
   // if size is greater than 4MB
   if (req.file.size > 4 * 1024 * 1024) {
-    return res.status(400).json({ message: 'File must be smaller than 4MB' });
+    return res.status(400).json({ message: "File must be smaller than 4MB" });
   }
 
   try {
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Use pdf-parse to extract text from PDF
-    const dataBuffer = fs.readFileSync(filePath);
     const data = await extractTextFromPDF(filePath);
     const text = data;
 
-    // console.log('Text extracted from PDF:', text);
-
-    // If a file with the same user ID exists, replace file data
     const existingFileData = await TextData.findOne({ userId });
-    
+
     if (existingFileData) {
       existingFileData.fileData = text;
       await existingFileData.save();
       fs.unlinkSync(filePath);
-      return res.status(201).json({ message: 'File uploaded and data saved successfully' });
+      return res
+        .status(201)
+        .json({ message: "File uploaded and data saved successfully" });
     }
 
     const newFileData = new TextData({
       userId,
       fileData: text,
     });
-    
+
     await newFileData.save();
 
-    // Delete the file after reading its content
     fs.unlinkSync(filePath);
 
-    res.status(201).json({ message: 'File uploaded and data saved successfully' });
+    res
+      .status(201)
+      .json({ message: "File uploaded and data saved successfully" });
   } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).json({ message: 'Error uploading file' });
+    console.error("Error uploading file:", error);
+    res.status(500).json({ message: "Error uploading file" });
   }
 });
 
-// Analyze URL
-router.post('/analyze-url', auth, async (req, res) => {
+// Analyze URL using Cheerio
+router.post("/analyze-url", auth, async (req, res) => {
   const { url } = req.body;
   const userId = req.user._id;
 
   if (!url) {
-    return res.status(400).json({ message: 'URL must be provided' });
+    return res.status(400).json({ message: "URL must be provided" });
   }
 
   try {
-    const response = await axios.get(url);
-    const text = response.data;
-    const charCount = text.length;
+    const { data } = await axios.get(url, { timeout: 10000 }); // 10s timeout
+    const $ = cheerio.load(data);
+    const extractedText = $("body").text().replace(/\s+/g, " ").trim();
+    const charCount = extractedText.length;
 
-    // Save the URL and character count in the database
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    user.urlList = user.urlList || [];
-    user.urlList.push({ url, charCount });
+    user.urls = user.urls || [];
+    user.urls.push({ url, charCount });
     await user.save();
 
-    res.status(200).json({ charCount });
+    res.status(200).json({ charCount, urls: user.urls });
   } catch (error) {
-    console.error('Error analyzing URL:', error);
-    res.status(500).json({ message: 'Error analyzing URL' });
+    console.error("Error analyzing URL:", error);
+    res.status(500).json({ message: "Error analyzing URL" });
+  }
+});
+
+// Delete URL
+router.delete("/delete-url", auth, async (req, res) => {
+  const { url } = req.body;
+  const userId = req.user._id;
+
+  if (!url) {
+    return res.status(400).json({ message: "URL must be provided" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.urls = user.urls.filter((item) => item.url !== url);
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: "URL deleted successfully", urls: user.urls });
+  } catch (error) {
+    console.error("Error deleting URL:", error);
+    res.status(500).json({ message: "Error deleting URL" });
+  }
+});
+
+// Get URL data
+router.get("/get-urls", auth, async (req, res) => {
+  const userId = req.user._id;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ urls: user.urls });
+  } catch (error) {
+    console.error("Error getting URLs:", error);
+    res.status(500).json({ message: "Error getting URLs" });
   }
 });
 

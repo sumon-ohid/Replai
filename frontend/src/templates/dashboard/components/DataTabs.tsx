@@ -10,13 +10,14 @@ import TextFieldsIcon from "@mui/icons-material/TextFields";
 import LanguageIcon from "@mui/icons-material/Language";
 import EmailIcon from "@mui/icons-material/Email";
 import { styled } from "@mui/material/styles";
-import { Divider, useMediaQuery } from "@mui/material";
+import { Divider, useMediaQuery, IconButton } from "@mui/material";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Alert from "@mui/material/Alert";
 import axios from "axios";
 import CircularProgress from "@mui/material/CircularProgress";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -78,7 +79,7 @@ export default function DataTabs() {
   const [fileName, setFileName] = React.useState("");
   const [fileSize, setFileSize] = React.useState(0);
   const [url, setUrl] = React.useState("");
-  const [urlList, setUrlList] = React.useState<string[]>([]);
+  const [urlList, setUrlList] = React.useState<{ url: string; charCount: number }[]>([]);
   const [charCount, setCharCount] = React.useState(0);
 
   const handleTrainAI = async () => {
@@ -247,7 +248,7 @@ export default function DataTabs() {
       if (response.status === 200) {
         const { charCount } = response.data as { charCount: number };
         setCharCount(charCount);
-        setUrlList((prevList) => [...prevList, url]);
+        setUrlList((prevList) => [...prevList, { url, charCount }]);
         setUrl("");
       }
     } catch (error) {
@@ -255,6 +256,10 @@ export default function DataTabs() {
       setError("Error analyzing URL.");
       setTimeout(() => setError(""), 3000);
     }
+  };
+
+  const handleDeleteUrl = (index: number) => {
+    setUrlList((prevList) => prevList.filter((_, i) => i !== index));
   };
 
   return (
@@ -454,10 +459,32 @@ export default function DataTabs() {
             Analyzed URLs:
           </Typography>
           <Box sx={{ mt: 1 }}>
-            {urlList.map((url, index) => (
-              <Typography key={index} variant="body2" color="text.secondary">
-                {url}
-              </Typography>
+            {urlList.map((item, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",  
+                  alignItems: "center",
+                  mb: 1,
+                  backgroundColor: "background.default",
+                  borderRadius: 2,
+                  p: 1,
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {item.url.length > 50 ? `${item.url.slice(0, 50)}...` : item.url} ({item.charCount} chars)
+                </Typography>
+                <IconButton
+                  aria-label="delete"
+                  size="small"
+                  onClick={() => handleDeleteUrl(index)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
             ))}
           </Box>
         </TabPanel>
