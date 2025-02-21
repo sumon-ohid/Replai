@@ -77,6 +77,9 @@ export default function DataTabs() {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [fileName, setFileName] = React.useState("");
   const [fileSize, setFileSize] = React.useState(0);
+  const [url, setUrl] = React.useState("");
+  const [urlList, setUrlList] = React.useState<string[]>([]);
+  const [charCount, setCharCount] = React.useState(0);
 
   const handleTrainAI = async () => {
     setIsTraining(true);
@@ -133,6 +136,10 @@ export default function DataTabs() {
       setFileName(file.name);
       setFileSize(file.size);
     }
+  };
+
+  const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(event.target.value);
   };
 
   const handleSaveData = async () => {
@@ -209,6 +216,43 @@ export default function DataTabs() {
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Only Max 4 MB size and *.pdf file is allowed. Please try again.");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const handleAnalyzeUrl = async () => {
+    if (!url) {
+      setError("URL cannot be empty.");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiBaseUrl}/api/data/analyze-url`,
+        { url },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        const { charCount } = response.data as { charCount: number };
+        setCharCount(charCount);
+        setUrlList((prevList) => [...prevList, url]);
+        setUrl("");
+      }
+    } catch (error) {
+      console.error("Error analyzing URL:", error);
+      setError("Error analyzing URL.");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -382,6 +426,8 @@ export default function DataTabs() {
             variant="outlined"
             fullWidth
             placeholder="https://example.com"
+            value={url}
+            onChange={handleUrlChange}
             sx={{ mb: 3 }}
             InputProps={{
               startAdornment: (
@@ -395,9 +441,25 @@ export default function DataTabs() {
             size="large"
             startIcon={<LanguageIcon />}
             sx={{ borderRadius: 2 }}
+            onClick={handleAnalyzeUrl}
           >
             Analyze Website
           </Button>
+          {charCount > 0 && (
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              Characters found: {charCount}
+            </Typography>
+          )}
+          <Typography variant="h6" sx={{ mt: 3 }}>
+            Analyzed URLs:
+          </Typography>
+          <Box sx={{ mt: 1 }}>
+            {urlList.map((url, index) => (
+              <Typography key={index} variant="body2" color="text.secondary">
+                {url}
+              </Typography>
+            ))}
+          </Box>
         </TabPanel>
 
         <TabPanel value={value} index={3}>

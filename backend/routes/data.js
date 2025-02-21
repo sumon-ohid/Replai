@@ -6,13 +6,31 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import { promisify } from 'util';
-import pdf from 'pdf-parse';
+import axios from 'axios';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 dotenv.config();
 
 const router = express.Router();
 
 const upload = multer({ dest: 'uploads/files' });
+
+const readFileAsync = promisify(fs.readFile);
+
+const extractTextFromPDF = async (filePath) => {
+  const data = new Uint8Array(fs.readFileSync(filePath));
+  const pdfDocument = await getDocument({ data }).promise;
+  let extractedText = '';
+
+  for (let i = 1; i <= pdfDocument.numPages; i++) {
+    const page = await pdfDocument.getPage(i);
+    const textContent = await page.getTextContent();
+    const text = textContent.items.map((item) => item.str).join(' ');
+    extractedText += text + '\n';
+  }
+
+  return extractedText;
+};
 
 // Endpoint to save text data
 router.post('/save-text', auth, async (req, res) => {
@@ -82,8 +100,8 @@ router.post('/upload-file', auth, upload.single('file'), async (req, res) => {
 
     // Use pdf-parse to extract text from PDF
     const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdf(dataBuffer);
-    const text = data.text;
+    const data = await extractTextFromPDF(filePath);
+    const text = data;
 
     // console.log('Text extracted from PDF:', text);
 
@@ -111,6 +129,37 @@ router.post('/upload-file', auth, upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Error uploading file:', error);
     res.status(500).json({ message: 'Error uploading file' });
+  }
+});
+
+// Analyze URL
+router.post('/analyze-url', auth, async (req, res) => {
+  const { url } = req.body;
+  const userId = req.user._id;
+
+  if (!url) {
+    return res.status(400).json({ message: 'URL must be provided' });
+  }
+
+  try {
+    const response = await axios.get(url);
+    const text = response.data;
+    const charCount = text.length;
+
+    // Save the URL and character count in the database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.urlList = user.urlList || [];
+    user.urlList.push({ url, charCount });
+    await user.save();
+
+    res.status(200).json({ charCount });
+  } catch (error) {
+    console.error('Error analyzing URL:', error);
+    res.status(500).json({ message: 'Error analyzing URL' });
   }
 });
 
