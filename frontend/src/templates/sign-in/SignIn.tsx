@@ -102,6 +102,10 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     } catch (error) {
       console.error('Error logging in:', error);
       setAlert({ severity: 'error', message: (error as any).response?.data?.message });
+
+      // Show resend email verification link if user is not verified
+      // Impement this feature in the future
+
     }
   };
 

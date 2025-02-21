@@ -6,6 +6,7 @@ import Token from '../models/Token.js'; // Import the Token model
 import dotenv from 'dotenv';
 import auth from '../middleware/auth.js';
 import nodemailer from 'nodemailer';
+import e from 'express';
 
 dotenv.config();
 
@@ -45,11 +46,23 @@ router.post('/register', async (req, res) => {
 
     const verificationLink = `${process.env.VITE_API_BASE_URL}/api/auth/verify-email?token=${token}`;
 
+    const emailHTML = `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
+        <h1 style="color: #333;">Email Agent</h1>
+        <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
+        <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
+        <a href="${verificationLink}" style="display: inline-block; background-color: #28a745; color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
+        <p style="color: #777; margin-top: 20px;">If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
+        <p style="background-color: #f4f4f4; padding: 10px; word-break: break-all; border-radius: 5px;">${verificationLink}</p>
+        <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
+      </div>
+    `;
+
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: 'Email Verification',
-      text: `Please verify your email by clicking on the following link: ${verificationLink}`,
+      subject: 'Verify Your Email - Email Agent',
+      html: emailHTML,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
