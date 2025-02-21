@@ -166,9 +166,9 @@ router.post("/analyze-url", auth, async (req, res) => {
 });
 
 // Delete URL
-router.delete("/delete-url", auth, async (req, res) => {
-  const { url } = req.body;
+router.delete("/delete-url/:url", auth, async (req, res) => {
   const userId = req.user._id;
+  const url = req.params.url;
 
   if (!url) {
     return res.status(400).json({ message: "URL must be provided" });

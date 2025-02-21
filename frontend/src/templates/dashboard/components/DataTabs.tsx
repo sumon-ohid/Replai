@@ -119,7 +119,30 @@ export default function DataTabs() {
       }
     };
 
+    const fetchUrlList = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+
+        const response = await axios.get(`${apiBaseUrl}/api/data/get-urls`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 200) {
+          setUrlList((response.data as { urls: { url: string; charCount: number }[] }).urls);
+        }
+      } catch (error) {
+        console.error("Error fetching URL list:", error);
+      }
+    };
+
     fetchDataPrompt();
+    fetchUrlList(); 
   }, []);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -258,8 +281,28 @@ export default function DataTabs() {
     }
   };
 
-  const handleDeleteUrl = (index: number) => {
-    setUrlList((prevList) => prevList.filter((_, i) => i !== index));
+  const handleDeleteUrl = async (urlToDelete: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.delete(`${apiBaseUrl}/api/data/delete-url/${encodeURIComponent(urlToDelete)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        setUrlList((response.data as { urls: { url: string; charCount: number }[] }).urls);
+      }
+    } catch (error) {
+      console.error("Error deleting URL:", error);
+      setError("Error deleting URL.");
+      setTimeout(() => setError(""), 3000);
+    }
   };
 
   return (
@@ -480,7 +523,7 @@ export default function DataTabs() {
                 <IconButton
                   aria-label="delete"
                   size="small"
-                  onClick={() => handleDeleteUrl(index)}
+                  onClick={() => handleDeleteUrl(item.url)}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
