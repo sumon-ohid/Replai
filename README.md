@@ -55,7 +55,7 @@ DASHBOARD_URL='' # Where to redirect after auth
 ```
 
 Frontend `.env`file:
-```
+```ini
 VITE_API_BASE_URL='http://localhost:3000'
 ```
 
