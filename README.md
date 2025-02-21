@@ -43,15 +43,20 @@ npm run start
 ## 🔧 Configuration
 Set up your Google OAuth 2.0 credentials and AI parameters in the `.env` file:
 ```ini
-MONGO_URL=''
-GENERATIVE_AI_API_KEY=''
-AUTHORIZATION_CODE=""
-JWT_SECRET=''
-PORT=''
-CLIENT_ID=""
-CLIENT_SECRET=""
+MONGO_URL='' # Database provider
+GENERATIVE_AI_API_KEY='' # Gemini API key
+AUTHORIZATION_CODE="" # Figure it out
+JWT_SECRET='' # Random string for JWT token genaration
+PORT='' # Where Vite app will run
+CLIENT_ID="" # Get from Goolge Console
+CLIENT_SECRET="" # Get from Goolge Console
 VITE_API_BASE_URL='' # Backend api url
 DASHBOARD_URL='' # Where to redirect after auth
+```
+
+Frontend `.env`file:
+```
+VITE_API_BASE_URL='http://localhost:3000'
 ```
 
 ## 📄 License
