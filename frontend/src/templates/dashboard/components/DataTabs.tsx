@@ -75,6 +75,8 @@ export default function DataTabs() {
   const [isTraining, setIsTraining] = React.useState(false);
   const [trainingCompleted, setTrainingCompleted] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [fileName, setFileName] = React.useState("");
+  const [fileSize, setFileSize] = React.useState(0);
 
   const handleTrainAI = async () => {
     setIsTraining(true);
@@ -126,7 +128,10 @@ export default function DataTabs() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      setSelectedFile(event.target.files[0]);
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      setFileName(file.name);
+      setFileSize(file.size);
     }
   };
 
@@ -203,7 +208,7 @@ export default function DataTabs() {
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      setError("Error uploading file.");
+      setError("Only Max 4 MB size and *.pdf file is allowed. Please try again.");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -302,15 +307,15 @@ export default function DataTabs() {
 
         <TabPanel value={value} index={1}>
           {alertVisible && (
-              <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
-                Data saved successfully
-              </Alert>
-            )}
-            {error && (
-              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+            <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
+              Data saved successfully
+            </Alert>
+          )}
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <Box
             sx={{
               width: isSmallScreen ? "100%" : 500,
@@ -339,6 +344,16 @@ export default function DataTabs() {
               Browse Files
               <input type="file" hidden onChange={handleFileChange} />
             </Button>
+            {selectedFile && (
+              <Box sx={{ mt: 2, textAlign: "left" }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>File Name:</strong> {fileName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>File Size:</strong> {(fileSize / 1024 / 1024).toFixed(2)} MB
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Button
             variant="contained"

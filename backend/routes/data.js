@@ -87,6 +87,16 @@ router.post('/upload-file', auth, upload.single('file'), async (req, res) => {
 
     // console.log('Text extracted from PDF:', text);
 
+    // If a file with the same user ID exists, replace file data
+    const existingFileData = await TextData.findOne({ userId });
+    
+    if (existingFileData) {
+      existingFileData.fileData = text;
+      await existingFileData.save();
+      fs.unlinkSync(filePath);
+      return res.status(201).json({ message: 'File uploaded and data saved successfully' });
+    }
+
     const newFileData = new TextData({
       userId,
       fileData: text,
