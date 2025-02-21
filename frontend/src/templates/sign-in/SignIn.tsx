@@ -101,7 +101,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       navigate('/dashboard');
     } catch (error) {
       console.error('Error logging in:', error);
-      setAlert({ severity: 'error', message: 'Error logging in. Please try again.' });
+      setAlert({ severity: 'error', message: (error as any).response?.data?.message });
     }
   };
 

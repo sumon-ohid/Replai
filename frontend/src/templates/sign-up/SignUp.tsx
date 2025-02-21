@@ -166,7 +166,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
       <CssBaseline enableColorScheme />
       <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
       <SignUpContainer direction="column" justifyContent="space-between">
-        <Card variant="outlined">
+        <Card variant="outlined" sx={{overflow: 'auto'}}>
           <SitemarkIcon />
           <Typography
             component="h1"
