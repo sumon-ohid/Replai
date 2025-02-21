@@ -95,9 +95,7 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
         const messages = res.data.messages || [];
 
         // user custom data to generate response router.get('/get-text', async (req, res)
-        const userPrompt = await TextData.findOne({ userId: localUserId });
-        console.log (`Prompt1: ${userPrompt.text}`);
-
+        let userPrompt = await TextData.findOne({ userId: localUserId });
 
         for (const message of messages) {
           if (!repliedEmails.has(message.id)) {
@@ -147,7 +145,7 @@ const createEmailBot = async (tokens, googleUserId, localUserId) => {
         }
 
         // Fetch the user's name
-        const user = await User.findById({ userId: localUserId });
+        const user = await User.findById(localUserId);
         const userName = user ? user.name : '';
 
         // Generate AI response
@@ -162,7 +160,7 @@ Guidelines:
 - Sign with "Best regards, ${userName}"
 - Avoid markdown formatting`;
 
-        const prompt = userPrompt;
+        let prompt = userPrompt;
         if (!prompt) {
           console.log('No prompt found. Using default prompt.');
           prompt = defaultPrompt;
