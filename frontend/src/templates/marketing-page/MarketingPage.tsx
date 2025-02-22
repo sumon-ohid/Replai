@@ -29,8 +29,13 @@ import Container from '@mui/material/Container';
 const UserJourney = () => (
   <Box sx={{ py: 8, bgcolor: 'background.default' }}>
     <Container maxWidth="lg">
-      <Typography variant="h6" align="center" gutterBottom sx={{ mb: 6 }}>
-        How It Works?
+      <Typography variant="h4" align="center" gutterBottom>
+        How Mr. John transformed his business
+      </Typography>
+      <Typography variant="body1" align="center" gutterBottom sx={{ mt: 2, mb: 6, ml: 'auto', mr: 'auto', maxWidth: 600 }}>
+      Mr. John is a small business owner who was tired of replying to emails manually.
+      Then, he discovered our AI automation magic and registered his business email. 
+      Now, he no longer has to worry about emails and can focus on doing what he loves.
       </Typography>
       <Grid container spacing={4} alignItems="center" justifyContent="center" direction={{ xs: 'column', md: 'row' }} wrap="nowrap">
         {[
@@ -58,7 +63,7 @@ const UserJourney = () => (
                     borderRadius: '50%',
                     objectFit: 'cover',
                     border: 4,
-                    borderColor: 'background.paper',
+                    borderColor: 'primary.main',
                     boxShadow: 3,
                     m: 2
                   }}
@@ -80,10 +85,10 @@ const UserJourney = () => (
           </React.Fragment>
         ))}
       </Grid>
-      {/* <Divider sx={{ my: 8 }} /> */}
     </Container>
   </Box>
 );
+
 
 export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
   return (
@@ -97,9 +102,7 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         {/* <Divider /> */}
         {/* <Divider />
         <Highlights /> */}
-        
-        {/* <UserJourney /> */}
-
+        <UserJourney />
         <AiCard />
         <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
           Powered by powerful AI
