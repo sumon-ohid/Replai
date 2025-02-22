@@ -36,7 +36,7 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         <Features />
         {/* <Pricing /> */}
         {/* <Testimonials /> */}
-        {/* <FAQ /> */}
+        <FAQ />
         {/* <Divider /> */}
         <Footer />
       </div>

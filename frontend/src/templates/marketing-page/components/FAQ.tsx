@@ -71,7 +71,7 @@ export default function FAQ() {
             </Typography>
           </AccordionDetails>
         </Accordion>
-        <Accordion
+        {/* <Accordion
           expanded={expanded.includes('panel2')}
           onChange={handleChange('panel2')}
         >
@@ -96,7 +96,7 @@ export default function FAQ() {
               &nbsp;. We&apos;ll be happy to assist you.
             </Typography>
           </AccordionDetails>
-        </Accordion>
+        </Accordion> */}
         <Accordion
           expanded={expanded.includes('panel3')}
           onChange={handleChange('panel3')}
@@ -133,7 +133,7 @@ export default function FAQ() {
             id="panel4d-header"
           >
             <Typography component="span" variant="subtitle2">
-              Which payment methods do you accept?
+              How to train the AI to understand my email style?
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -142,7 +142,9 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              We accept all major credit and debit cards, as well as PayPal and bank transfers.
+              You can train the AI by providing it with text, file or website link. The AI
+              will learn from these examples and generate responses that match your style.
+              You can also provide feedback to the AI to help it improve its responses.
             </Typography>
           </AccordionDetails>
         </Accordion>

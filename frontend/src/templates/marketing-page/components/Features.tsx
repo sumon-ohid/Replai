@@ -26,8 +26,8 @@ const items = [
     title: 'Custom AI Training',
     description:
       'Train your AI with text input, file and website. We use the latest encryption technology to keep your data safe.',
-    imageLight: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/mobile-light.png")`,
-    imageDark: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/mobile-dark.png")`,
+    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/aitrain-light.png?token=GHSAT0AAAAAAC4GQMQHAYSEBR25GQBQ5XQAZ52DUUQ")`,
+    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/aitrain-dark.png?token=GHSAT0AAAAAAC4GQMQG25PAKJQSRREZHYSOZ52DUQQ")`,
   },
   // {
   //   icon: <DevicesRoundedIcon />,
