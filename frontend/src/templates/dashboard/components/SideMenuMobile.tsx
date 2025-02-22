@@ -20,12 +20,6 @@ interface SideMenuMobileProps {
   toggleDrawer: (newOpen: boolean) => () => void;
 }
 
-interface User {
-  name: string;
-  email: string;
-  profilePicture?: string;
-}
-
 export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
   const { user, logout } = useAuth();
 
