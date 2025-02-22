@@ -44,7 +44,7 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
   const [email, setEmail] = useState("");
   const [comments, setComments] = useState("");
   const [feedbackList, setFeedbackList] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
+  const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
   const [alert, setAlert] = useState<{
     type: "success" | "error";
     message: string;
@@ -109,7 +109,7 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
 
       const response = await axios.post(
         `${apiBaseUrl}/api/feedback/comment/${feedbackId}`,
-        { comment: newComment },
+        { comment: newComments[feedbackId] },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -122,7 +122,10 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
           feedback._id === feedbackId ? response.data : feedback
         )
       );
-      setNewComment("");
+      setNewComments((prevComments) => ({
+        ...prevComments,
+        [feedbackId]: "",
+      }));
       setAlert({ type: "success", message: "Comment submitted successfully!" });
     } catch (error) {
       console.error("Error submitting comment:", error);
@@ -156,6 +159,13 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
     } catch (error) {
       console.error("Error liking feedback:", error);
     }
+  };
+
+  const handleCommentChange = (feedbackId: string, value: string) => {
+    setNewComments((prevComments) => ({
+      ...prevComments,
+      [feedbackId]: value,
+    }));
   };
 
   return (
@@ -343,7 +353,10 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                   </Box>
                   <Box
                     component="form"
-                    onSubmit={() => handleCommentSubmit(feedback._id)}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleCommentSubmit(feedback._id);
+                    }}
                     noValidate
                     sx={{
                       mt: 2,
@@ -360,8 +373,10 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                       placeholder="Add a comment"
                       variant="outlined"
                       fullWidth
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
+                      value={newComments[feedback._id] || ""}
+                      onChange={(e) =>
+                        handleCommentChange(feedback._id, e.target.value)
+                      }
                     />
                     <Button
                       type="submit"
