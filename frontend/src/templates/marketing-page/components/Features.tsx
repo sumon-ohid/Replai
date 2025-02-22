@@ -203,32 +203,40 @@ export default function Features() {
         mx: 'auto',
         px: { md: 4 }
       }}>
+        <Typography
+          component="h2"
+          variant="h4"
+          gutterBottom
+          sx={{ 
+            color: 'text.primary',
+            fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
+            justifyContent: 'center',
+            textAlign: 'center',
+            alignItems: 'center',
+            display: 'flex',
+          }}
+        >
+          Features
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{ 
+            color: 'text.secondary',
+            mb: { xs: 2, sm: 4 },
+            fontSize: { xs: '0.875rem', md: '1rem' },
+            textAlign: 'center',
+            justifyContent: 'center',
+            alignItems: 'center',
+            display: 'flex',
+          }}
+        >
+          Here are some of the features we provide to help you to make things easier.
+        </Typography>
         <Box sx={{ 
           width: '100%',
           maxWidth: { md: '60%', lg: '50%' },
           mb: { xs: 4, sm: 6, md: 8 }
         }}>
-          <Typography
-            component="h2"
-            variant="h4"
-            gutterBottom
-            sx={{ 
-              color: 'text.primary',
-              fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
-            }}
-          >
-            Features
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ 
-              color: 'text.secondary',
-              mb: { xs: 2, sm: 4 },
-              fontSize: { xs: '0.875rem', md: '1rem' }
-            }}
-          >
-            {/* Keep description text */}
-          </Typography>
         </Box>
 
         <Box
