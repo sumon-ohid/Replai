@@ -16,6 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import data from "./routes/data.js";
 import googleAuth from "./routes/googleAuth.js";
+import feedback from "./routes/feedback.js";
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -75,6 +76,7 @@ app.use("/api/emails", stats);
 app.use("/api/blocklist", blocklist);
 app.use("/api/data", data);
 app.use("/api/auth", googleAuth);
+app.use("/api/feedback", feedback);
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${port}`);

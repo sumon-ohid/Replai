@@ -1,9 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
-import type {} from "@mui/x-date-pickers/themeAugmentation";
-import type {} from "@mui/x-charts/themeAugmentation";
-import type {} from "@mui/x-data-grid-pro/themeAugmentation";
-import type {} from "@mui/x-tree-view/themeAugmentation";
+import { useState, useEffect } from "react";
 import { alpha } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
@@ -14,30 +10,32 @@ import Header from "./components/Header";
 import SideMenu from "./components/SideMenu";
 import AppTheme from "../shared-theme/AppTheme";
 import {
-  chartsCustomizations,
-  dataGridCustomizations,
-  datePickersCustomizations,
-  treeViewCustomizations,
-} from "./theme/customizations";
-import {
   Typography,
   Card,
   CardContent,
-  Paper,
   Button,
   TextField,
   Rating,
-  FormControl,
-  FormLabel,
+  Avatar,
+  IconButton,
+  Alert,
+  AlertTitle,
 } from "@mui/material";
 import Footer from "../marketing-page/components/Footer";
 import FeedbackIcon from "@mui/icons-material/Feedback";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import axios from "axios";
+import { FormControl } from "@mui/material";
 
-const xThemeComponents = {
-  ...chartsCustomizations,
-  ...dataGridCustomizations,
-  ...datePickersCustomizations,
-  ...treeViewCustomizations,
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+type FeedbackComment = {
+  _id: string;
+  userId: {
+    name: string;
+    profilePicture: string;
+  };
+  comment: string;
 };
 
 export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
@@ -45,20 +43,117 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [comments, setComments] = useState("");
+  const [feedbackList, setFeedbackList] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+
+  const fetchFeedback = async () => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/feedback/all`);
+      setFeedbackList(response.data as any[]);
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // Process form submission, e.g., send the data to an API
-    console.log({ name, email, rating, comments });
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiBaseUrl}/api/feedback/submit`,
+        { rating, comments },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setFeedbackList((prevList) => [response.data, ...prevList]);
+      setRating(null);
+      setComments("");
+      setAlert({ type: "success", message: "Feedback submitted successfully!" });
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      setAlert({ type: "error", message: "Rating and Comment both are required for submitting feedback." });
+    }
+  };
+
+  const handleCommentSubmit = async (feedbackId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiBaseUrl}/api/feedback/comment/${feedbackId}`,
+        { comment: newComment },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setFeedbackList((prevList) =>
+        prevList.map((feedback) =>
+          feedback._id === feedbackId ? response.data : feedback
+        )
+      );
+      setNewComment("");
+      setAlert({ type: "success", message: "Comment submitted successfully!" });
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      setAlert({ type: "error", message: "Error submitting comment." });
+    }
+  };
+
+  const handleLike = async (feedbackId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+
+      const response = await axios.post(
+        `${apiBaseUrl}/api/feedback/like/${feedbackId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setFeedbackList((prevList) =>
+        prevList.map((feedback) =>
+          feedback._id === feedbackId ? response.data : feedback
+        )
+      );
+    } catch (error) {
+      console.error("Error liking feedback:", error);
+    }
   };
 
   return (
-    <AppTheme {...props} themeComponents={xThemeComponents}>
+    <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <Box sx={{ display: "flex" }}>
         <SideMenu />
         <AppNavbar />
-        {/* Main Content */}
         <Box
           component="main"
           sx={(theme) => ({
@@ -100,28 +195,18 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                     improve.
                   </Typography>
                   <Box component="form" onSubmit={handleSubmit} noValidate>
+                    {alert && (
+                      <Box sx={{ mb: 3 }}>
+                        <Alert severity={alert.type} onClose={() => setAlert(null)}>
+                          <AlertTitle>{alert.type === "success" ? "Success" : "Error"}</AlertTitle>
+                          {alert.message}
+                        </Alert>
+                      </Box>
+                    )}
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          placeholder="Name"
-                          variant="outlined"
-                          fullWidth
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          placeholder="Email"
-                          variant="outlined"
-                          fullWidth
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                        />
-                      </Grid>
+                      <Typography variant="body1" sx={{fontWeight: 'bold', ml: 2}}>Rate us</Typography>
                       <Grid item xs={12}>
                         <FormControl component="fieldset" fullWidth>
-                          <FormLabel component="legend">Rating</FormLabel>
                           <Rating
                             name="feedback-rating"
                             value={rating}
@@ -165,6 +250,77 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                 </Stack>
               </CardContent>
             </Card>
+          </Box>
+          <Typography variant="h4" align="center" sx={{ mt: 3 }}>
+            Feedback
+          </Typography>
+          <Box sx={{ mx: 3, mb: 3 }}>
+            {feedbackList.map((feedback) => (
+              <Card key={feedback._id} sx={{ mb: 3 }}>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar
+                      alt={feedback.name}
+                      src={feedback.userId.profilePicture}
+                    />
+                    <Typography variant="h6">{feedback.name}</Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {feedback.comments}
+                  </Typography>
+                  <Rating value={feedback.rating} readOnly />
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <IconButton
+                      aria-label="like"
+                      onClick={() => handleLike(feedback._id)}
+                    >
+                      <ThumbUpIcon
+                        color={
+                          feedback.likes.includes(localStorage.getItem("userId"))
+                            ? "primary"
+                            : "inherit"
+                        }
+                      />
+                    </IconButton>
+                    <Typography variant="body2">
+                      {feedback.likes.length}
+                    </Typography>
+                  </Stack>
+                  <Box>
+                    {feedback.feedbackComments.map((comment: FeedbackComment) => (
+                      <Box key={comment._id} sx={{ mt: 2 }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar
+                        alt={comment.userId.name}
+                        src={comment.userId.profilePicture}
+                        />
+                        <Typography variant="body2">
+                        {comment.comment}
+                        </Typography>
+                      </Stack>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box component="form" onSubmit={() => handleCommentSubmit(feedback._id)} noValidate sx={{ mt: 2 }}>
+                    <TextField
+                      placeholder="Add a comment"
+                      variant="outlined"
+                      fullWidth
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      sx={{ mt: 1 }}
+                    >
+                      Comment
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
           </Box>
           <Footer />
         </Box>
