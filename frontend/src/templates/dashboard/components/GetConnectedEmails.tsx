@@ -10,6 +10,8 @@ import TextField from '@mui/material/TextField';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import axios from 'axios';
 import { useAuth } from '../../../AuthContext';
+import Box from '@mui/material/Box';
+import SearchIcon from '@mui/icons-material/Search';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -97,30 +99,46 @@ export default function GetConnectedEmails() {
 
   return (
     <Card sx={{ m: 2 }}>
+      <CardContent>
         <Typography
           component="h2"
           variant="subtitle2"
           gutterBottom
-          sx={{ fontWeight: '600' }}
+          sx={{ fontWeight: '600', overflow: 'auto' }}
         >
           Connected Emails
         </Typography>
         {loading && <Typography>Loading...</Typography>}
         {error && <Typography color="error">{error}</Typography>}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <TextField
+            placeholder='Search'
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ flexGrow: 1, mr: 2 }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: .5 }}>
+            <SearchIcon />
+          </Box>
+        </Box>
         {connectedEmails.length > 0 ? (
-          <div style={{ height: 400, width: '100%' }}>
+          <Box sx={{ height: 400, width: '100%', overflowX: 'auto' }}>
             <DataGrid
-                rows={filteredEmails}
-                columns={columns}
-                pagination
-                paginationMode="server"
-                rowCount={100}
-                disableRowSelectionOnClick
-              />
-          </div>
+              rows={filteredEmails}
+              columns={columns}
+              pagination
+              paginationMode="server"
+              rowCount={100}
+              disableRowSelectionOnClick
+              autoHeight
+            />
+          </Box>
         ) : (
           <Typography>No connected accounts</Typography>
         )}
+      </CardContent>
     </Card>
   );
 }
