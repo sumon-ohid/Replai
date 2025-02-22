@@ -77,7 +77,7 @@ function a11yProps(index: number) {
 export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
   const { user, updateProfilePicture } = useAuth();
-  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || `https://easy-email-production.up.railway.app${user?.profilePicture}`);
+  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '' );
   const [alertVisible, setAlertVisible] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -87,7 +87,14 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      setProfilePicture(URL.createObjectURL(file));
+      let fileUrl = URL.createObjectURL(file);
+      // if url contain http or https, it is a valid url
+      if (fileUrl.includes('http://') || fileUrl.includes('https://')) {
+        setProfilePicture(fileUrl);
+      } else {
+        fileUrl = import.meta.env.VITE_API_BASE_URL + fileUrl;
+        setProfilePicture(URL.createObjectURL(file));
+      }
       await updateProfilePicture(file);
     }
   };
