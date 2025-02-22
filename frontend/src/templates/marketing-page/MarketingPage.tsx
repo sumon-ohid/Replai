@@ -33,7 +33,7 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
           Powered by powerful AI
         </Typography>
-        {/* <Features /> */}
+        <Features />
         {/* <Pricing /> */}
         {/* <Testimonials /> */}
         {/* <FAQ /> */}

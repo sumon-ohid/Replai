@@ -17,8 +17,8 @@ const items = [
     title: 'Dashboard',
     description:
       'We provide a beautify and easy to use dashboard for you to monitor your data.',
-    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dashboard-light.png?token=GHSAT0AAAAAAC4GQMQG6ZMOEQ77XRJXPPOIZ52CBOA")`,
-    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dashboard-dark.png?token=GHSAT0AAAAAAC4GQMQH6KY53AO5HOOTHMZWZ52CBAQ")`,
+    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/ai-train-light.png?token=GHSAT0AAAAAAC4GQMQGVQHAYGBDN2BPAV6IZ52DGHA")`,
+    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/ai-train-dark.png?token=GHSAT0AAAAAAC4GQMQG3RGIH4U6V3WKKOB6Z52DFZQ")`,
   },
   {
     icon: <EdgesensorHighRoundedIcon />,
