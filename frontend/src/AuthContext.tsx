@@ -10,6 +10,8 @@ interface AuthContextType {
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
   updateProfilePicture: (profilePicture: File) => Promise<void>;
+  updateUserName: (name: string) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 interface User {
@@ -101,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         if (response.status === 200) {
           const data = response.data as User;
-          const updatedUser = { ...user, profilePicture: `http://localhost:3000${data.profilePicture}` } as User;
+          const updatedUser = { ...user, profilePicture: `${data.profilePicture}` } as User;
           setUser(updatedUser);
         }
       }
@@ -110,12 +112,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserName = async (name: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.post(`${apiBaseUrl}/api/user/me/name`, { name }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.status === 200) {
+          setUser((prevUser) => prevUser ? { ...prevUser, name } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Updating user name failed:', error);
+    }
+  };
+
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.post(`${apiBaseUrl}/api/user/me/password`, { currentPassword, newPassword }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Updating password failed:', error);
+    }
+  };
+
   React.useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, checkAuthStatus, updateProfilePicture }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, checkAuthStatus, updateProfilePicture, updateUserName, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

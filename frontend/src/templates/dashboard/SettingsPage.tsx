@@ -76,9 +76,16 @@ function a11yProps(index: number) {
 
 export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
-  const { user, updateProfilePicture } = useAuth();
-  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '' );
+  const { user, updateProfilePicture, updateUserName, updatePassword } = useAuth();
+  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
   const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -99,13 +106,50 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
     }
   };
 
-  const handleProfileChange = () => {
+  const handleProfileChange = async () => {
+    try {
+      await updateUserName(fullName);
+      setAlertMessage('Profile updated successfully');
+      setAlertType('success');
+    } catch (error) {
+      setAlertMessage('Error updating profile');
+      setAlertType('error');
+    }
     setAlertVisible(true);
     window.setTimeout(() => {
       setAlertVisible(false);
       window.location.reload();
+    }, 2000);
+  };
+
+  const handlePasswordChange = async () => {
+    if (newPassword !== confirmNewPassword) {
+      setAlertMessage('New passwords do not match');
+      setAlertType('error');
+      setAlertVisible(true);
+      return;
     }
-    , 2000);
+    try {
+      await updatePassword(currentPassword, newPassword);
+      setAlertMessage('Password updated successfully');
+      setAlertType('success');
+    } catch (error) {
+      setAlertMessage('Error updating password');
+      setAlertType('error');
+    }
+    setAlertVisible(true);
+    window.setTimeout(() => {
+      setAlertVisible(false);
+    }, 2000);
+  };
+
+  const handleEmailChange = () => {
+    setAlertMessage('Email cannot be changed');
+    setAlertType('error');
+    setAlertVisible(true);
+    window.setTimeout(() => {
+      setAlertVisible(false);
+    }, 2000);
   };
 
   return (
@@ -141,7 +185,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
           <Typography variant="body1" color="textSecondary" align="left" ml={3} mb={2}>
             Manage your account settings
           </Typography>
-          <Box sx={{ mx: 3, mb: 3}}>
+          <Box sx={{ mx: 3, mb: 3 }}>
             <Paper square>
               <Tabs
                 value={tabValue}
@@ -176,8 +220,19 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     Profile Details
                   </Typography>
                   <Stack spacing={2}>
-                    <TextField placeholder='Full name' variant="outlined" fullWidth />
-                    <TextField placeholder='Email address' variant="outlined" fullWidth />
+                    <TextField
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                    />
+                    <TextField
+                      value={email}
+                      onChange={handleEmailChange}
+                      variant="outlined"
+                      fullWidth
+                      disabled
+                    />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar sx={{ width: 56, height: 56 }} src={profilePicture} />
                       <Button variant="outlined" component="label" startIcon={<PhotoCameraIcon />}>
@@ -206,7 +261,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     <Button variant="contained" color="primary" onClick={handleProfileChange}>
                       Save Profile
                     </Button>
-                    {alertVisible && <Alert severity="success">Profile updated successfully</Alert>}
+                    {alertVisible && <Alert severity={alertType}>{alertMessage}</Alert>}
                   </Stack>
                 </CardContent>
               </Card>
@@ -224,22 +279,29 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                       type="password"
                       variant="outlined"
                       fullWidth
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                     />
                     <TextField
                       placeholder="New Password"
                       type="password"
                       variant="outlined"
                       fullWidth
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
                     />
                     <TextField
                       placeholder="Confirm New Password"
                       type="password"
                       variant="outlined"
                       fullWidth
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
                     />
-                    <Button variant="contained" color="primary">
+                    <Button variant="contained" color="primary" onClick={handlePasswordChange}>
                       Update Password
                     </Button>
+                    {alertVisible && <Alert severity={alertType}>{alertMessage}</Alert>}
                   </Stack>
                 </CardContent>
               </Card>

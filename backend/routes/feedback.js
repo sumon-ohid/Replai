@@ -52,6 +52,10 @@ router.post('/comment/:id', auth, async (req, res) => {
   const userId = req.user._id;
   const feedbackId = req.params.id;
 
+  if (!comment) {
+    return res.status(400).json({ message: 'Comment is required' });
+  }
+
   try {
     const feedback = await Feedback.findById(feedbackId);
     if (!feedback) {
