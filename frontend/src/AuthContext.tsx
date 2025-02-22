@@ -60,9 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await fetchUserData();
         } else {
           setIsAuthenticated(false);
+          localStorage.removeItem('token');
         }
       } else {
         setIsAuthenticated(false);
+        localStorage.removeItem('token');
       }
     } catch (error) {
       console.error('Auth status check failed:', error);
