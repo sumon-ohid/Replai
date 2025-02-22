@@ -5,7 +5,7 @@ import Card from '@mui/material/Card';
 import MuiChip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import { styled } from '@mui/material/styles';
+import { styled, keyframes } from '@mui/material/styles';
 
 import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded';
 import EdgesensorHighRoundedIcon from '@mui/icons-material/EdgesensorHighRounded';
@@ -15,6 +15,21 @@ import ailight from '../../../assets/aitrain-light.png';
 import aidark from '../../../assets/aitrain-dark.png';
 import dashlight from '../../../assets/dash-light.png';
 import dashdark from '../../../assets/dash-dark.png';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+
+
+const glow = keyframes`
+  0% {
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 123, 255, 1);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  }
+`;
 
 const items = [
   {
@@ -78,6 +93,9 @@ export function MobileLayout({
   handleItemClick,
   selectedFeature,
 }: MobileLayoutProps) {
+  const theme = useTheme();
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   if (!items[selectedItemIndex]) {
     return null;
   }
@@ -90,49 +108,74 @@ export function MobileLayout({
         gap: 2,
       }}
     >
-      <Box sx={{ display: 'flex', gap: 2, overflow: 'auto' }}>
+      <Box sx={{ 
+        display: 'flex',
+        gap: 1,
+        overflow: 'auto',
+        pb: 1,
+        mx: -2,
+        px: 2,
+        '&::-webkit-scrollbar': { display: 'none' }
+      }}>
         {items.map(({ title }, index) => (
           <Chip
-            size="medium"
+            size={isSmallMobile ? 'small' : 'medium'}
             key={index}
             label={title}
             onClick={() => handleItemClick(index)}
             selected={selectedItemIndex === index}
+            sx={{ 
+              flexShrink: 0,
+              '&:first-of-type': { ml: 'auto' },
+              '&:last-of-type': { mr: 'auto' }
+            }}
           />
         ))}
       </Box>
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ overflow: 'visible' }}>
         <Box
+          component="div"
           sx={(theme) => ({
             mb: 2,
-            backgroundSize: 'cover',
+            backgroundSize: 'contain',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            minHeight: 280,
+            height: { xs: 200, sm: 280 },
             border: '1px solid',
             borderColor: 'divider',
+            borderRadius: 1,
+            mx: 2,
+            mt: 2,
             backgroundImage: 'var(--items-imageLight)',
+            animation: `${glow} 2s infinite`,
             ...theme.applyStyles('dark', {
               backgroundImage: 'var(--items-imageDark)',
             }),
           })}
-          style={
-            items[selectedItemIndex]
-              ? ({
-                  '--items-imageLight': items[selectedItemIndex].imageLight,
-                  '--items-imageDark': items[selectedItemIndex].imageDark,
-                } as any)
-              : {}
-          }
+          style={{
+            '--items-imageLight': items[selectedItemIndex].imageLight,
+            '--items-imageDark': items[selectedItemIndex].imageDark,
+          } as React.CSSProperties}
         />
         <Box sx={{ px: 2, pb: 2 }}>
           <Typography
             gutterBottom
-            sx={{ color: 'text.primary', fontWeight: 'medium' }}
+            sx={{ 
+              color: 'text.primary', 
+              fontWeight: 'medium',
+              fontSize: { xs: '1.1rem', sm: '1.25rem' }
+            }}
           >
             {selectedFeature.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'text.secondary', 
+              mb: 1.5,
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }}
+          >
             {selectedFeature.description}
           </Typography>
         </Box>
@@ -143,6 +186,8 @@ export function MobileLayout({
 
 export default function Features() {
   const [selectedItemIndex, setSelectedItemIndex] = React.useState(0);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const handleItemClick = (index: number) => {
     setSelectedItemIndex(index);
@@ -151,133 +196,166 @@ export default function Features() {
   const selectedFeature = items[selectedItemIndex];
 
   return (
-    <Container id="features" sx={{ py: { xs: 8, sm: 16 } }}>
-      <Box sx={{ width: { sm: '100%', md: '60%' } }}>
-        <Typography
-          component="h2"
-          variant="h4"
-          gutterBottom
-          sx={{ color: 'text.primary' }}
-        >
-          Features
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: 'text.secondary', mb: { xs: 2, sm: 4 } }}
-        >
-          We provide a beautify and easy to use dashboard for you to monitor your data.
-          You can access it from any device, anywhere. In addition, you see AI sent emails,
-          connected accounts, AI training with text input, file and website. We use the latest
-          encryption technology to keep your data safe.
-        </Typography>
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row-reverse' },
-          gap: 2,
-        }}
-      >
-        <div>
-          <Box
-            sx={{
-              display: { xs: 'none', sm: 'flex' },
-              flexDirection: 'column',
-              gap: 2,
-              height: '100%',
+    <Container id="features" sx={{ py: { xs: 6, sm: 12, md: 16 } }}>
+      <Box sx={{ 
+        width: '100%',
+        maxWidth: { md: 1200 },
+        mx: 'auto',
+        px: { md: 4 }
+      }}>
+        <Box sx={{ 
+          width: '100%',
+          maxWidth: { md: '60%', lg: '50%' },
+          mb: { xs: 4, sm: 6, md: 8 }
+        }}>
+          <Typography
+            component="h2"
+            variant="h4"
+            gutterBottom
+            sx={{ 
+              color: 'text.primary',
+              fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
             }}
           >
-            {items.map(({ icon, title, description }, index) => (
+            Features
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ 
+              color: 'text.secondary',
+              mb: { xs: 2, sm: 4 },
+              fontSize: { xs: '0.875rem', md: '1rem' }
+            }}
+          >
+            {/* Keep description text */}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row-reverse' },
+            gap: { xs: 4, md: 6 },
+            alignItems: 'flex-start',
+          }}
+        >
+          <Box sx={{ 
+            width: '100%',
+            maxWidth: { md: '55%' },
+            flexShrink: 0,
+            position: { md: 'sticky' },
+            top: 100
+          }}>
+            <Card
+              variant="outlined"
+              sx={{
+                height: '100%',
+                width: '100%',
+                display: { xs: 'none', sm: 'flex' },
+                aspectRatio: '1.2',
+                overflow: 'hidden',
+              }}
+            >
               <Box
-                key={index}
-                component={Button}
-                onClick={() => handleItemClick(index)}
-                sx={[
-                  (theme) => ({
-                    p: 2,
-                    height: '100%',
-                    width: '100%',
-                    '&:hover': {
-                      backgroundColor: theme.palette.action.hover,
-                    },
+                component="div"
+                sx={(theme) => ({
+                  width: '100%',
+                  height: '100%',
+                  backgroundSize: 'contain',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundImage: 'var(--items-imageLight)',
+                  animation: `${glow} 2s infinite`,
+                  ...theme.applyStyles('dark', {
+                    backgroundImage: 'var(--items-imageDark)',
                   }),
-                  selectedItemIndex === index && {
-                    backgroundColor: 'action.selected',
-                  },
-                ]}
-              >
+                })}
+                style={{
+                  '--items-imageLight': items[selectedItemIndex].imageLight,
+                  '--items-imageDark': items[selectedItemIndex].imageDark,
+                } as React.CSSProperties}
+              />
+            </Card>
+          </Box>
+
+          <Box sx={{ 
+            flex: 1,
+            width: '100%',
+            maxWidth: { md: '45%' }
+          }}>
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                flexDirection: 'column',
+                gap: { xs: 2, md: 3 },
+                height: '100%',
+              }}
+            >
+              {items.map(({ icon, title, description }, index) => (
                 <Box
+                  key={index}
+                  component={Button}
+                  onClick={() => handleItemClick(index)}
                   sx={[
-                    {
+                    (theme) => ({
+                      p: { sm: 2, md: 3 },
+                      height: '100%',
                       width: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'left',
-                      gap: 1,
-                      textAlign: 'left',
-                      textTransform: 'none',
-                      color: 'text.secondary',
-                    },
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }),
                     selectedItemIndex === index && {
-                      color: 'text.primary',
+                      backgroundColor: 'action.selected',
+                      boxShadow: 2,
                     },
                   ]}
                 >
-                  {icon}
-
-                  <Typography variant="h6">{title}</Typography>
-                  <Typography variant="body2">{description}</Typography>
+                  <Box
+                    sx={{
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      textAlign: 'left',
+                      textTransform: 'none',
+                      color: 'text.secondary',
+                    }}
+                  >
+                    {React.cloneElement(icon, {
+                      sx: { fontSize: isDesktop ? '2rem' : '1.5rem' }
+                    })}
+                    <Typography 
+                      variant="h6"
+                      sx={{ 
+                        fontSize: { sm: '1.1rem', md: '1.25rem' },
+                        fontWeight: 600 
+                      }}
+                    >
+                      {title}
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: { sm: '0.875rem', md: '1rem' },
+                        lineHeight: 1.5 
+                      }}
+                    >
+                      {description}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            ))}
-          </Box>
-          <MobileLayout
-            selectedItemIndex={selectedItemIndex}
-            handleItemClick={handleItemClick}
-            selectedFeature={selectedFeature}
-          />
-        </div>
-        <Box
-          sx={{
-            display: { xs: 'none', sm: 'flex' },
-            width: { xs: '100%', md: '70%' },
-            height: 'var(--items-image-height)',
-          }}
-        >
-          <Card
-            variant="outlined"
-            sx={{
-              height: '100%',
-              width: '100%',
-              display: { xs: 'none', sm: 'flex' },
-              pointerEvents: 'none',
-            }}
-          >
-            <Box
-              sx={(theme) => ({
-                m: 'auto',
-                width: 420,
-                height: '100%',
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                border: '1px solid',
-                borderColor: 'divider',
-                backgroundImage: 'var(--items-imageLight)',
-                ...theme.applyStyles('dark', {
-                  backgroundImage: 'var(--items-imageDark)',
-                }),
-              })}
-              style={
-                items[selectedItemIndex]
-                  ? ({
-                      '--items-imageLight': items[selectedItemIndex].imageLight,
-                      '--items-imageDark': items[selectedItemIndex].imageDark,
-                    } as any)
-                  : {}
-              }
+              ))}
+            </Box>
+            <MobileLayout
+              selectedItemIndex={selectedItemIndex}
+              handleItemClick={handleItemClick}
+              selectedFeature={selectedFeature}
             />
-          </Card>
+          </Box>
         </Box>
       </Box>
     </Container>
