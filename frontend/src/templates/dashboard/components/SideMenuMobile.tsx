@@ -27,50 +27,7 @@ interface User {
 }
 
 export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
-  const { logout } = useAuth();
-  const [user, setUser] = React.useState<User>({ name: '', email: '', profilePicture: '' });
-
-  React.useEffect(() => {
-    const fetchUserDetails = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found');
-        return;
-      }
-
-      try {
-        const userDetailsResponse = await axios.get(`${apiBaseUrl}/api/user/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        const profilePictureResponse = await axios.get(`${apiBaseUrl}/api/user/me/profile-picture`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        // Check profile picture url, if url has http:// or https://, use it as is, else prepend apiBaseUrl
-        const profilePictureUrl = (profilePictureResponse.data as { profilePicture: string }).profilePicture;
-        if (!profilePictureUrl.startsWith('http://') && !profilePictureUrl.startsWith('https://')) {
-          (profilePictureResponse.data as { profilePicture: string }).profilePicture = `${profilePictureUrl}`;
-        } else {
-          (profilePictureResponse.data as { profilePicture: string }).profilePicture = `${apiBaseUrl}${profilePictureUrl}`;
-        }
-
-        setUser({
-          name: (userDetailsResponse.data as { name: string }).name,
-          email: (userDetailsResponse.data as { email: string }).email,
-          profilePicture: (profilePictureResponse.data as { profilePicture: string }).profilePicture
-        });
-      } catch (error) {
-        console.error('Error fetching user details:', error);
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
+  const { user, logout } = useAuth();
 
   return (
     <Drawer
