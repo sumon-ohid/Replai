@@ -45,7 +45,10 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
   const [comments, setComments] = useState("");
   const [feedbackList, setFeedbackList] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [alert, setAlert] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchFeedback();
@@ -82,10 +85,17 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
       setFeedbackList((prevList) => [response.data, ...prevList]);
       setRating(null);
       setComments("");
-      setAlert({ type: "success", message: "Feedback submitted successfully!" });
+      setAlert({
+        type: "success",
+        message: "Feedback submitted successfully!",
+      });
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setAlert({ type: "error", message: "Rating and Comment both are required for submitting feedback." });
+      setAlert({
+        type: "error",
+        message:
+          "Rating and Comment both are required for submitting feedback.",
+      });
     }
   };
 
@@ -181,7 +191,15 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
             We value your feedback
           </Typography>
           <Box sx={{ mx: 3, mb: 3 }}>
-            <Card sx={{ maxWidth: 600, height: 500, mx: "auto", p: 2, overflow: "auto" }}>
+            <Card
+              sx={{
+                maxWidth: 600,
+                height: 500,
+                mx: "auto",
+                p: 2,
+                overflow: "auto",
+              }}
+            >
               <CardContent>
                 <Stack spacing={3}>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -197,14 +215,24 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                   <Box component="form" onSubmit={handleSubmit} noValidate>
                     {alert && (
                       <Box sx={{ mb: 3 }}>
-                        <Alert severity={alert.type} onClose={() => setAlert(null)}>
-                          <AlertTitle>{alert.type === "success" ? "Success" : "Error"}</AlertTitle>
+                        <Alert
+                          severity={alert.type}
+                          onClose={() => setAlert(null)}
+                        >
+                          <AlertTitle>
+                            {alert.type === "success" ? "Success" : "Error"}
+                          </AlertTitle>
                           {alert.message}
                         </Alert>
                       </Box>
                     )}
                     <Grid container spacing={2}>
-                      <Typography variant="body1" sx={{fontWeight: 'bold', ml: 2}}>Rate us</Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: "bold", ml: 2 }}
+                      >
+                        Rate us
+                      </Typography>
                       <Grid item xs={12}>
                         <FormControl component="fieldset" fullWidth>
                           <Rating
@@ -251,21 +279,25 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
               </CardContent>
             </Card>
           </Box>
-          <Typography variant="h4" align="center" sx={{ mt: 3 }}>
-            Feedback
+          <Typography variant="h4" align="center" sx={{ mt: 3, mb: 3 }}>
+            Feedback from other users
           </Typography>
           <Box sx={{ mx: 3, mb: 3 }}>
             {feedbackList.map((feedback) => (
               <Card key={feedback._id} sx={{ mb: 3 }}>
                 <CardContent>
-                  <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", paddingBottom: "10px" }}>
                     <Avatar
                       alt={feedback.name}
                       src={feedback.userId.profilePicture}
                     />
                     <Typography variant="h6">{feedback.name}</Typography>
                   </Stack>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 2, mb: 2 }}
+                    color="text.secondary"
+                  >
                     {feedback.comments}
                   </Typography>
                   <Rating value={feedback.rating} readOnly />
@@ -276,7 +308,9 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                     >
                       <ThumbUpIcon
                         color={
-                          feedback.likes.includes(localStorage.getItem("userId"))
+                          feedback.likes.includes(
+                            localStorage.getItem("userId")
+                          )
                             ? "primary"
                             : "inherit"
                         }
@@ -287,21 +321,41 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                     </Typography>
                   </Stack>
                   <Box>
-                    {feedback.feedbackComments.map((comment: FeedbackComment) => (
-                      <Box key={comment._id} sx={{ mt: 2 }}>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar
-                        alt={comment.userId.name}
-                        src={comment.userId.profilePicture}
-                        />
-                        <Typography variant="body2">
-                        {comment.comment}
-                        </Typography>
-                      </Stack>
-                      </Box>
-                    ))}
+                    {feedback.feedbackComments.map(
+                      (comment: FeedbackComment) => (
+                        <Box key={comment._id} sx={{ mt: 2, border: "1px solid", borderColor: "divider", borderRadius: "5px", padding: "10px" }}>
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="center"
+                          >
+                            <Avatar
+                              alt={comment.userId.name}
+                              src={comment.userId.profilePicture}
+                            />
+                            <Typography variant="body2">
+                              {comment.comment}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      )
+                    )}
                   </Box>
-                  <Box component="form" onSubmit={() => handleCommentSubmit(feedback._id)} noValidate sx={{ mt: 2 }}>
+                  <Box
+                    component="form"
+                    onSubmit={() => handleCommentSubmit(feedback._id)}
+                    noValidate
+                    sx={{
+                      mt: 2,
+                      mb: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: "5px",
+                      padding: "10px",
+                    }}
+                  >
                     <TextField
                       placeholder="Add a comment"
                       variant="outlined"
