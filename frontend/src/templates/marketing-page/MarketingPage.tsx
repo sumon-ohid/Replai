@@ -18,6 +18,72 @@ import Typography from '@mui/material/Typography';
 import AiCard from './components/AiCard';
 import { Policy } from '@mui/icons-material';
 import { Box, fontStyle } from '@mui/system';
+import Grid from '@mui/material/Grid';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import tiredImg from '../../assets/Tiredness.svg';
+import foundAppImg from '../../assets/ChatBot.svg';
+import registeredImg from '../../assets/happy.svg';
+import happyImg from '../../assets/holiday.svg';
+import Container from '@mui/material/Container';
+
+const UserJourney = () => (
+  <Box sx={{ py: 8, bgcolor: 'background.default' }}>
+    <Container maxWidth="lg">
+      <Typography variant="h6" align="center" gutterBottom sx={{ mb: 6 }}>
+        How It Works?
+      </Typography>
+      <Grid container spacing={4} alignItems="center" justifyContent="center" direction={{ xs: 'column', md: 'row' }} wrap="nowrap">
+        {[
+          { image: tiredImg, label: 'Tired of manual work' },
+          { image: foundAppImg, label: 'AI Automation Magic' },
+          { image: registeredImg, label: 'No more email to reply' },
+          { image: happyImg, label: 'Do things you love' }
+        ].map((step, index) => (
+          <React.Fragment key={step.label}>
+            <Grid item>
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                transition: 'transform 0.3s',
+                '&:hover': { transform: 'scale(1.05)' }
+              }}>
+                <Box
+                  component="img"
+                  src={step.image}
+                  alt={step.label}
+                  sx={{
+                    width: 160,
+                    height: 160,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: 4,
+                    borderColor: 'primary.main',
+                    boxShadow: 3,
+                    m: 2
+                  }}
+                />
+                <Typography variant="body1" align="center" sx={{ maxWidth: 200 }}>
+                  {step.label}
+                </Typography>
+              </Box>
+            </Grid>
+            {index < 3 && (
+              <Grid item sx={{ 
+                display: { xs: 'none', md: 'block' }, 
+                mx: { md: -4 },
+                color: 'text.secondary'
+              }}>
+                <ArrowForwardIosIcon sx={{ fontSize: 40 }} />
+              </Grid>
+            )}
+          </React.Fragment>
+        ))}
+      </Grid>
+      {/* <Divider sx={{ my: 8 }} /> */}
+    </Container>
+  </Box>
+);
 
 export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
   return (
@@ -31,6 +97,7 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         {/* <Divider /> */}
         {/* <Divider />
         <Highlights /> */}
+        <UserJourney />
         <AiCard />
         <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
           Powered by powerful AI
