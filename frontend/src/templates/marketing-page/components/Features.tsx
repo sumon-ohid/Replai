@@ -10,6 +10,7 @@ import { styled } from '@mui/material/styles';
 import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded';
 import EdgesensorHighRoundedIcon from '@mui/icons-material/EdgesensorHighRounded';
 import ViewQuiltRoundedIcon from '@mui/icons-material/ViewQuiltRounded';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 const items = [
   {
@@ -17,25 +18,25 @@ const items = [
     title: 'Dashboard',
     description:
       'We provide a beautify and easy to use dashboard for you to monitor your data.',
-    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/ai-train-light.png?token=GHSAT0AAAAAAC4GQMQGVQHAYGBDN2BPAV6IZ52DGHA")`,
-    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/ai-train-dark.png?token=GHSAT0AAAAAAC4GQMQG3RGIH4U6V3WKKOB6Z52DFZQ")`,
+    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dash-light.png?token=GHSAT0AAAAAAC4GQMQGM4HDV4XPFY36N5QAZ52DNAQ")`,
+    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dash-dark.png?token=GHSAT0AAAAAAC4GQMQHIMWMGH7PAVRYXMMCZ52DM2A")`,
   },
   {
-    icon: <EdgesensorHighRoundedIcon />,
-    title: 'Mobile integration',
+    icon: <AutoFixHighIcon />,
+    title: 'Custom AI Training',
     description:
-      'This item could provide information about the mobile app version of the product.',
+      'Train your AI with text input, file and website. We use the latest encryption technology to keep your data safe.',
     imageLight: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/mobile-light.png")`,
     imageDark: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/mobile-dark.png")`,
   },
-  {
-    icon: <DevicesRoundedIcon />,
-    title: 'Available on all platforms',
-    description:
-      'This item could let users know the product is available on all platforms, such as web, mobile, and desktop.',
-    imageLight: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/devices-light.png")`,
-    imageDark: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/devices-dark.png")`,
-  },
+  // {
+  //   icon: <DevicesRoundedIcon />,
+  //   title: 'Available on all platforms',
+  //   description:
+  //     'This item could let users know the product is available on all platforms, such as web, mobile, and desktop.',
+  //   imageLight: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/devices-light.png")`,
+  //   imageDark: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/devices-dark.png")`,
+  // },
 ];
 
 interface ChipProps {
@@ -102,6 +103,7 @@ export function MobileLayout({
             mb: 2,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
             minHeight: 280,
             backgroundImage: 'var(--items-imageLight)',
             ...theme.applyStyles('dark', {
@@ -251,6 +253,8 @@ export default function Features() {
                 width: 420,
                 height: 500,
                 backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
                 backgroundImage: 'var(--items-imageLight)',
                 ...theme.applyStyles('dark', {
                   backgroundImage: 'var(--items-imageDark)',
