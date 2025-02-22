@@ -77,7 +77,7 @@ function a11yProps(index: number) {
 export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [tabValue, setTabValue] = useState(0);
   const { user, updateProfilePicture } = useAuth();
-  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+  const [profilePicture, setProfilePicture] = useState(user?.profilePicture || `https://easy-email-production.up.railway.app${user?.profilePicture}`);
   const [alertVisible, setAlertVisible] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
