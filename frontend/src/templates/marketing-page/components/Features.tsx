@@ -17,8 +17,8 @@ const items = [
     title: 'Dashboard',
     description:
       'This item could provide a snapshot of the most important metrics or data points related to the product.',
-    imageLight: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/dash-light.png")`,
-    imageDark: `url("${import.meta.env.VITE_TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/dash-dark.png")`,
+    imageLight: `url("../../../assets/dashboard-light.png")`,
+    imageDark: `url("../../../assets/dashboard-dark.png")`,
   },
   {
     icon: <EdgesensorHighRoundedIcon />,
@@ -151,15 +151,16 @@ export default function Features() {
           gutterBottom
           sx={{ color: 'text.primary' }}
         >
-          Product features
+          Features
         </Typography>
         <Typography
           variant="body1"
           sx={{ color: 'text.secondary', mb: { xs: 2, sm: 4 } }}
         >
-          Provide a brief overview of the key features of the product. For example,
-          you could list the number of features, their types or benefits, and
-          add-ons.
+          We provide a beautify and easy to use dashboard for you to monitor your data.
+          You can access it from any device, anywhere. In addition, you see AI sent emails,
+          connected accounts, AI training with text input, file and website. We use the latest
+          encryption technology to keep your data safe.
         </Typography>
       </Box>
       <Box
