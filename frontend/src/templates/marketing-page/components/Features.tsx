@@ -105,6 +105,9 @@ export function MobileLayout({
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             minHeight: 280,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
             backgroundImage: 'var(--items-imageLight)',
             ...theme.applyStyles('dark', {
               backgroundImage: 'var(--items-imageDark)',
@@ -235,7 +238,6 @@ export default function Features() {
           sx={{
             display: { xs: 'none', sm: 'flex' },
             width: { xs: '100%', md: '70%' },
-            height: 'var(--items-image-height)',
           }}
         >
           <Card
@@ -251,10 +253,13 @@ export default function Features() {
               sx={(theme) => ({
                 m: 'auto',
                 width: 420,
-                height: 500,
+                height: '100%',
                 backgroundSize: 'contain',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
                 backgroundImage: 'var(--items-imageLight)',
                 ...theme.applyStyles('dark', {
                   backgroundImage: 'var(--items-imageDark)',
