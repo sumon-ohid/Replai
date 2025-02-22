@@ -84,11 +84,12 @@ export default function GetConnectedEmails() {
 
   const columns: GridColDef[] = [
     { field: 'email', headerName: 'Email', flex: 1 },
-    { field: 'provider', headerName: 'Provider', flex: 1 },
+    // { field: 'provider', headerName: 'Provider', flex: 1 },
     {
       field: 'delete',
       headerName: 'Delete',
       sortable: false,
+      width: 100,
       renderCell: (params: GridRenderCellParams) => (
         <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteEmail(params.row.email)}>
           <DeleteIcon />
@@ -124,7 +125,7 @@ export default function GetConnectedEmails() {
           </Box>
         </Box>
         {connectedEmails.length > 0 ? (
-          <Box sx={{ height: 400, width: '100%', overflowX: 'auto' }}>
+          <Box sx={{ height: 400, width: '100%', overflowX: 'auto', overflowY: 'auto' }}>
             <DataGrid
               rows={filteredEmails}
               columns={columns}
@@ -132,7 +133,6 @@ export default function GetConnectedEmails() {
               paginationMode="server"
               rowCount={100}
               disableRowSelectionOnClick
-              autoHeight
             />
           </Box>
         ) : (

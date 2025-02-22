@@ -2,9 +2,10 @@ import * as React from 'react';
 import { DataGrid, GridColDef, GridRowsProp } from '@mui/x-data-grid';
 import axios from 'axios';
 import { columns } from '../internals/data/gridData';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, useTheme } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, useTheme, TextField, Box } from '@mui/material';
 import { Container } from '@mui/system';
 import { Card, CardContent, CardActions, Divider } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -75,8 +76,10 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({ open, onClose, em
 
 export default function CustomizedDataGrid() {
   const [rows, setRows] = React.useState<EmailRow[]>([]);
+  const [filteredRows, setFilteredRows] = React.useState<EmailRow[]>([]);
   const [selectedEmail, setSelectedEmail] = React.useState<EmailRow | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [search, setSearch] = React.useState<string>('');
 
   React.useEffect(() => {
     const fetchEmails = async () => {
@@ -104,6 +107,7 @@ export default function CustomizedDataGrid() {
         }));
 
         setRows(formattedEmails);
+        setFilteredRows(formattedEmails);
       } catch (error) {
         console.error('Error fetching emails:', error);
       }
@@ -123,13 +127,38 @@ export default function CustomizedDataGrid() {
     setSelectedEmail(null);
   };
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toLowerCase();
+    setSearch(value);
+    const filtered = rows.filter(row =>
+      row.subject.toLowerCase().includes(value) ||
+      row.from.toLowerCase().includes(value) ||
+      row.to.toLowerCase().includes(value) ||
+      row.content.toLowerCase().includes(value)
+    );
+    setFilteredRows(filtered);
+  };
+
   return (
     <>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <TextField
+          placeholder="Search"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={handleSearchChange}
+          sx={{ flexGrow: 1, mr: 2 }}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: .5 }}>
+            <SearchIcon />
+        </Box>
+      </Box>
       <DataGrid
-        rows={rows}
+        rows={filteredRows}
         columns={columns}
         pagination={true}
-        rowCount={rows.length}
+        rowCount={filteredRows.length}
         getRowClassName={(params) =>
           params.indexRelativeToCurrentPage % 2 === 0 ? 'even' : 'odd'
         }
