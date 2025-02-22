@@ -43,8 +43,10 @@ router.get('/google/callback', async (req, res) => {
       user = new User({ googleId: id, email, name, profilePicture: picture });
     } else {
       user.googleId = id;
-      user.name = name;
-      user.profilePicture = picture;
+      if (!user.name)
+        user.name = name;
+      if (!user.profilePicture)
+        user.profilePicture = picture;
     }
     await user.save();
 

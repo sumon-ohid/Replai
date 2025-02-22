@@ -92,7 +92,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
       if (fileUrl.includes('http://') || fileUrl.includes('https://')) {
         setProfilePicture(fileUrl);
       } else {
-        fileUrl = import.meta.env.VITE_API_BASE_URL + fileUrl;
+        fileUrl = 'https://easy-email-production.up.railway.app' + fileUrl;
         setProfilePicture(URL.createObjectURL(file));
       }
       await updateProfilePicture(file);
