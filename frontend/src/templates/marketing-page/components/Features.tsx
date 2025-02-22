@@ -277,6 +277,7 @@ export default function Features() {
                   ...theme.applyStyles('dark', {
                     backgroundImage: 'var(--items-imageDark)',
                   }),
+                  borderRadius: 1,
                 })}
                 style={{
                   '--items-imageLight': items[selectedItemIndex].imageLight,
