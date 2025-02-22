@@ -126,10 +126,10 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
         ...prevComments,
         [feedbackId]: "",
       }));
-      setAlert({ type: "success", message: "Comment submitted successfully!" });
+      // setAlert({ type: "success", message: "Comment submitted successfully!" });
     } catch (error) {
       console.error("Error submitting comment:", error);
-      setAlert({ type: "error", message: "Error submitting comment." });
+      // setAlert({ type: "error", message: "Error submitting comment." });
     }
   };
 
