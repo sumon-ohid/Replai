@@ -21,7 +21,7 @@ import { Box, fontStyle } from "@mui/system";
 import Grid from "@mui/material/Grid2";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import tiredImg from "../../assets/Tiredness.svg";
-import foundAppImg from "../../assets/ChatBot.svg";
+import foundAppImg from "../../assets/Chatbot.svg";
 import registeredImg from "../../assets/happy.svg";
 import happyImg from "../../assets/holiday.svg";
 import Container from "@mui/material/Container";
