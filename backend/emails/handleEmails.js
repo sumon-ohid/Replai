@@ -160,16 +160,18 @@ Guidelines:
 - Sign with "Best regards, ${userName}"
 - Avoid markdown formatting`;
 
-        let prompt = userPrompt + defaultPrompt;
+        // let prompt = userPrompt + defaultPrompt;
 
-        // Limit prompt to 500 characters take last 500 characters
-        if (prompt.length > 500)
-          prompt = prompt.slice(prompt.length - 500);
+        // // Limit prompt to 500 characters take last 500 characters
+        // if (prompt.length > 500)
+        //   prompt = prompt.slice(prompt.length - 500);
 
-        if (!prompt) {
-          console.log('No prompt found. Using default prompt.');
-          prompt = defaultPrompt;
-        }
+        // if (!prompt) {
+        //   console.log('No prompt found. Using default prompt.');
+        //   prompt = defaultPrompt;
+        // }
+
+        const prompt = defaultPrompt;
 
         const aiRes = await model.generateContent(prompt);
         const responseText = aiRes.response.text();
