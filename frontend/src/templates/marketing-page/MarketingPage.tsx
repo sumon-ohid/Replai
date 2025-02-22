@@ -58,7 +58,7 @@ const UserJourney = () => (
                     borderRadius: '50%',
                     objectFit: 'cover',
                     border: 4,
-                    borderColor: 'primary.main',
+                    borderColor: 'background.paper',
                     boxShadow: 3,
                     m: 2
                   }}
@@ -97,7 +97,9 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
         {/* <Divider /> */}
         {/* <Divider />
         <Highlights /> */}
-        <UserJourney />
+        
+        {/* <UserJourney /> */}
+
         <AiCard />
         <Typography variant="h6" align="center" gutterBottom sx={{ mt: -6, mb: 3, fontWeight: 'normal', fontSize: '.8rem' }}>
           Powered by powerful AI
