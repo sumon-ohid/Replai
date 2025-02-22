@@ -14,6 +14,11 @@ router.get('/me', auth, async (req, res) => {
     const userId = req.user._id;
     const user = await User.findById(userId).select('name email profilePicture');
 
+    // if user picture contains http, then it is a google picture
+    if (user.profilePicture) {
+      user.profilePicture = user.profilePicture.includes('http') ? user.profilePicture : `${process.env.VITE_API_BASE_URL}${user.profilePicture}`;
+    }
+
     if (!user) {
       return res.status(404).send('User not found');
     }
