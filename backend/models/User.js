@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: function () {
     return !this.googleId; // Password is required if the user is not authenticated with Google
   }},
-  profilePicture: { type: String, default: '' },
+  profilePicture: { type: String },
   connectedEmails: [
     {
       email: { type: String, required: true },

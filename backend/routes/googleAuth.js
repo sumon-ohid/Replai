@@ -36,14 +36,15 @@ router.get('/google/callback', async (req, res) => {
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const googleUser = await oauth2.userinfo.get();
-    const { id, email, name } = googleUser.data;
+    const { id, email, name, picture } = googleUser.data;
 
     let user = await User.findOne({ email });
     if (!user) {
-      user = new User({ googleId: id, email, name });
+      user = new User({ googleId: id, email, name, profilePicture: picture });
     } else {
       user.googleId = id;
       user.name = name;
+      user.profilePicture = picture;
     }
     await user.save();
 
