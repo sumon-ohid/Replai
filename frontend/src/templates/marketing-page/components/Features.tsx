@@ -16,9 +16,9 @@ const items = [
     icon: <ViewQuiltRoundedIcon />,
     title: 'Dashboard',
     description:
-      'This item could provide a snapshot of the most important metrics or data points related to the product.',
-    imageLight: `url("../../../assets/dashboard-light.png")`,
-    imageDark: `url("../../../assets/dashboard-dark.png")`,
+      'We provide a beautify and easy to use dashboard for you to monitor your data.',
+    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dashboard-light.png?token=GHSAT0AAAAAAC4GQMQG6ZMOEQ77XRJXPPOIZ52CBOA")`,
+    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dashboard-dark.png?token=GHSAT0AAAAAAC4GQMQH6KY53AO5HOOTHMZWZ52CBAQ")`,
   },
   {
     icon: <EdgesensorHighRoundedIcon />,
