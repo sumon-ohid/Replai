@@ -11,6 +11,10 @@ import DevicesRoundedIcon from '@mui/icons-material/DevicesRounded';
 import EdgesensorHighRoundedIcon from '@mui/icons-material/EdgesensorHighRounded';
 import ViewQuiltRoundedIcon from '@mui/icons-material/ViewQuiltRounded';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ailight from '../../../assets/aitrain-light.png';
+import aidark from '../../../assets/aitrain-dark.png';
+import dashlight from '../../../assets/dash-light.png';
+import dashdark from '../../../assets/dash-dark.png';
 
 const items = [
   {
@@ -18,16 +22,16 @@ const items = [
     title: 'Dashboard',
     description:
       'We provide a beautify and easy to use dashboard for you to monitor your data.',
-    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dash-light.png?token=GHSAT0AAAAAAC4GQMQGM4HDV4XPFY36N5QAZ52DNAQ")`,
-    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/dash-dark.png?token=GHSAT0AAAAAAC4GQMQHIMWMGH7PAVRYXMMCZ52DM2A")`,
+    imageLight: `url(${dashlight})`,
+    imageDark: `url(${dashdark})`,
   },
   {
     icon: <AutoFixHighIcon />,
     title: 'Custom AI Training',
     description:
       'Train your AI with text input, file and website. We use the latest encryption technology to keep your data safe.',
-    imageLight: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/aitrain-light.png?token=GHSAT0AAAAAAC4GQMQHAYSEBR25GQBQ5XQAZ52DUUQ")`,
-    imageDark: `url("https://raw.githubusercontent.com/sumon-ohid/Email-Agent/refs/heads/main/frontend/src/assets/aitrain-dark.png?token=GHSAT0AAAAAAC4GQMQG25PAKJQSRREZHYSOZ52DUQQ")`,
+    imageLight: `url(${ailight})`,
+    imageDark: `url(${aidark})`,
   },
   // {
   //   icon: <DevicesRoundedIcon />,
@@ -107,7 +111,6 @@ export function MobileLayout({
             minHeight: 280,
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 2,
             backgroundImage: 'var(--items-imageLight)',
             ...theme.applyStyles('dark', {
               backgroundImage: 'var(--items-imageDark)',
@@ -238,6 +241,7 @@ export default function Features() {
           sx={{
             display: { xs: 'none', sm: 'flex' },
             width: { xs: '100%', md: '70%' },
+            height: 'var(--items-image-height)',
           }}
         >
           <Card
@@ -259,7 +263,6 @@ export default function Features() {
                 backgroundRepeat: 'no-repeat',
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: 2,
                 backgroundImage: 'var(--items-imageLight)',
                 ...theme.applyStyles('dark', {
                   backgroundImage: 'var(--items-imageDark)',
