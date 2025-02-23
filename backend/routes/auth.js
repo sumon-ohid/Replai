@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js"; // Adjust the import path as needed
 import Token from "../models/Token.js"; // Import the Token model
@@ -51,7 +51,7 @@ router.post("/register", async (req, res) => {
 
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-        <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
         <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
@@ -64,7 +64,7 @@ router.post("/register", async (req, res) => {
         <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
         support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
-        <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
+        <p style="color: #777;">You're receiving this email because you signed up for an account on Replai.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
       </div>
     `;
@@ -72,7 +72,7 @@ router.post("/register", async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Verify Your Email - Email Agent",
+      subject: "Verify Your Email - Replai",
       html: emailHTML,
     };
 
@@ -164,10 +164,10 @@ router.get("/verify-email", async (req, res) => {
       </head>
       <body>
         <div class="container">
-          <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">
+          <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">
           <h2>Email Verified Successfully!</h2>
           <p class="message">Your email has been successfully verified. You can now log in to your account.</p>
-          <a href="https://email-agent.up.railway.app/signin" class="btn">Go to Login</a>
+          <a href="https://replai.tech/signin" class="btn">Go to Login</a>
         </div>
       </body>
       </html>
@@ -231,7 +231,7 @@ router.post("/resend-verification", async (req, res) => {
 
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-        <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
         <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
@@ -244,7 +244,7 @@ router.post("/resend-verification", async (req, res) => {
         <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
         support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
-        <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
+        <p style="color: #777;">You're receiving this email because you signed up for an account on Replai.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
       </div>
     `;
@@ -252,7 +252,7 @@ router.post("/resend-verification", async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Verify Your Email - Email Agent",
+      subject: "Verify Your Email - Replai",
       html: emailHTML,
     };
 
@@ -293,7 +293,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const emailHTML = `
     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-      <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+      <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
       <h2 style="color: #333;">Forgot password?</h2>
       <p style="color: #555;">Click the button below to set new password.</p>
       <a href="${resetLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Reset password</a>
@@ -306,7 +306,7 @@ router.post("/forgot-password", async (req, res) => {
       <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
       support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
       <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
-      <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
+      <p style="color: #777;">You're receiving this email because you signed up for an account on Replai.</p>
       <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
     </div>
   `;
@@ -314,7 +314,7 @@ router.post("/forgot-password", async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Password Reset - Email Agent",
+      subject: "Password Reset - Replai",
       html: emailHTML,
     };
 
@@ -416,7 +416,7 @@ router.get("/reset-password", async (req, res) => {
 </head>
 <body>
     <div class="container">
-        <img src="https://email-agent.up.railway.app/logo/logo_light.png" alt="Email Agent" style="width: 200px; height: 60px; margin-bottom: 20px;">
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">
         <h2>Reset Your Password</h2>
         <input type="password" id="password" placeholder="New Password" required>
         <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
@@ -453,7 +453,7 @@ router.get("/reset-password", async (req, res) => {
                 if (response.ok) {
                     messageElement.style.color = "green";
                     messageElement.textContent = "Password reset successfully! Redirecting...";
-                    setTimeout(() => { window.location.href = "https://email-agent.up.railway.app/signin"; }, 2000);
+                    setTimeout(() => { window.location.href = "https://replai.tech/signin"; }, 2000);
                 } else {
                     messageElement.textContent = data.message || "Error resetting password.";
                 }

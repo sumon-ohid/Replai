@@ -41,10 +41,10 @@ app.set('trust proxy', true);
 
 const allowedOrigins = [
   "http://localhost:5173", // For local development
-  "https://email-agent.up.railway.app", // For production
   "http://localhost:3000", // For test
   `${process.env.FRONTEND_URL}`,
   `${process.env.VITE_API_BASE_URL}`,
+  "https://replai.tech",
 ];
 
 app.use(
