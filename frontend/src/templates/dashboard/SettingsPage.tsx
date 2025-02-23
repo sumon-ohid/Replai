@@ -31,6 +31,10 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from '@mui/material';
 import Footer from '../marketing-page/components/Footer';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -41,6 +45,8 @@ import Info from '@mui/icons-material/Info';
 import { Tooltip } from '@mui/material';
 import { useAuth } from '../../AuthContext';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -51,12 +57,12 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-// Helper component for Tab Panels
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
+
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
@@ -71,6 +77,7 @@ function TabPanel(props: TabPanelProps) {
     </div>
   );
 }
+
 function a11yProps(index: number) {
   return {
     id: `settings-tab-${index}`,
@@ -90,23 +97,17 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deletionStatus, setDeletionStatus] = useState<'idle' | 'deleting' | 'success' | 'error'>('idle');
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
+    if (event.target.files?.[0]) {
       const file = event.target.files[0];
-      let fileUrl = URL.createObjectURL(file);
-      // if url contain http or https, it is a valid url
-      if (fileUrl.includes('http://') || fileUrl.includes('https://')) {
-        setProfilePicture(fileUrl);
-      } else {
-        fileUrl = 'https://easy-email-production.up.railway.app' + fileUrl;
-        setProfilePicture(URL.createObjectURL(file));
-      }
+      setProfilePicture(URL.createObjectURL(file));
       await updateProfilePicture(file);
     }
   };
@@ -114,84 +115,54 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const handleProfileChange = async () => {
     try {
       await updateUserName(fullName);
-      setAlertMessage('Profile updated successfully');
-      setAlertType('success');
+      showAlert('Profile updated successfully', 'success');
     } catch (error) {
-      setAlertMessage('Error updating profile');
-      setAlertType('error');
+      showAlert('Error updating profile', 'error');
     }
-    setAlertVisible(true);
-    window.setTimeout(() => {
-      setAlertVisible(false);
-      window.location.reload();
-    }, 2000);
   };
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmNewPassword) {
-      setAlertMessage('New passwords do not match');
-      setAlertType('error');
-      setAlertVisible(true);
+      showAlert('New passwords do not match', 'error');
       return;
     }
     try {
       await updatePassword(currentPassword, newPassword);
-      setAlertMessage('Password updated successfully');
-      setAlertType('success');
+      showAlert('Password updated successfully', 'success');
     } catch (error) {
-      setAlertMessage('Error updating password');
-      setAlertType('error');
+      showAlert('Error updating password', 'error');
     }
-    setAlertVisible(true);
-    window.setTimeout(() => {
-      setAlertVisible(false);
-    }, 2000);
   };
 
-  const handleEmailChange = () => {
-    setAlertMessage('Email cannot be changed');
-    setAlertType('error');
+  const showAlert = (message: string, type: 'success' | 'error') => {
+    setAlertMessage(message);
+    setAlertType(type);
     setAlertVisible(true);
-    window.setTimeout(() => {
-      setAlertVisible(false);
-    }, 2000);
+    setTimeout(() => setAlertVisible(false), 2000);
   };
 
   const handleDeleteAccount = async () => {
-    setIsDeleting(true);
+    setDeletionStatus('deleting');
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No token found');
-      }
+      if (!token) throw new Error('No token found');
+      
       const response = await fetch(`${apiBaseUrl}/api/user/account/delete`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
-      }
+      if (!response.ok) throw new Error('Failed to delete account');
 
-      setAlertMessage('Account deleted successfully');
-      setAlertType('success');
-      setTimeout(() => {
-        // Redirect to login or home page after deletion
-        window.location.href = '/';
-      }, 2000);
+      setDeletionStatus('success');
+      setTimeout(() => (window.location.href = '/'), 2000);
     } catch (error) {
-      setAlertMessage('Error deleting account');
-      setAlertType('error');
-    } finally {
-      setIsDeleting(false);
-      setAlertVisible(true);
-      setTimeout(() => {
-        setAlertVisible(false);
-      }, 2000);
+      setDeletionStatus('error');
+      setTimeout(() => setDeletionStatus('idle'), 2000);
     }
   };
+
+  const isDarkMode = localStorage.getItem("mui-mode") === "dark";
 
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
@@ -199,7 +170,6 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
       <Box sx={{ display: 'flex' }}>
         <SideMenu />
         <AppNavbar />
-        {/* Main content */}
         <Box
           component="main"
           sx={(theme) => ({
@@ -236,23 +206,12 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                 variant="fullWidth"
                 sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
               >
-                <Tab
-                  icon={<PersonIcon />}
-                  label="Profile"
-                  {...a11yProps(0)}
-                />
-                <Tab
-                  icon={<LockIcon />}
-                  label="Security"
-                  {...a11yProps(1)}
-                />
-                <Tab
-                  icon={<PaymentIcon />}
-                  label="Billing"
-                  {...a11yProps(2)}
-                />
+                <Tab icon={<PersonIcon />} label="Profile" {...a11yProps(0)} />
+                <Tab icon={<LockIcon />} label="Security" {...a11yProps(1)} />
+                <Tab icon={<PaymentIcon />} label="Billing" {...a11yProps(2)} />
               </Tabs>
             </Paper>
+
             {/* Profile Tab */}
             <TabPanel value={tabValue} index={0}>
               <Card sx={{ mt: 2 }}>
@@ -269,7 +228,6 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     />
                     <TextField
                       value={email}
-                      onChange={handleEmailChange}
                       variant="outlined"
                       fullWidth
                       disabled
@@ -283,32 +241,22 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     </Box>
                     <Box>
                       <Divider sx={{ my: 2 }} />
-                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                         Account Deletion
                         <Info sx={{ ml: 1, fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="black" sx={{ ml: 1, bgcolor: 'grey.400', pl: 1, pr: 1, pt: .5, pb: .5, borderRadius: 5, fontSize: 10 }}>
-                          Deleting your account will remove all your data and you will be logged out.
+                        <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
+                          Deleting your account will remove all data permanently
                         </Typography>
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        To delete your account, click the button below.
-                      </Typography>
-                      <Tooltip title="This action is irreversible. All your data will be lost." placement="right" color="error">
-                        <Button
-                          variant="contained"
-                          color="error"
-                          sx={{ mt: 1 }}
-                          onClick={handleDeleteAccount}
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <CircularProgress size={24} sx={{ color: 'white', mr: 1 }} />
-                          ) : (
-                            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
-                          )}
-                          Delete Account
-                        </Button>
-                      </Tooltip>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ mt: 1 }}
+                        onClick={() => setOpenDeleteDialog(true)}
+                        startIcon={<DeleteIcon />}
+                      >
+                        Delete Account
+                      </Button>
                     </Box>
                     <Button variant="contained" color="primary" onClick={handleProfileChange}>
                       Save Profile
@@ -318,6 +266,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                 </CardContent>
               </Card>
             </TabPanel>
+
             {/* Security Tab */}
             <TabPanel value={tabValue} index={1}>
               <Card sx={{ mt: 2 }}>
@@ -329,26 +278,26 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                     <TextField
                       placeholder="Current Password"
                       type="password"
-                      variant="outlined"
-                      fullWidth
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
+                      variant="outlined"
+                      fullWidth
                     />
                     <TextField
                       placeholder="New Password"
                       type="password"
-                      variant="outlined"
-                      fullWidth
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
+                      variant="outlined"
+                      fullWidth
                     />
                     <TextField
                       placeholder="Confirm New Password"
                       type="password"
-                      variant="outlined"
-                      fullWidth
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      variant="outlined"
+                      fullWidth
                     />
                     <Button variant="contained" color="primary" onClick={handlePasswordChange}>
                       Update Password
@@ -358,41 +307,161 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                 </CardContent>
               </Card>
             </TabPanel>
+
             {/* Billing Tab */}
             <TabPanel value={tabValue} index={2}>
               <Card sx={{ mt: 2 }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Card Details
+                    Billing Information
                   </Typography>
                   <Stack spacing={2}>
                     <TextField placeholder="Card Number" variant="outlined" fullWidth />
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                      <TextField
-                        placeholder="Expiry Date MM/YY"
-                        variant="outlined"
-                        fullWidth
-                      />
+                      <TextField placeholder="Expiry Date" variant="outlined" fullWidth />
                       <TextField placeholder="CVV" variant="outlined" fullWidth />
                     </Box>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Billing Address
-                    </Typography>
-                    <TextField placeholder="Address" variant="outlined" fullWidth />
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <TextField placeholder="City" variant="outlined" fullWidth />
-                      <TextField placeholder="Zip Code" variant="outlined" fullWidth />
-                    </Box>
-                    <TextField placeholder="Country" variant="outlined" fullWidth />
                     <Button variant="contained" color="primary">
-                      Update Billing Details
+                      Update Payment Method
                     </Button>
                   </Stack>
                 </CardContent>
               </Card>
             </TabPanel>
           </Box>
+
+          {/* Delete Account Dialog */}
+          <Dialog
+            open={openDeleteDialog}
+            onClose={() => deletionStatus === 'idle' && setOpenDeleteDialog(false)}
+            aria-labelledby="delete-account-dialog"
+          >
+            <DialogTitle id="delete-account-dialog" sx={{ backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
+              {deletionStatus === 'success' ? 'Account Deleted' : 
+              deletionStatus === 'error' ? 'Deletion Error' : 'Confirm Account Deletion'}
+            </DialogTitle>
+            <DialogContent sx={{ backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                {deletionStatus === 'deleting' ? (
+                  <>
+                    <CircularProgress 
+                      size={80} 
+                      thickness={4}
+                      sx={{ 
+                        color: 'primary.main',
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                        '@keyframes pulse': {
+                          '0%': { transform: 'scale(1)', opacity: 1 },
+                          '50%': { transform: 'scale(1.1)', opacity: 0.7 },
+                          '100%': { transform: 'scale(1)', opacity: 1 },
+                        }
+                      }}
+                    />
+                    <Typography variant="h6" sx={{ mt: 3 }}>
+                      Securely Deleting Your Data...
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                      This may take a few moments. Please don't close this window.
+                    </Typography>
+                  </>
+                ) : deletionStatus === 'success' ? (
+                  <>
+                    <CheckCircleIcon 
+                      sx={{ 
+                        fontSize: 80, 
+                        color: 'success.main',
+                        animation: 'scaleUp 0.5s ease-in-out',
+                        '@keyframes scaleUp': {
+                          '0%': { transform: 'scale(0)', opacity: 0 },
+                          '100%': { transform: 'scale(1)', opacity: 1 },
+                        }
+                      }}
+                    />
+                    <Typography variant="h6" sx={{ mt: 3 }}>
+                      Account Successfully Deleted!
+                    </Typography>
+                  </>
+                ) : deletionStatus === 'error' ? (
+                  <>
+                    <ErrorIcon 
+                      sx={{ 
+                        fontSize: 80, 
+                        color: 'error.main',
+                        animation: 'shake 0.5s ease-in-out',
+                        '@keyframes shake': {
+                          '0%, 100%': { transform: 'translateX(0)' },
+                          '25%': { transform: 'translateX(-5px)' },
+                          '75%': { transform: 'translateX(5px)' },
+                        }
+                      }}
+                    />
+                    <Typography variant="h6" sx={{ mt: 3 }}>
+                      Failed to Delete Account
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Box sx={{ position: 'relative', width: 100, height: 100, mx: 'auto' }}>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          border: '3px solid',
+                          borderColor: 'error.main',
+                          animation: 'pulse 2s infinite',
+                          '@keyframes pulse': {
+                            '0%': { transform: 'scale(0.95)', opacity: 0.7 },
+                            '70%': { transform: 'scale(1.1)', opacity: 0.4 },
+                            '100%': { transform: 'scale(0.95)', opacity: 0.7 },
+                          }
+                        }}
+                      />
+                      <DeleteIcon 
+                        sx={{ 
+                          fontSize: 60, 
+                          color: 'error.main',
+                          position: 'absolute',
+                          left: '50%',
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="h6" sx={{ mt: 3 }}>
+                      Are You Absolutely Sure?
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                      This action cannot be undone. All your data will be permanently removed.
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ pb: 3, justifyContent: 'center', backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
+              {deletionStatus === 'idle' && (
+                <>
+                  <Button 
+                    onClick={() => setOpenDeleteDialog(false)} 
+                    variant="outlined" 
+                    sx={{ width: 120 }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleDeleteAccount}
+                    variant="contained" 
+                    color="error"
+                    sx={{ width: 120, ml: 2 }}
+                  >
+                    Confirm
+                  </Button>
+                </>
+              )}
+            </DialogActions>
+          </Dialog>
+
           <Footer />
         </Box>
       </Box>
