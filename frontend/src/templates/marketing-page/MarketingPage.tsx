@@ -78,8 +78,8 @@ const UserJourney = () => (
                     borderRadius: "50%",
                     objectFit: "cover",
                     border: 4,
-                    borderColor: "primary.main",
-                    boxShadow: 3,
+                    borderColor: "divider",
+                    // boxShadow: 3,
                     m: 2,
                   }}
                 />
@@ -101,7 +101,7 @@ const UserJourney = () => (
                   color: "text.secondary",
                 }}
               >
-                <ArrowForwardIosIcon sx={{ fontSize: 40 }} />
+                <ArrowForwardIosIcon sx={{ fontSize: 40, opacity: .4 }} />
               </Grid>
             )}
           </React.Fragment>
