@@ -7,9 +7,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
     ],
-    base: mode === 'production' ? 'https://easy-email-production.up.railway.app/' : '/',
+    base: mode === 'production' ? 'https://replai.tech/' : 'localhost:3000',
     server: {
-      allowedHosts: ['email-agent.up.railway.app', 'divine-forgiveness-production.up.railway.app'],
+      allowedHosts: ['email-agent.up.railway.app', 'divine-forgiveness-production.up.railway.app', 'localhost', 'replai.tech'],
     },
   };
 });
