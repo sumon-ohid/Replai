@@ -39,6 +39,7 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import Info from '@mui/icons-material/Info';
 import { Tooltip } from '@mui/material';
 import { useAuth } from '../../AuthContext';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -241,22 +242,23 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                       </Button>
                     </Box>
                     <Box>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Signature
-                        <Tooltip title="Your signature will be used for emails responses. (eg: Best Regards John Doe).
-                            If no signature provided your Full Name will be used." placement="right">
-                          <Info sx={{ ml: 1, fontSize: 18, color: 'text.secondary' }} />
-                        </Tooltip>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+                        Account Deletion
+                        <Info sx={{ ml: 1, fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="black" sx={{ ml: 1, bgcolor: 'grey.400', pl: 1, pr: 1, pt: .5, pb: .5, borderRadius: 5, fontSize: 10 }}>
+                          Deleting your account will remove all your data and you will be logged out.
+                        </Typography>
                       </Typography>
-                      {/* Replace with a signature canvas or upload component as needed */}
-                      <TextField
-                        placeholder="Type your full name"
-                        variant="outlined"
-                        fullWidth
-                      />
-                      <Button variant="contained" sx={{ mt: 1 }}>
-                        Update Signature
-                      </Button>
+                      <Typography variant="body2" color="textSecondary">
+                        To delete your account, click the button below.
+                      </Typography>
+                      <Tooltip title="This action is irreversible. All your data will be lost." placement="right" color="error">
+                        <Button variant="contained" color="error" sx={{ mt: 1}}>
+                          < DeleteIcon sx={{mr: 1, fontSize: 18}} />
+                          Delete Account
+                        </Button>
+                      </Tooltip>
                     </Box>
                     <Button variant="contained" color="primary" onClick={handleProfileChange}>
                       Save Profile
