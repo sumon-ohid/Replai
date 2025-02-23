@@ -29,7 +29,8 @@ import {
   TextField,
   Avatar,
   Divider,
-  Alert
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import Footer from '../marketing-page/components/Footer';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -40,6 +41,8 @@ import Info from '@mui/icons-material/Info';
 import { Tooltip } from '@mui/material';
 import { useAuth } from '../../AuthContext';
 import DeleteIcon from '@mui/icons-material/Delete';
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -87,6 +90,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -151,6 +155,42 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
     window.setTimeout(() => {
       setAlertVisible(false);
     }, 2000);
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await fetch(`${apiBaseUrl}/api/user/account/delete`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete account');
+      }
+
+      setAlertMessage('Account deleted successfully');
+      setAlertType('success');
+      setTimeout(() => {
+        // Redirect to login or home page after deletion
+        window.location.href = '/';
+      }, 2000);
+    } catch (error) {
+      setAlertMessage('Error deleting account');
+      setAlertType('error');
+    } finally {
+      setIsDeleting(false);
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 2000);
+    }
   };
 
   return (
@@ -254,8 +294,18 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                         To delete your account, click the button below.
                       </Typography>
                       <Tooltip title="This action is irreversible. All your data will be lost." placement="right" color="error">
-                        <Button variant="contained" color="error" sx={{ mt: 1}}>
-                          < DeleteIcon sx={{mr: 1, fontSize: 18}} />
+                        <Button
+                          variant="contained"
+                          color="error"
+                          sx={{ mt: 1 }}
+                          onClick={handleDeleteAccount}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <CircularProgress size={24} sx={{ color: 'white', mr: 1 }} />
+                          ) : (
+                            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+                          )}
                           Delete Account
                         </Button>
                       </Tooltip>
