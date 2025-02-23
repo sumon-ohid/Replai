@@ -57,6 +57,12 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
   const fetchFeedback = async () => {
     try {
       const response = await axios.get(`${apiBaseUrl}/api/feedback/all`);
+      const data = response.data as { userId: string };
+      if (!data.userId) {
+        console.log("No feedback found");
+        return;
+      }
+
       setFeedbackList(response.data as any[]);
     } catch (error) {
       console.error("Error fetching feedback:", error);
@@ -298,8 +304,8 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                 <CardContent>
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", paddingBottom: "10px" }}>
                     <Avatar
-                      alt={feedback.name}
-                      src={feedback.userId.profilePicture}
+                      alt={feedback.name || "anonymous"}
+                      src={feedback.userId.profilePicture || ""}
                     />
                     <Typography variant="h6">{feedback.name}</Typography>
                   </Stack>
@@ -340,8 +346,8 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                             alignItems="center"
                           >
                             <Avatar
-                              alt={comment.userId.name}
-                              src={comment.userId.profilePicture}
+                              alt={comment.userId.name || "anonymous"}
+                              src={comment.userId.profilePicture || ""}
                             />
                             <Typography variant="body2">
                               {comment.comment}

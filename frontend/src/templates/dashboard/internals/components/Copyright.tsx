@@ -17,7 +17,7 @@ export default function Copyright(props: any) {
     >
       {'Copyright © '}
       <Link color="inherit" href="#">
-        email-agent
+        replai.tech
       </Link>{' '}
       {new Date().getFullYear()}
       {'.'}

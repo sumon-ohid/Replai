@@ -1,6 +1,6 @@
-# 📧 Email Agent - AI-Powered Email Automation
+# 📧 Replai.tech - AI-Powered Email Automation
 
-Email Agent is an intelligent email automation platform that connects to your Google account, monitors your inbox in real-time, and generates context-aware responses using advanced AI. Maintain seamless communication while enhancing productivity with automated, professional email handling.
+Replai is an intelligent email automation platform that connects to your Google account, monitors your inbox in real-time, and generates context-aware responses using advanced AI. Maintain seamless communication while enhancing productivity with automated, professional email handling.
 
 ## 🚀 Features
 
@@ -60,8 +60,8 @@ VITE_API_BASE_URL='http://localhost:3000'
 ```
 
 ## 📄 License
-ISC License © 2025 Email Agent Team
+ISC License © 2025 Replai Team
 
 ## 📬 Contact
-For support and inquiries: [support@email-agent.com](mailto:support@email-agent.com)
+For support and inquiries: [support@replai.tech](mailto:support@replai.tech)
 

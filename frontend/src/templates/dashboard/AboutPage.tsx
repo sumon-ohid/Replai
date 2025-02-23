@@ -62,9 +62,9 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2, borderRadius: 1, border: 1, borderColor: 'divider', flexDirection: 'column' }}>
             <Typography variant="body1" color="textSecondary" align="left" ml={1} paragraph>
-              Email Agent is an AI-driven email automation platform that helps businesses manage their email communication more effectively. 
+              Replai is an AI-driven email automation platform that helps businesses manage their email communication more effectively. 
               Our platform leverages advanced machine learning algorithms to analyze incoming emails, generate intelligent responses, and automate repetitive tasks. 
-              By integrating with your existing email client, Email Agent enables you to respond to emails faster, reduce manual effort, and improve customer satisfaction.
+              By integrating with your existing email client, Replai enables you to respond to emails faster, reduce manual effort, and improve customer satisfaction.
             </Typography>
             </Box>
             <Divider sx={{ my: 3 }} />
@@ -74,7 +74,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2, borderRadius: 1, border: 1, borderColor: 'divider', flexDirection: 'column' }}>
               
               <Typography variant="body1" color="textSecondary" align="left" ml={1} paragraph>
-              At Email Agent, we empower developers and businesses to streamline email communication with AI-driven automation.
+              At Replai, we empower developers and businesses to streamline email communication with AI-driven automation.
               Our goal is to provide intelligent, efficient, and personalized email responses that save time, enhance productivity, 
               and drive success. With cutting-edge AI technology, seamless integration, and dedicated support, 
               we help you stay ahead by transforming the way you manage your emails.

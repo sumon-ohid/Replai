@@ -65,7 +65,7 @@ export default function FAQ() {
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
               You can reach our customer support team by emailing&nbsp;
-              <Link href="mailto:support@email-agent.com">support@email-agent.com</Link>
+              <Link href="mailto:support@replai.tech">support@replai.tech</Link>
               &nbsp;. We&apos;re here to assist you
               promptly.
             </Typography>
@@ -92,7 +92,7 @@ export default function FAQ() {
             >
               Absolutely! We offer a hassle-free refund policy. If you&apos;re not
               completely satisfied, please contact our customer support team by emailing&nbsp;
-              <Link href="mailto:support@email-agent.com">support@email-agent.com</Link>
+              <Link href="mailto:support@replai.tech">support@replai.tech</Link>
               &nbsp;. We&apos;ll be happy to assist you.
             </Typography>
           </AccordionDetails>

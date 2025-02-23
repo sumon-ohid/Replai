@@ -8,7 +8,7 @@ export default function SitemarkIcon() {
       component="img"
       src={logo}
       alt="Logo"
-      sx={{ width: 150, height: 40, display: 'block', ml: 1 }}
+      sx={{ width: 110, height: 40, display: 'block', ml: 1 }}
     />
   );
 }

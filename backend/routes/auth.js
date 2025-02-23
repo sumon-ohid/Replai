@@ -62,7 +62,7 @@ router.post("/register", async (req, res) => {
         <p style="color: #777;">Please do not reply this email.</p>
         <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
         <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
-        support@email-agent.com" style="color: #007bff; text-decoration: none;">support@email-agent.com</a></p>
+        support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
         <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
@@ -242,7 +242,7 @@ router.post("/resend-verification", async (req, res) => {
         <p style="color: #777;">Please do not reply this email.</p>
         <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
         <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
-        support@email-agent.com" style="color: #007bff; text-decoration: none;">support@email-agent.com</a></p>
+        support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
         <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
@@ -304,7 +304,7 @@ router.post("/forgot-password", async (req, res) => {
       <p style="color: #777;">Please do not reply this email.</p>
       <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
       <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
-      support@email-agent.com" style="color: #007bff; text-decoration: none;">support@email-agent.com</a></p>
+      support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
       <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
       <p style="color: #777;">You're receiving this email because you signed up for an account on Email Agent.</p>
       <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
