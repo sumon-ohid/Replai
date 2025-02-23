@@ -11,13 +11,6 @@ Replai is an intelligent email automation platform that connects to your Google 
 
 ## 📸 Application Preview
 
-<img width="1443" alt="Screenshot 2025-02-18 at 20 21 37" src="https://github.com/user-attachments/assets/b0742953-0f85-4e93-83a1-e6357ddd53bb" />
-<img width="1449" alt="Screenshot 2025-02-18 at 20 21 19" src="https://github.com/user-attachments/assets/7f3de410-8d55-456b-a575-d963dbc8c77c" />
-<img width="1468" alt="Screenshot 2025-02-18 at 20 22 22" src="https://github.com/user-attachments/assets/d338a8bd-749b-45b6-9089-12257985168b" />
-<img width="1470" alt="Screenshot 2025-02-18 at 20 22 49" src="https://github.com/user-attachments/assets/60f9facc-d0ba-47bd-a412-d834a93b5140" />
-<img width="1470" alt="Screenshot 2025-02-18 at 20 23 15" src="https://github.com/user-attachments/assets/c2bca2e9-7ec7-43d7-8e7c-87fe6155bafd" />
-<img width="1469" alt="Screenshot 2025-02-18 at 20 23 47" src="https://github.com/user-attachments/assets/0802b4e5-250b-489a-b30d-657372016d99" />
-
 ## 🛠 Installation & Usage
 
 ### **Requirements**
