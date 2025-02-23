@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     ],
     base: mode === 'production' ? 'https://replai.tech/' : '/',
     server: {
-      allowedHosts: ['email-agent.up.railway.app', 'divine-forgiveness-production.up.railway.app', 'localhost', 'replai.tech'],
+      allowedHosts: ['localhost', 'replai.tech'],
     },
   };
 });
