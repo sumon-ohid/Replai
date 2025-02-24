@@ -13,11 +13,25 @@ dotenv.config();
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
-  service: "Gmail",
+  host: "mail.replai.tech",
+  port: 587, // Common ports: 465 (SSL), 587 (TLS), 25 (unsecured)
+  secure: false, // Set to true if using port 465
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
+  tls: {
+    rejectUnauthorized: false, // Needed if the provider has self-signed certs
+  },
+});
+
+// Test sending an email
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("SMTP connection error:", error);
+  } else {
+    console.log("SMTP Server is ready to send emails");
+  }
 });
 
 // Register
