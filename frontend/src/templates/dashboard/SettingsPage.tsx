@@ -321,8 +321,9 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                       <TextField placeholder="Expiry Date" variant="outlined" fullWidth />
                       <TextField placeholder="CVV" variant="outlined" fullWidth />
                     </Box>
+                    <Alert  variant="filled" severity="warning"> We do not accept any payment yet. It will be available soon.</Alert>
                     <Button variant="contained" color="primary">
-                      Update Payment Method
+                      Not available yet
                     </Button>
                   </Stack>
                 </CardContent>
