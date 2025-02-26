@@ -25,6 +25,7 @@ const teamMembers = [
     image: 'https://i.ibb.co/Ps3KsPVy/IMG-8313-1.jpg',
     bio: 'Great problem solver, passionate about technology, and always eager to learn new things.',
     quote: '"The best way to predict the future is to create it."',
+    // website: "https://msumon.vercel.app/",
   },
   // Add more team members here when needed
 ];
@@ -107,6 +108,9 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                         <Typography variant="body2" align="center" sx={{ fontStyle: 'italic', fontWeight: 'bold', p: 2 }}>
                           {member.quote}
                         </Typography>
+                        <Button variant='contained' color='primary' href='https://msumon.vercel.app/' target='_blank'>
+                          website
+                        </Button>
                       </Stack>
                     </CardContent>
                   </Card>

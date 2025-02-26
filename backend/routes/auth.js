@@ -65,7 +65,7 @@ router.post("/register", async (req, res) => {
 
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">  
         <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
@@ -84,7 +84,7 @@ router.post("/register", async (req, res) => {
     `;
 
     const mailOptions = {
-      from: process.env.EMAIL,
+      from: `"Replai Tech" <${process.env.EMAIL}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
@@ -178,7 +178,7 @@ router.get("/verify-email", async (req, res) => {
       </head>
       <body>
         <div class="container">
-          <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">
+          <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">
           <h2>Email Verified Successfully!</h2>
           <p class="message">Your email has been successfully verified. You can now log in to your account.</p>
           <a href="https://replai.tech/signin" class="btn">Go to Login</a>
@@ -245,7 +245,7 @@ router.post("/resend-verification", async (req, res) => {
 
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">  
         <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
@@ -264,7 +264,7 @@ router.post("/resend-verification", async (req, res) => {
     `;
 
     const mailOptions = {
-      from: process.env.EMAIL,
+      from: `"Replai Tech" <${process.env.EMAIL}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
@@ -307,7 +307,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const emailHTML = `
     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
-      <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">  
+      <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">  
       <h2 style="color: #333;">Forgot password?</h2>
       <p style="color: #555;">Click the button below to set new password.</p>
       <a href="${resetLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Reset password</a>
@@ -326,7 +326,7 @@ router.post("/forgot-password", async (req, res) => {
   `;
 
     const mailOptions = {
-      from: process.env.EMAIL,
+      from: `"Replai Tech" <${process.env.EMAIL}>`,
       to: email,
       subject: "Password Reset - Replai",
       html: emailHTML,
@@ -430,7 +430,7 @@ router.get("/reset-password", async (req, res) => {
 </head>
 <body>
     <div class="container">
-        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 200px; height: 60px; margin-bottom: 20px;">
+        <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">
         <h2>Reset Your Password</h2>
         <input type="password" id="password" placeholder="New Password" required>
         <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
