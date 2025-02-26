@@ -120,7 +120,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
             <Typography variant="body1" color="textSecondary" align="left" ml={1} paragraph>
               If you have any questions or would like to learn more about our services, please feel free to reach out to us.
             </Typography>
-            <Button variant="contained" color="primary" sx={{ ml: 1 }} href="https://www.linkedin.com/in/sumon-md-ohiduzzaman/" target="_blank">
+            <Button variant="contained" color="primary" sx={{ ml: 1 }} href="mailto:support@replai.tech" target="_blank">
               Get in Touch
             </Button>
           </Box>
