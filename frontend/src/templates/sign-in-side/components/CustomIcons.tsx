@@ -11,6 +11,7 @@ export function SitemarkIcon() {
       src={logo}
       alt="Logo"
       sx={{ width: 110, height: 40, display: 'block', ml: 1 }}
+      onClick={() => window.location.href = '/'}
     />
   );
 }
