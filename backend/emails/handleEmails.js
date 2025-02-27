@@ -60,7 +60,7 @@ const getUser = async (auth) => {
 
 router.get('/auth/google/callback', async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.status(400).send('Missing code parameter');
+  if (!code) return res.redirect(dashboardUrl);
 
   try {
     const { tokens } = await oauth2Client.getToken(code);

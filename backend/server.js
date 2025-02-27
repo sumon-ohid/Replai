@@ -19,6 +19,7 @@ import googleAuth from "./routes/googleAuth.js";
 import feedback from "./routes/feedback.js";
 import userController from "./routes/userController.js";
 import deleteUser from "./routes/deleteUser.js";
+// import { handleSecurityEvent } from "./googleSecurity.js";
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +46,7 @@ const allowedOrigins = [
   `${process.env.FRONTEND_URL}`,
   `${process.env.VITE_API_BASE_URL}`,
   "https://replai.tech",
+  "https://www.replai.tech",
 ];
 
 app.use(
@@ -81,6 +83,10 @@ app.use("/api/auth", googleAuth);
 app.use("/api/feedback", feedback);
 app.use("/api/user", userController);
 app.use("/api/user", deleteUser);
+
+// Google security event
+// app.post("/security-events", handleSecurityEvent);
+
 
 app.use(express.static(path.join(__dirname, "dist")));
 app.get("*", (req, res) => {
