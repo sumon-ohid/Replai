@@ -45,7 +45,6 @@ router.get('/auth/google', auth, (req, res) => {
     scope: SCOPES,
     prompt: 'consent',
     include_granted_scopes: true
-
   });
 
   localUserId = req.user._id;
