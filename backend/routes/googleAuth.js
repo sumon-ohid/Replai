@@ -29,7 +29,7 @@ router.get('/login/google', (req, res) => {
 
 router.get('/google/callback', async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.status(400).send('Missing code parameter');
+  if (!code) return res.redirect(`${process.env.FRONTEND_URL}/signin`);
 
   try {
     const { tokens } = await oauth2Client.getToken(code);

@@ -7,6 +7,7 @@ import EmailManager from './templates/dashboard/EmailManager';
 import SignUp from './templates/sign-up/SignUp';
 import DataManager from './templates/dashboard/DataManager';
 import BlockList from './templates/dashboard/BlockList';
+import Analytics from './templates/dashboard/Analytics';
 import PlanBillingManagement from './templates/dashboard/PlanManager';
 import SettingsPage from './templates/dashboard/SettingsPage';
 import AboutPage from './templates/dashboard/AboutPage';
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
           <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
           <Route path="/blocklist" element={<ProtectedRoute><BlockList /></ProtectedRoute>} />
+          {/* <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} /> */}
           <Route path="/billing" element={<ProtectedRoute><PlanBillingManagement /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/about" element={<AboutPage />} />

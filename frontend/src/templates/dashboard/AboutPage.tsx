@@ -22,7 +22,7 @@ const teamMembers = [
   {
     name: 'Md Ohiduzzaman Sumon',
     role: 'Founder',
-    image: 'https://i.ibb.co/Ps3KsPVy/IMG-8313-1.jpg',
+    image: 'https://img.freepik.com/premium-photo/3d-portrait-businessman_849407-6268.jpg',
     bio: 'Great problem solver, passionate about technology, and always eager to learn new things.',
     quote: '"The best way to predict the future is to create it."',
     // website: "https://msumon.vercel.app/",
@@ -108,9 +108,9 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                         <Typography variant="body2" align="center" sx={{ fontStyle: 'italic', fontWeight: 'bold', p: 2 }}>
                           {member.quote}
                         </Typography>
-                        <Button variant='contained' color='primary' href='https://msumon.vercel.app/' target='_blank'>
+                        {/* <Button variant='contained' color='primary' href='https://msumon.vercel.app/' target='_blank'>
                           website
-                        </Button>
+                        </Button> */}
                       </Stack>
                     </CardContent>
                   </Card>

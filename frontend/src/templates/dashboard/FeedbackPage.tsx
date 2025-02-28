@@ -271,6 +271,8 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                             padding: "10px",
                             borderRadius: "5px",
                             border: ".5px solid rgba(142, 142, 142, 0.48)",
+                            backgroundColor: "transparent",
+                            resize: "none",
                           }}
                           placeholder="Comments"
                           value={comments}

@@ -18,6 +18,8 @@ import { useTheme } from '@mui/material/styles';
 import StorageIcon from '@mui/icons-material/Storage';
 import CancelScheduleSendIcon from '@mui/icons-material/CancelScheduleSend';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import { text } from 'stream/consumers';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 
 const mainListItems = [
   { text: 'Home', icon: <HomeRoundedIcon />, path: '/dashboard' },

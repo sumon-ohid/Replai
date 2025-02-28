@@ -149,7 +149,7 @@ export default function DataTabs() {
     setValue(newValue);
   };
 
-  const handleTextDataChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTextDataChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTextData(event.target.value);
   };
 
@@ -372,16 +372,29 @@ export default function DataTabs() {
             autoComplete="off"
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <TextField
+            <textarea
+                name="textarea"
+                id="textarea"
+                rows={6}
+                cols={65}
                 required
-                id="standard-multiline-flexible"
-                multiline
-                maxRows={8}
-                variant="standard"
+                style={{
+                  width: "90%",
+                  height: "100%",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  border: ".5px solid rgba(142, 142, 142, 0.48)",
+                  // outline: "none",
+                  margin: "20px",
+                  resize: "none",
+                  backgroundColor: "transparent",
+                }}
+                placeholder={dataPrompt}
                 value={textData}
                 onChange={handleTextDataChange}
-                placeholder={dataPrompt}
-              />
+              >
+                {dataPrompt}
+              </textarea>
             </div>
           </Box>
           <Button
