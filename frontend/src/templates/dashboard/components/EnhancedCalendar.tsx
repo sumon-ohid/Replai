@@ -97,8 +97,9 @@ export default function EnhancedCalendar() {
         const response = await axios.get(`${API_URL}/api/calendar/status`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setIsConnected(response.data.connected);
-        if (response.data.connected) {
+        const data = response.data as { connected: boolean };
+        setIsConnected(data.connected);
+        if (data.connected) {
           fetchEvents();
         } else {
           setIsLoading(false);
@@ -122,7 +123,8 @@ export default function EnhancedCalendar() {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setEvents(response.data.events);
+      const data = response.data as { events: GoogleEventType[] };
+      setEvents(data.events);
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
@@ -140,7 +142,8 @@ export default function EnhancedCalendar() {
       });
       
       // Open Google auth URL in a new window
-      window.open(response.data.authUrl, '_blank');
+      const data = response.data as { authUrl: string };
+      window.open(data.authUrl, '_blank');
       
       // Poll for connection status
       const checkInterval = setInterval(async () => {
@@ -149,7 +152,8 @@ export default function EnhancedCalendar() {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          if (statusRes.data.connected) {
+          const statusData = statusRes.data as { connected: boolean };
+          if (statusData.connected) {
             setIsConnected(true);
             fetchEvents();
             clearInterval(checkInterval);
