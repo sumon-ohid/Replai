@@ -80,8 +80,8 @@ router.get('/auth/google', auth, (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
-    prompt: 'consent',
-    include_granted_scopes: true
+    // prompt: 'consent',
+    // include_granted_scopes: true
   });
 
   localUserId = req.user._id;
