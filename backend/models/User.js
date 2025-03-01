@@ -24,7 +24,14 @@ const userSchema = new mongoose.Schema({
       charCount: { type: Number, required: true },
     },
   ],
-});
+  googleAuth: {
+    accessToken: String,
+    refreshToken: String,
+    expiryDate: Number,
+    email: String,
+    name: String
+  },
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 

@@ -17,6 +17,7 @@ import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import PrivacyPage from './templates/marketing-page/PrivacyPage';
+import CalendarPage from './templates/dashboard/CalendarPage';
 
 export default function App() {
   return (
@@ -30,7 +31,7 @@ export default function App() {
           <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
           <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
           <Route path="/blocklist" element={<ProtectedRoute><BlockList /></ProtectedRoute>} />
-          {/* <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} /> */}
+          <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/billing" element={<ProtectedRoute><PlanBillingManagement /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/about" element={<AboutPage />} />

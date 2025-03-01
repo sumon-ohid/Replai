@@ -20,6 +20,7 @@ import CancelScheduleSendIcon from '@mui/icons-material/CancelScheduleSend';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { text } from 'stream/consumers';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 const mainListItems = [
   { text: 'Home', icon: <HomeRoundedIcon />, path: '/dashboard' },
@@ -27,6 +28,7 @@ const mainListItems = [
   { text: 'Data', icon: <StorageIcon />, path: '/data' },
   { text: 'Blocklist', icon: <CancelScheduleSendIcon />, path: '/blocklist' },
   { text: 'Plan & Billing', icon: <CreditCardIcon />, path: '/billing' },
+  { text: 'Calendar', icon: <CalendarMonthIcon />, path: '/calendar' },
 ];
 
 const secondaryListItems = [

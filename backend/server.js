@@ -19,6 +19,8 @@ import googleAuth from "./routes/googleAuth.js";
 import feedback from "./routes/feedback.js";
 import userController from "./routes/userController.js";
 import deleteUser from "./routes/deleteUser.js";
+import googleCalendar from "./calendar/googleCalendar.js";
+
 // import { handleSecurityEvent } from "./googleSecurity.js";
 
 // Define __dirname
@@ -83,6 +85,7 @@ app.use("/api/auth", googleAuth);
 app.use("/api/feedback", feedback);
 app.use("/api/user", userController);
 app.use("/api/user", deleteUser);
+app.use("/api/calendar", googleCalendar);
 
 // Google security event
 // app.post("/security-events", handleSecurityEvent);

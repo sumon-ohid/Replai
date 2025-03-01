@@ -8,11 +8,13 @@ import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export default function HighlightedCard() {
   const theme = useTheme();
+  const [loading, setLoading] = React.useState(false);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   // const { user } = useAuth();
@@ -58,13 +60,15 @@ export default function HighlightedCard() {
         </Typography>
         <Button
           variant="contained"
+          startIcon={<GoogleIcon />}
           size="small"
           color="primary"
           endIcon={<ChevronRightRoundedIcon />}
           fullWidth={isSmallScreen}
           onClick={handleCreateBot}
+          disabled={loading}
         >
-          Create Bot
+          Connect Gmail
         </Button>
       </CardContent>
     </Card>

@@ -1,0 +1,86 @@
+// In your parent component
+import type {} from '@mui/x-date-pickers/themeAugmentation';
+import type {} from '@mui/x-charts/themeAugmentation';
+import type {} from '@mui/x-data-grid-pro/themeAugmentation';
+import type {} from '@mui/x-tree-view/themeAugmentation';
+import { alpha } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
+import AppNavbar from './components/AppNavbar';
+import Header from './components/Header';
+import MainGrid from './components/MainGrid';
+import SideMenu from './components/SideMenu';
+import AppTheme from '../shared-theme/AppTheme';
+import {
+  chartsCustomizations,
+  dataGridCustomizations,
+  datePickersCustomizations,
+  treeViewCustomizations,
+} from './theme/customizations';
+import BlockListData from './components/BlockListData';
+import { Typography } from '@mui/material';
+import { Alert } from '@mui/material';
+import Stack from '@mui/material/Stack';
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid' // a plugin!
+import EnhancedCalendar from './components/EnhancedCalendar';
+
+
+const xThemeComponents = {
+  ...chartsCustomizations,
+  ...dataGridCustomizations,
+  ...datePickersCustomizations,
+  ...treeViewCustomizations,
+};
+
+export default function Calendar(props: { disableCustomTheme?: boolean }) {
+
+  return (
+    <AppTheme {...props} themeComponents={xThemeComponents}>
+      <CssBaseline enableColorScheme />
+      <Box sx={{ display: 'flex' }}>
+        <SideMenu />
+        <AppNavbar />
+        {/* Main content */}
+        <Box
+          component="main"
+          sx={(theme) => ({
+            flexGrow: 1,
+            backgroundColor: alpha(theme.palette.background.default, 1),
+            overflow: 'auto',
+          })}
+        >
+          <Stack
+            spacing={2}
+            sx={{
+              alignItems: 'center',
+              mx: 3,
+              pb: 5,
+              mt: { xs: 8, md: 0 },
+            }}
+          >
+            <Header />
+          </Stack>
+          <Typography variant="h4" align="left" mt={3} ml={3}>
+            Calendar
+          </Typography>
+          <Typography variant="body1" align="left" mt={1} ml={3}>
+            View your events and appointments and manage your schedule.
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'left', ml: 3, mt: 5, mr: 3, border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+            <EnhancedCalendar />
+          </Box>
+          {/* <FullCalendar
+            plugins={[ dayGridPlugin ]}
+            initialView="dayGridMonth"
+            weekends={false}
+            events={[
+              { title: 'event 1', date: '2019-04-01' },
+              { title: 'event 2', date: '2019-04-02' }
+            ]}
+          /> */}
+        </Box>
+      </Box>
+    </AppTheme>
+  );
+}
