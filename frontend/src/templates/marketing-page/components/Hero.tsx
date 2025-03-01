@@ -48,8 +48,8 @@ const StyledBox = styled("div")(({ theme }) => ({
 
 export default function Hero() {
   const navigate = useNavigate();
-  const isDarkMode = localStorage.getItem("mui-mode") === "dark";
   const theme = useTheme();
+  const isDarkMode = localStorage.getItem("mui-mode") === "dark";
 
   return (
     <Box

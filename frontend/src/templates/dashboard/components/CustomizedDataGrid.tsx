@@ -31,7 +31,7 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({ open, onClose, em
   if (!email) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog open={open} onClose={onClose} fullWidth sx={{backdropFilter: "blur(5px)"}}>
       <DialogContent sx={{ backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
         <Card sx={{ maxWidth: 600, margin: 'auto', mt: 4 }}>
         <CardContent>

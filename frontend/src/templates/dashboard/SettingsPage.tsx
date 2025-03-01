@@ -336,6 +336,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
             open={openDeleteDialog}
             onClose={() => deletionStatus === 'idle' && setOpenDeleteDialog(false)}
             aria-labelledby="delete-account-dialog"
+            sx={{backdropFilter: "blur(5px)", backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'}}
           >
             <DialogTitle id="delete-account-dialog" sx={{ backgroundColor: isDarkMode ? '#000000 !important' : '#ffffff !important' }}>
               {deletionStatus === 'success' ? 'Account Deleted' : 

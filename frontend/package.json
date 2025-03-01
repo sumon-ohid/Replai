@@ -11,6 +11,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fullcalendar/bootstrap5": "^6.1.15",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/google-calendar": "^6.1.15",
@@ -34,6 +35,8 @@
     "@mui/x-tree-view": "^7.26.0",
     "algoliasearch": "^5.20.3",
     "axios": "^1.7.9",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
     "chart.js": "^4.4.8",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",

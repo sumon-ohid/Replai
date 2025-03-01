@@ -23,6 +23,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 
   if (loading) {
     const theme = useTheme();
+    // const isDarkMode = theme.palette.mode === "dark";
     const isDarkMode = localStorage.getItem("mui-mode") === "dark";
     return (
       <div
