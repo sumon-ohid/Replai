@@ -19,7 +19,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import dayjs from 'dayjs';
-import EventFormDialog from './EventFormDialog.tsx';
+import EventFormDialog from './EventFormDialog';
 
 // API URL
 const API_URL = import.meta.env.VITE_API_BASE_URL;
