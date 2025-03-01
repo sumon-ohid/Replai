@@ -19,6 +19,21 @@ interface AppThemeProps {
 
 export default function AppTheme(props: AppThemeProps) {
   const { children, disableCustomTheme, themeComponents } = props;
+  
+  // Override for Alert component to use MUI defaults
+  const alertOverride = {
+    MuiAlert: {
+      defaultProps: {
+        // This resets any default severity
+        severity: undefined
+      },
+      styleOverrides: {
+        // Reset any global styles that might affect all alerts
+        root: {}
+      }
+    }
+  };
+  
   const theme = React.useMemo(() => {
     return disableCustomTheme
       ? {}
@@ -28,7 +43,7 @@ export default function AppTheme(props: AppThemeProps) {
             colorSchemeSelector: 'data-mui-color-scheme',
             cssVarPrefix: 'template',
           },
-          colorSchemes, // Recently added in v6 for building light & dark mode app, see https://mui.com/material-ui/customization/palette/#color-schemes
+          colorSchemes,
           typography,
           shadows,
           shape,
@@ -38,6 +53,7 @@ export default function AppTheme(props: AppThemeProps) {
             ...feedbackCustomizations,
             ...navigationCustomizations,
             ...surfacesCustomizations,
+            ...alertOverride, // Override comes after feedbackCustomizations to take precedence
             ...themeComponents,
           },
         });

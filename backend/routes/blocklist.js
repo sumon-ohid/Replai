@@ -58,7 +58,8 @@ router.post('/', auth, async (req, res) => {
 
 // Endpoint to delete an entry from the block list
 router.delete('/', auth, async (req, res) => {
-  const { entry } = req.body;
+  const { entry } = req.query;
+
   if (!entry) {
     return res.status(400).json({ error: 'Entry cannot be empty' });
   }
