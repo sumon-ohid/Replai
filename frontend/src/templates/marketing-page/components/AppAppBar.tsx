@@ -92,11 +92,11 @@ export default function AppAppBar() {
               alignItems: 'center',
             }}
           >
-            <Button onClick={handleSignInClick} color="primary" variant="text" size="small">
+            <Button onClick={handleSignInClick} color="primary" variant="text" size="small" sx={{border: 1, borderColor: 'divider'}}>
               Sign in
             </Button>
             <Button onClick={handleSignUpClick} color="primary" variant="contained" size="small">
-              Sign up
+              Try for free
             </Button>
             <ColorModeIconDropdown />
           </Box>

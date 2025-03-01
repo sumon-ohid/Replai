@@ -14,8 +14,8 @@ import Chip from "@mui/material/Chip";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { Alert } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 import { useTheme } from "@mui/material/styles";
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 
 const StyledBox = styled("div")(({ theme }) => ({
   alignSelf: "center",
@@ -86,11 +86,10 @@ export default function Hero() {
               alignItems: "center",
               border: 1,
               borderColor: "divider",
-              borderRadius: 2,
+              borderRadius: 10,
               pl: 1,
               pr: 2,
               position: "relative",
-
               "&::before": {
                 content: '""',
                 position: "absolute",
@@ -105,12 +104,11 @@ export default function Hero() {
               boxShadow: `0px -3px 8px rgba(0, 119, 255, 0.4)`,
             }}
           >
-            <InfoIcon sx={{ mr: 1 }} />
-            <Typography variant="overline" color="text.secondary">
+            <ErrorOutlineOutlinedIcon sx={{ml: 1, opacity: .6, fontSize: "0.9rem" }} fontSize="small" />
+            <Typography color="text.secondary" p={1} variant="body1" sx={{fontSize: "0.7rem"}}>
               This website is still in development
             </Typography>
           </Box>
-
           <Typography
             variant="h1"
             sx={{
