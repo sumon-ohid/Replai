@@ -13,6 +13,9 @@ import CustomizedTimeline from "./Timeline";
 import Chip from "@mui/material/Chip";
 import { useNavigate } from "react-router-dom";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { Alert } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
+import { useTheme } from "@mui/material/styles";
 
 const StyledBox = styled("div")(({ theme }) => ({
   alignSelf: "center",
@@ -46,6 +49,7 @@ const StyledBox = styled("div")(({ theme }) => ({
 export default function Hero() {
   const navigate = useNavigate();
   const isDarkMode = localStorage.getItem("mui-mode") === "dark";
+  const theme = useTheme();
 
   return (
     <Box
@@ -76,6 +80,37 @@ export default function Hero() {
           useFlexGap
           sx={{ alignItems: "center", width: { xs: "100%", sm: "70%" } }}
         >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 2,
+              pl: 1,
+              pr: 2,
+              position: "relative",
+
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: -1,
+                left: 0,
+                width: "100%",
+                height: "5px",
+                borderTopLeftRadius: "10px",
+                borderTopRightRadius: "10px",
+                pointerEvents: "none",
+              },
+              boxShadow: `0px -3px 8px rgba(0, 119, 255, 0.4)`,
+            }}
+          >
+            <InfoIcon sx={{ mr: 1 }} />
+            <Typography variant="overline" color="text.secondary">
+              This website is still in development
+            </Typography>
+          </Box>
+
           <Typography
             variant="h1"
             sx={{
@@ -140,17 +175,18 @@ export default function Hero() {
               Start now
             </Button> */}
 
-          <button className="relative inline-flex h-12 active:scale-95 transition overflow-hidden rounded-lg p-[1px] focus:outline-none"
-            onClick={() => {
-                navigate('/signin');
-              }}>
-            <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,rgb(75,165,255)_0%,rgb(120,190,255)_50%,rgb(50,140,255)_100%)]"></span>
-            <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-lg bg-slate-950 px-7 text-sm font-medium text-white backdrop-blur-3xl gap-2">
-              <span>Let's get started</span>
-              <ArrowForwardIcon />
-            </span>
-          </button>
-
+            <button
+              className="relative inline-flex h-12 active:scale-95 transition overflow-hidden rounded-lg p-[1px] focus:outline-none"
+              onClick={() => {
+                navigate("/signin");
+              }}
+            >
+              <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,rgb(75,165,255)_0%,rgb(120,190,255)_50%,rgb(50,140,255)_100%)]"></span>
+              <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-lg bg-slate-950 px-7 text-sm font-medium text-white backdrop-blur-3xl gap-2">
+                <span>Let's get started</span>
+                <ArrowForwardIcon />
+              </span>
+            </button>
           </Stack>
           <Typography
             variant="caption"
