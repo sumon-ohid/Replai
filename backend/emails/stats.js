@@ -5,6 +5,28 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Helper function to get date range based on timeRange parameter
+const getDateRange = (timeRange) => {
+  const now = new Date();
+  const startDate = new Date();
+  
+  switch (timeRange) {
+    case 'week':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case 'month':
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case 'year':
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 7); // Default to week
+  }
+  
+  return { startDate, endDate: now };
+};
+
 // Endpoint to get stats data
 router.get('/stats', auth, async (req, res) => {
   try {

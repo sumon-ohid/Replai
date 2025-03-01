@@ -9,6 +9,8 @@ import CustomizedDataGrid from './CustomizedDataGrid';
 import StatCard, { StatCardProps } from './StatCard';
 import axios from 'axios';
 import Footer from '../../marketing-page/components/Footer';
+import SessionsChart from './SessionsChart';
+import EmailCountChart from './EmailCountChart';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -70,7 +72,7 @@ export default function MainGrid() {
           {/* <SessionsChart /> */}
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          {/* <PageViewsBarChart /> */}
+          {/* <EmailCountChart /> */}
         </Grid>
       </Grid>
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
