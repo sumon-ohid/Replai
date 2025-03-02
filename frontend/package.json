@@ -49,7 +49,8 @@
     "react-dom": "latest",
     "react-intersection-observer": "^9.15.1",
     "react-lottie-player": "^2.1.0",
-    "react-router-dom": "^7.1.5"
+    "react-router-dom": "^7.1.5",
+    "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
@@ -58,6 +59,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/react-router-dom": "^5.3.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "latest",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.1",
