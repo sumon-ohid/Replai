@@ -101,7 +101,7 @@ export default function EnhancedCalendar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const calendarRef = React.useRef<FullCalendar | null>(null);
-  const isDarkMode = theme.palette.mode === 'dark';
+  const isDarkMode = theme.palette.mode === "dark";
 
   const [isConnected, setIsConnected] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -375,7 +375,9 @@ export default function EnhancedCalendar() {
     }
     
     .fc-list-day-cushion {
-      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[100]} !important;
+      background-color: ${
+        isDarkMode ? theme.palette.background.default : theme.palette.grey[100]
+      } !important;
       color: ${theme.palette.text.primary} !important;
     }
     
@@ -385,7 +387,11 @@ export default function EnhancedCalendar() {
     }
     
     .fc-list-event:hover td {
-      background-color: ${isDarkMode ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.08)} !important;
+      background-color: ${
+        isDarkMode
+          ? alpha(theme.palette.primary.main, 0.15)
+          : alpha(theme.palette.primary.main, 0.08)
+      } !important;
     }
     
     .fc-list-event-dot {
@@ -425,7 +431,11 @@ export default function EnhancedCalendar() {
     }
     
     .fc-day-today {
-      background-color: ${isDarkMode ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.05)} !important;
+      background-color: ${
+        isDarkMode
+          ? alpha(theme.palette.primary.main, 0.15)
+          : alpha(theme.palette.primary.main, 0.05)
+      } !important;
     }
     
     /* General styles */
@@ -436,7 +446,9 @@ export default function EnhancedCalendar() {
     }
     
     .fc-button {
-      background-color: ${theme.palette.grey[isDarkMode ? 800 : 200]} !important;
+      background-color: ${
+        theme.palette.grey[isDarkMode ? 800 : 200]
+      } !important;
       color: ${theme.palette.text.primary} !important;
       border-color: ${theme.palette.divider} !important;
       box-shadow: none !important;
@@ -448,7 +460,9 @@ export default function EnhancedCalendar() {
     }
     
     .fc-button:hover {
-      background-color: ${isDarkMode ? theme.palette.grey[700] : theme.palette.grey[300]} !important;
+      background-color: ${
+        isDarkMode ? theme.palette.grey[700] : theme.palette.grey[300]
+      } !important;
     }
     
     .fc-button-primary:not(:disabled):active, 
@@ -460,7 +474,9 @@ export default function EnhancedCalendar() {
     
     /* Non-business days and other-month days */
     .fc-day-other {
-      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[50]} !important;
+      background-color: ${
+        isDarkMode ? theme.palette.background.default : theme.palette.grey[50]
+      } !important;
       opacity: 0.8 !important;
     }
     
@@ -477,8 +493,14 @@ export default function EnhancedCalendar() {
     }
     
     .fc-popover-header {
-      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[100]} !important;
+      background-color: ${
+        isDarkMode ? theme.palette.background.default : theme.palette.grey[100]
+      } !important;
       color: ${theme.palette.text.primary} !important;
+    }
+
+    .fc-toolbar-title {
+      font-size: ${isMobile ? ".65rem" : "1rem"} !important;
     }
   `;
 
@@ -501,7 +523,7 @@ export default function EnhancedCalendar() {
       }}
     >
       {/* Global Styles for FullCalendar */}
-      <GlobalStyles styles={{ html: { overflow: 'auto' } }} />
+      <GlobalStyles styles={{ html: { overflow: "auto" } }} />
       <style>{calendarStyles}</style>
 
       {/* Header with controls */}
@@ -640,7 +662,7 @@ export default function EnhancedCalendar() {
             ]}
             initialView={isMobile ? "listWeek" : "dayGridMonth"}
             headerToolbar={{
-              left: "prev,next today",
+              left: isMobile ? "prev,next" : "prev,next today",
               center: "title",
               right: isMobile
                 ? "listWeek,dayGridMonth"
@@ -676,7 +698,7 @@ export default function EnhancedCalendar() {
         onClose={() => setEventDetailsOpen(false)}
         maxWidth="sm"
         fullWidth
-        sx={{ backdropFilter: "blur(5px)"}}
+        sx={{ backdropFilter: "blur(5px)" }}
       >
         {selectedEvent && (
           <>
@@ -687,7 +709,6 @@ export default function EnhancedCalendar() {
                 alignItems: "center",
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 backgroundColor: theme.palette.background.paper,
-          
               }}
             >
               <Typography variant="h6" component="div" sx={{ pr: 2 }}>
@@ -702,7 +723,9 @@ export default function EnhancedCalendar() {
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ backgroundColor: theme.palette.background.paper }}>
+            <DialogContent
+              sx={{ backgroundColor: theme.palette.background.paper }}
+            >
               <Stack spacing={2} sx={{ pt: 2 }}>
                 {/* Date & Time */}
                 <Box>
