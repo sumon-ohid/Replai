@@ -297,7 +297,7 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
           borderBottom: `1px solid ${theme.palette.divider}`,
           backgroundColor: theme.palette.background.paper,
         }}>
-          <Typography variant="h6">
+          <Typography variant="body1">
             {isNew ? 'Create Event' : 'Edit Event'}
           </Typography>
           <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">

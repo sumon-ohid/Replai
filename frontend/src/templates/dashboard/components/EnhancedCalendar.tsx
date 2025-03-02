@@ -10,7 +10,6 @@ import {
   DialogActions,
   CircularProgress,
   useTheme,
-  Alert,
   IconButton,
   Tooltip,
   Snackbar,
@@ -18,19 +17,17 @@ import {
   Divider,
   useMediaQuery,
   alpha,
+  Alert,
 } from "@mui/material";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import listPlugin from "@fullcalendar/list";
-import googleCalendarPlugin from "@fullcalendar/google-calendar";
-import {
-  EventSourceInput,
-  DateSelectArg,
-  EventClickArg,
-  EventInput,
-} from "@fullcalendar/core";
+import { 
+  LocalizationProvider, 
+  DateCalendar,
+  PickersDay,
+  PickersDayProps,
+  DayCalendarSkeleton
+} from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DateCalendarProps } from '@mui/x-date-pickers/DateCalendar';
 import axios from "axios";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -40,8 +37,15 @@ import EventIcon from "@mui/icons-material/Event";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import VideocamIcon from "@mui/icons-material/Videocam";
-import dayjs from "dayjs";
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import TodayIcon from '@mui/icons-material/Today';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
+import ViewDayIcon from '@mui/icons-material/ViewDay';
+import Badge from '@mui/material/Badge';
+import dayjs, { Dayjs } from "dayjs";
 import EventFormDialog from "./EventFormDialog";
+
 
 // API URL
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -94,25 +98,79 @@ interface EventDetails {
     name?: string;
   };
   conferenceLink?: string;
+  colorId?: string;
+}
+
+// Define view types
+type CalendarViewType = 'month' | 'week' | 'day' | 'agenda';
+
+// Custom component for days with events
+function ServerDay(props: PickersDayProps<Dayjs> & { 
+  highlightedDays?: Record<string, GoogleEventType[]>,
+  onDayClick?: (day: Dayjs, events: GoogleEventType[]) => void 
+}) {
+  const {
+    highlightedDays = {},
+    day,
+    outsideCurrentMonth,
+    onDayClick,
+    ...other
+  } = props;
+
+  const dateStr = day.format('YYYY-MM-DD');
+  const hasEvents = highlightedDays[dateStr]?.length > 0;
+  const eventsForDay = highlightedDays[dateStr] || [];
+  
+  // Handle click on a day
+  const handleClick = () => {
+    if (onDayClick && hasEvents) {
+      onDayClick(day, eventsForDay);
+    }
+  };
+
+  return (
+    <Badge
+      key={day.toString()}
+      overlap="circular"
+      badgeContent={hasEvents ? eventsForDay.length : 0}
+      color="primary"
+    >
+      <PickersDay
+        {...other}
+        outsideCurrentMonth={outsideCurrentMonth}
+        day={day}
+        onClick={handleClick}
+        sx={{
+          ...(hasEvents && {
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            '&:hover': {
+              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            }
+          })
+        }}
+      />
+    </Badge>
+  );
 }
 
 export default function EnhancedCalendar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const calendarRef = React.useRef<FullCalendar | null>(null);
 
   const [isConnected, setIsConnected] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [events, setEvents] = React.useState<GoogleEventType[]>([]);
+  const [eventsByDay, setEventsByDay] = React.useState<Record<string, GoogleEventType[]>>({});
   const [eventFormOpen, setEventFormOpen] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState<EventDetails | null>(
-    null
-  );
+  const [selectedEvent, setSelectedEvent] = React.useState<EventDetails | null>(null);
   const [eventDetailsOpen, setEventDetailsOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(
-    null
-  );
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = React.useState<Dayjs>(dayjs());
+  const [calendarView, setCalendarView] = React.useState<CalendarViewType>('month');
+  const [selectedDay, setSelectedDay] = React.useState<Dayjs | null>(null);
+  const [dayEventsOpen, setDayEventsOpen] = React.useState(false);
+  const [eventsForSelectedDay, setEventsForSelectedDay] = React.useState<GoogleEventType[]>([]);
 
   // Check connection status on component mount
   React.useEffect(() => {
@@ -140,14 +198,45 @@ export default function EnhancedCalendar() {
     checkConnection();
   }, []);
 
+  // Organize events by day when events change
+  React.useEffect(() => {
+    const eventMap: Record<string, GoogleEventType[]> = {};
+    
+    events.forEach(event => {
+      // Handle both date and dateTime formats
+      const startDate = event.start.date || event.start.dateTime?.split('T')[0];
+      
+      if (startDate) {
+        if (!eventMap[startDate]) {
+          eventMap[startDate] = [];
+        }
+        eventMap[startDate].push(event);
+      }
+    });
+    
+    setEventsByDay(eventMap);
+  }, [events]);
+
   // Fetch calendar events
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/calendar/events`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      
+      // Calculate time range for fetching events
+      const startOfMonth = dayjs(currentMonth).startOf('month').subtract(1, 'week');
+      const endOfMonth = dayjs(currentMonth).endOf('month').add(1, 'week');
+      
+      const response = await axios.get(
+        `${API_URL}/api/calendar/events`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            timeMin: startOfMonth.toISOString(),
+            timeMax: endOfMonth.toISOString()
+          }
+        }
+      );
 
       const data = response.data as { events: GoogleEventType[] };
       setEvents(data.events);
@@ -200,52 +289,52 @@ export default function EnhancedCalendar() {
     }
   };
 
-  // Handle event click
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    const event = events.find((e) => e.id === clickInfo.event.id) || null;
-
-    if (event) {
-      const eventDetails: EventDetails = {
-        id: event.id,
-        title: event.summary,
-        description: event.description,
-        location: event.location,
-        start: event.start.dateTime || event.start.date || null,
-        end: event.end.dateTime || event.end.date || null,
-        url: event.htmlLink,
-        allDay: !event.start.dateTime,
-        attendees: event.attendees?.map((a) => ({
-          email: a.email,
-          name: a.displayName,
-          status: a.responseStatus,
-        })),
-        creator: {
-          email: event.creator?.email,
-          name: event.creator?.displayName,
-        },
-        conferenceLink: event.conferenceData?.entryPoints?.[0]?.uri,
-      };
-
-      setSelectedEvent(eventDetails);
-      setEventDetailsOpen(true);
-    }
+  // Handle day click to show events for that day
+  const handleDayClick = (day: Dayjs, events: GoogleEventType[]) => {
+    setSelectedDay(day);
+    setEventsForSelectedDay(events);
+    setDayEventsOpen(true);
   };
 
-  // Handle date selection
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
-    const startTime = dayjs(selectInfo.start);
-    const endTime = dayjs(selectInfo.end);
+  // Handle month change
+  const handleMonthChange = (date: Dayjs) => {
+    setCurrentMonth(date);
+    // Refetch events when month changes
+    fetchEvents();
+  };
+  
+  // Handle calendar view change
+  const handleViewChange = (view: CalendarViewType) => {
+    setCalendarView(view);
+  };
 
-    const newEventDetails: EventDetails = {
-      id: "",
-      title: "",
-      start: startTime.toISOString(),
-      end: endTime.toISOString(),
-      allDay: selectInfo.allDay,
+  // Handle event click
+  const handleEventClick = (event: GoogleEventType) => {
+    const eventDetails: EventDetails = {
+      id: event.id,
+      title: event.summary,
+      description: event.description,
+      location: event.location,
+      start: event.start.dateTime || event.start.date || null,
+      end: event.end.dateTime || event.end.date || null,
+      url: event.htmlLink,
+      allDay: !event.start.dateTime,
+      colorId: event.colorId,
+      attendees: event.attendees?.map((a) => ({
+        email: a.email,
+        name: a.displayName,
+        status: a.responseStatus,
+      })),
+      creator: {
+        email: event.creator?.email,
+        name: event.creator?.displayName,
+      },
+      conferenceLink: event.conferenceData?.entryPoints?.[0]?.uri,
     };
 
-    setSelectedEvent(newEventDetails);
-    setEventFormOpen(true);
+    setSelectedEvent(eventDetails);
+    setEventDetailsOpen(true);
+    setDayEventsOpen(false);
   };
 
   // Create a new event
@@ -305,25 +394,6 @@ export default function EnhancedCalendar() {
     }
   };
 
-  // Format events for FullCalendar
-  const getFormattedEvents = (): EventInput[] => {
-    return events.map((event) => ({
-      id: event.id,
-      title: event.summary,
-      start: event.start.dateTime || event.start.date,
-      end: event.end.dateTime || event.end.date,
-      allDay: !event.start.dateTime,
-      backgroundColor: getEventColor(event.colorId),
-      borderColor: getEventColor(event.colorId),
-      textColor: theme.palette.getContrastText(getEventColor(event.colorId)),
-      extendedProps: {
-        description: event.description,
-        location: event.location,
-        attendees: event.attendees,
-      },
-    }));
-  };
-
   // Get event color based on Google colorId or fallback to theme
   const getEventColor = (colorId?: string): string => {
     // Define a mapping from Google Calendar color IDs to colors that fit in both light and dark theme
@@ -365,7 +435,24 @@ export default function EnhancedCalendar() {
     }
   };
 
-  const isDarkMode = localStorage.getItem("theme") === "dark";
+  // Handle creating an event from day selection
+  const handleCreateFromDay = () => {
+    if (selectedDay) {
+      const startTime = selectedDay.startOf('day').add(9, 'hour'); // Default to 9 AM
+      
+      const newEventDetails: EventDetails = {
+        id: "",
+        title: "",
+        start: startTime.toISOString(),
+        end: startTime.add(1, 'hour').toISOString(),
+        allDay: false,
+      };
+
+      setSelectedEvent(newEventDetails);
+      setEventFormOpen(true);
+      setDayEventsOpen(false);
+    }
+  };
 
   return (
     <Box
@@ -394,7 +481,82 @@ export default function EnhancedCalendar() {
           mb: 2,
         }}
       >
-        <Typography variant="h6" component="h2"></Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h6" component="h2" sx={{ mr: 2 }}>
+            {currentMonth.format('MMMM YYYY')}
+          </Typography>
+          
+          <Tooltip title="Previous month">
+            <IconButton 
+              size="small" 
+              onClick={() => handleMonthChange(currentMonth.subtract(1, 'month'))}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Today">
+            <IconButton 
+              size="small" 
+              onClick={() => {
+                setCurrentMonth(dayjs());
+                fetchEvents();
+              }}
+            >
+              <TodayIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Next month">
+            <IconButton 
+              size="small" 
+              onClick={() => handleMonthChange(currentMonth.add(1, 'month'))}
+            >
+              <ArrowForwardIcon />
+            </IconButton>
+          </Tooltip>
+          
+          {!isMobile && (
+            <Box sx={{ ml: 2, display: 'flex', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              <Tooltip title="Month view">
+                <IconButton 
+                  size="small" 
+                  color={calendarView === 'month' ? 'primary' : 'default'}
+                  onClick={() => handleViewChange('month')}
+                >
+                  <ViewDayIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Week view">
+                <IconButton 
+                  size="small"
+                  color={calendarView === 'week' ? 'primary' : 'default'}
+                  onClick={() => handleViewChange('week')}
+                >
+                  <ViewWeekIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Day view">
+                <IconButton 
+                  size="small"
+                  color={calendarView === 'day' ? 'primary' : 'default'}
+                  onClick={() => handleViewChange('day')}
+                >
+                  <ViewDayIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Agenda view">
+                <IconButton 
+                  size="small"
+                  color={calendarView === 'agenda' ? 'primary' : 'default'}
+                  onClick={() => handleViewChange('agenda')}
+                >
+                  <ViewDayIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+        </Box>
 
         <Stack direction="row" spacing={1}>
           {isConnected ? (
@@ -512,46 +674,165 @@ export default function EnhancedCalendar() {
             </Box>
           )}
 
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[
-              dayGridPlugin,
-              timeGridPlugin,
-              interactionPlugin,
-              listPlugin,
-              googleCalendarPlugin,
-            ]}
-            initialView={isMobile ? "listWeek" : "dayGridMonth"}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: isMobile
-                ? "listWeek,dayGridMonth"
-                : "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
-            }}
-            events={getFormattedEvents()}
-            eventClick={handleEventClick}
-            select={handleDateSelect}
-            selectable={true}
-            height="100%"
-            nowIndicator={true}
-            navLinks={true}
-            dayMaxEvents={true}
-            themeSystem="Litera"
-            firstDay={1} // Monday as first day
-            showNonCurrentDates={false}
-            dayMaxEventRows={3}
-            moreLinkClick="popover"
-            longPressDelay={1000}
-            handleWindowResize={true}
-            eventTimeFormat={{
-              hour: "2-digit",
-              minute: "2-digit",
-              meridiem: false,
-            }}
-          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            {calendarView === 'month' && (
+              <DateCalendar
+                value={currentMonth}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setCurrentMonth(newValue);
+                  }
+                }}
+                onMonthChange={handleMonthChange}
+                slots={{
+                  day: ServerDay
+                }}
+                slotProps={{
+                  day: {
+                    highlightedDays: eventsByDay,
+                    onDayClick: handleDayClick
+                  } as any
+                }}
+                sx={{ 
+                  width: '100%', 
+                  height: '100%',
+                  '& .MuiPickersCalendarHeader-root': {
+                    display: 'none', // Hide the default header since we have our own
+                  },
+                  '& .MuiDayCalendar-header, & .MuiDayCalendar-weekContainer': {
+                    justifyContent: 'space-around'
+                  }
+                }}
+              />
+            )}
+            
+            {calendarView !== 'month' && (
+              <Box sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
+                <Typography variant="h6" gutterBottom>
+                  {calendarView === 'week' 
+                    ? `Week of ${currentMonth.startOf('week').format('MMMM D')}` 
+                    : calendarView === 'day'
+                    ? currentMonth.format('dddd, MMMM D, YYYY')
+                    : 'Upcoming Events'}
+                </Typography>
+                
+                {/* This is a placeholder for other views - would need full implementation */}
+                <Box sx={{ 
+                  p: 4, 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  height: '80%',
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1
+                }}>
+                  <Typography color="text.secondary">
+                    {calendarView.charAt(0).toUpperCase() + calendarView.slice(1)} view implementation would go here
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </LocalizationProvider>
         </Paper>
       )}
+
+      {/* Events for Selected Day Dialog */}
+      <Dialog
+        open={dayEventsOpen}
+        onClose={() => setDayEventsOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ backdropFilter: "blur(5px)"}}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.paper
+          }}
+        >
+          <Typography variant="h6" component="div">
+            Events for {selectedDay?.format('MMMM D, YYYY')}
+          </Typography>
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={() => setDayEventsOpen(false)}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ backgroundColor: theme.palette.background.paper, pt: 2 }}>
+          {eventsForSelectedDay.length === 0 ? (
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+              No events scheduled for this day
+            </Typography>
+          ) : (
+            <Stack spacing={1} sx={{ mt: 1 }}>
+              {eventsForSelectedDay.map((event) => (
+                <Paper
+                  key={event.id}
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                    },
+                    borderLeft: '4px solid',
+                    borderLeftColor: getEventColor(event.colorId)
+                  }}
+                  onClick={() => handleEventClick(event)}
+                >
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    {event.summary}
+                  </Typography>
+                  
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {event.start.dateTime 
+                      ? `${dayjs(event.start.dateTime).format('h:mm A')} - ${dayjs(event.end.dateTime).format('h:mm A')}`
+                      : 'All day'}
+                  </Typography>
+                  
+                  {event.location && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      📍 {event.location}
+                    </Typography>
+                  )}
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </DialogContent>
+        
+        <DialogActions
+          sx={{
+            borderTop: `1px solid ${theme.palette.divider}`,
+            px: 3,
+            py: 2,
+            backgroundColor: theme.palette.background.paper
+          }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleCreateFromDay}
+          >
+            Add Event
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => setDayEventsOpen(false)}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Event Details Dialog */}
       <Dialog
@@ -570,7 +851,10 @@ export default function EnhancedCalendar() {
                 alignItems: "center",
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 backgroundColor: theme.palette.background.paper,
-          
+                borderLeft: '4px solid',
+                borderLeftColor: selectedEvent.colorId 
+                  ? getEventColor(selectedEvent.colorId) 
+                  : theme.palette.primary.main
               }}
             >
               <Typography variant="h6" component="div" sx={{ pr: 2 }}>
@@ -647,78 +931,9 @@ export default function EnhancedCalendar() {
                             sx={{ mb: 0.5 }}
                           >
                             {attendee.name || attendee.email}
-                            {attendee.status && (
-                              <Box
-                                component="span"
-                                sx={{
-                                  ml: 1,
-                                  px: 1,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  fontSize: "0.75rem",
-                                  backgroundColor:
-                                    attendee.status === "accepted"
-                                      ? alpha(theme.palette.success.main, 0.1)
-                                      : attendee.status === "tentative"
-                                      ? alpha(theme.palette.warning.main, 0.1)
-                                      : attendee.status === "declined"
-                                      ? alpha(theme.palette.error.main, 0.1)
-                                      : alpha(theme.palette.grey[500], 0.1),
-                                  color:
-                                    attendee.status === "accepted"
-                                      ? theme.palette.success.main
-                                      : attendee.status === "tentative"
-                                      ? theme.palette.warning.main
-                                      : attendee.status === "declined"
-                                      ? theme.palette.error.main
-                                      : theme.palette.grey[500],
-                                }}
-                              >
-                                {attendee.status === "needsAction"
-                                  ? "Pending"
-                                  : attendee.status
-                                  ? attendee.status.charAt(0).toUpperCase() +
-                                    attendee.status.slice(1)
-                                  : "Unknown"}
-                              </Box>
-                            )}
                           </Typography>
                         ))}
                       </Box>
-                    </Box>
-                  )}
-
-                {/* Conference link if available */}
-                {selectedEvent.conferenceLink && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Video Conference
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      startIcon={<VideocamIcon />}
-                      href={selectedEvent.conferenceLink}
-                      target="_blank"
-                      size="small"
-                      sx={{ mt: 1 }}
-                    >
-                      Join Meeting
-                    </Button>
-                  </Box>
-                )}
-
-                {/* Creator info if available */}
-                {selectedEvent.creator &&
-                  (selectedEvent.creator.email ||
-                    selectedEvent.creator.name) && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Organizer
-                      </Typography>
-                      <Typography variant="body2">
-                        {selectedEvent.creator.name ||
-                          selectedEvent.creator.email}
-                      </Typography>
                     </Box>
                   )}
               </Stack>
@@ -728,23 +943,22 @@ export default function EnhancedCalendar() {
                 borderTop: `1px solid ${theme.palette.divider}`,
                 px: 3,
                 py: 2,
-                backgroundColor: theme.palette.background.paper,
+                backgroundColor: theme.palette.background.paper
               }}
             >
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => handleDeleteEvent(selectedEvent.id)}
-              >
-                Delete
-              </Button>
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
                 onClick={handleEditEvent}
               >
                 Edit
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<DeleteIcon />}
+                onClick={() => handleDeleteEvent(selectedEvent.id)}
+              >
+                Delete
               </Button>
               <Button
                 variant="contained"
@@ -758,49 +972,38 @@ export default function EnhancedCalendar() {
       </Dialog>
 
       {/* Event Form Dialog */}
-      {selectedEvent && (
-        <EventFormDialog
-          open={eventFormOpen}
-          onClose={() => setEventFormOpen(false)}
-          event={selectedEvent}
-          onSave={handleSaveEvent}
-          isNew={!selectedEvent.id}
-        />
-      )}
-
-      {/* Error Snackbar */}
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={() => setError(null)}
-        message={error}
-        action={
-          <IconButton
-            size="small"
-            color="inherit"
-            onClick={() => setError(null)}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
+      <EventFormDialog  
+        open={eventFormOpen}
+        onClose={() => setEventFormOpen(false)}
+        onSave={handleSaveEvent}
+        event={selectedEvent || { id: "", title: "", start: null, end: null }}
+        isNew={!selectedEvent?.id}
       />
 
-      {/* Success Snackbar */}
+      {/* Snackbar for errors */}
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={6000} 
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+
+      >
+        <Alert severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+
+      {/* Snackbar for success messages */}
       <Snackbar
         open={!!successMessage}
         autoHideDuration={6000}
         onClose={() => setSuccessMessage(null)}
-        message={successMessage}
-        action={
-          <IconButton
-            size="small"
-            color="inherit"
-            onClick={() => setSuccessMessage(null)}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      />
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      > 
+        <Alert severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
