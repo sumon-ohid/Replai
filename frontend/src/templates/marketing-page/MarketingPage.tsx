@@ -479,6 +479,8 @@ const WorkflowSection = () => {
       window.scrollTo({ top: offset, behavior: 'smooth' });
     }
   };
+
+  const navigate = useNavigate();
   
   return (
     <Box 
@@ -875,6 +877,8 @@ const WorkflowSection = () => {
                 boxShadow: `0 10px 25px ${alpha(theme.palette.primary.main, 0.5)}`
               }
             }}
+            // onclick go to signup page
+            onClick={() => navigate('/signup')}
           >
             Get Started with Replai
           </Button>
@@ -883,6 +887,8 @@ const WorkflowSection = () => {
     </Box>
   );
 };
+
+import { Navigate, useNavigate } from "react-router-dom";
 
 // Benefits section with floating elements and responsive design
 const BenefitsSection = () => {
@@ -940,6 +946,8 @@ const BenefitsSection = () => {
     setActiveSlide(index);
   };
   
+  const navigate = useNavigate();
+
   return (
     <Box 
       sx={{ 
@@ -1435,6 +1443,8 @@ const BenefitsSection = () => {
                 }
               }}
               endIcon={<ChevronRight />}
+              // onclick go to signup page
+              onClick={() => navigate('/signup')}
             >
               Start Your Free Trial
             </Button>
@@ -1487,7 +1497,7 @@ const StatsSection = () => {
       description: "Users report spending significantly less time managing their inbox"
     },
     {
-      value: "10000",
+      value: "100",
       suffix: "+",
       label: "Business Users",
       icon: <ForumOutlined fontSize="large" />,
@@ -1887,7 +1897,7 @@ const StatsSection = () => {
                         zIndex: 2
                       }}
                     >
-                      {React.cloneElement(stats[activeSlide].icon as React.ReactElement, { 
+                        {React.cloneElement(stats[activeSlide].icon as React.ReactElement<any>, { 
                         style: { fontSize: 40 } 
                       })}
                     </Box>
@@ -2084,156 +2094,480 @@ const StatsSection = () => {
   );
 };
 
-// Modern CTA Section
+
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+
+// Modern CTA Section with enhanced visuals and mobile optimization
 const CtaSection = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
+  const navigate = useNavigate();
+  
+  // Make the sparkle effect for CTA
+  const sparkleVariants = {
+    animate: {
+      scale: [1, 1.2, 1],
+      opacity: [0.5, 1, 0.5],
+      transition: {
+        duration: 3,
+        repeat: Infinity,
+        repeatType: "reverse"
+      }
+    }
+  };
   
   return (
-    <Container maxWidth="lg" sx={{ my: { xs: 10, md: 15 } }}>
-      <AnimatedBox animation="scaleUp" threshold={0.4}>
-        <Box
-          sx={{
-            position: 'relative',
-            borderRadius: 6,
-            overflow: 'hidden',
-            py: { xs: 6, md: 10 },
-            px: { xs: 3, md: 8 },
+    <Box sx={{ py: { xs: 5, md: 10 }, overflow: 'hidden' }}>
+      <Container maxWidth="lg">
+        <AnimatedBox animation="scaleUp" threshold={0.4}>
+          <Box
+            sx={{
+              position: 'relative',
+              borderRadius: { xs: 4, md: 8 },
+              overflow: 'hidden',
+              boxShadow: theme.palette.mode === 'dark'
+                ? `0 30px 80px ${alpha('#000', 0.5)}`
+                : `0 30px 80px ${alpha(theme.palette.primary.main, 0.15)}`,
+              border: '1px solid',
+              borderColor: theme.palette.mode === 'dark'
+                ? alpha(theme.palette.primary.dark, 0.3)
+                : alpha(theme.palette.primary.main, 0.2)
+            }}
+          >
+            {/* Background with enhanced gradient and texture */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: theme.palette.mode === 'dark'
+                  ? `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.95)} 0%, ${alpha('#0A1929', 0.85)} 100%)`
+                  : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.95)} 0%, ${alpha(theme.palette.primary.main, 0.85)} 100%)`,
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\' fill=\'%23ffffff\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")',
+                  backgroundSize: '24px 24px',
+                  opacity: 0.3
+                },
+                zIndex: 0
+              }}
+            />
+            
+            {/* Animated sparkles and decorative elements */}
+            <Box
+              component={motion.div}
+              animate={{
+                rotate: [0, 360],
+                x: [0, 15, -15, 0],
+                y: [0, 10, -5, 0]
+              }}
+              transition={{ duration: 20, repeat: Infinity }}
+              sx={{
+                position: 'absolute',
+                top: '10%',
+                right: '5%',
+                width: { xs: 200, sm: 250, md: 320 },
+                height: { xs: 200, sm: 250, md: 320 },
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${alpha('#ffffff', 0.15)} 0%, transparent 70%)`,
+                filter: 'blur(30px)',
+                zIndex: 1
+              }}
+            />
+            
+            <Box
+              component={motion.div}
+              animate={{
+                rotate: [0, -360],
+                x: [0, -20, 20, 0],
+                y: [0, -10, 15, 0]
+              }}
+              transition={{ duration: 25, repeat: Infinity }}
+              sx={{
+                position: 'absolute',
+                bottom: '10%',
+                left: '8%',
+                width: { xs: 150, sm: 200, md: 280 },
+                height: { xs: 150, sm: 200, md: 280 },
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${alpha('#ffffff', 0.1)} 0%, transparent 70%)`,
+                filter: 'blur(40px)',
+                zIndex: 1
+              }}
+            />
+            
+            {/* Small decorative sparkles */}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Box
+                component={motion.div}
+                sx={{
+                  position: 'absolute',
+                  top: `${15 + (i * 18)}%`,
+                  left: `${5 + (i * 20)}%`,
+                  width: { xs: 6, md: 8 },
+                  height: { xs: 6, md: 8 },
+                  borderRadius: '50%',
+                  background: 'white',
+                  boxShadow: '0 0 12px 2px rgba(255, 255, 255, 0.7)',
+                  opacity: 0.7,
+                  zIndex: 1
+                }}
+              />
+            ))}
+            
+            {/* Content container */}
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 2,
+                py: { xs: 6, md: 10 },
+                px: { xs: 3, sm: 6, md: 10 },
+                backdropFilter: 'blur(8px)'
+              }}
+            >
+              <Container maxWidth="md" disableGutters>
+                <Stack 
+                  direction={isMobile ? 'column' : 'row'}
+                  spacing={{ xs: 4, md: 6 }}
+                  alignItems="center"
+                >
+                  {/* Left side content */}
+                  <Box sx={{ width: isMobile ? '100%' : '60%' }}>
+                    <Box
+                      component={motion.div}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6 }}
+                      viewport={{ once: true }}
+                    >
+                      <Typography
+                        variant="h2"
+                        sx={{
+                          color: 'white',
+                          fontWeight: 800,
+                          mb: { xs: 2, md: 3 },
+                          fontSize: { xs: '2rem', sm: '2.5rem', md: '3.2rem' },
+                          lineHeight: 1.2,
+                          textAlign: { xs: 'center', md: 'left' },
+                          textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        Ready to Transform Your Email Experience?
+                      </Typography>
+                    </Box>
+                    
+                    <Box
+                      component={motion.div}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontWeight: 400,
+                          mb: { xs: 3, md: 4 },
+                          textAlign: { xs: 'center', md: 'left' },
+                          fontSize: { xs: '1rem', md: '1.25rem' },
+                          lineHeight: 1.6,
+                          textShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        Join hundreds of businesses already saving hours every day with Replai's
+                        intelligent email automation.
+                      </Typography>
+                    </Box>
+                    
+                    {/* Mobile CTA buttons */}
+                    {isMobile && (
+                      <Stack 
+                        direction="column"
+                        spacing={2}
+                        sx={{ width: '100%' }}
+                      >
+                        <Button
+                          variant="contained"
+                          size="large"
+                          component={motion.button}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                          sx={{
+                            borderRadius: 3,
+                            py: 2,
+                            px: 4,
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            textTransform: 'none',
+                            bgcolor: 'white',
+                            color: 'primary.dark',
+                            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.12)',
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              boxShadow: '0 12px 25px rgba(0, 0, 0, 0.18)',
+                            }
+                          }}
+                          // navigate to signup page
+                          onClick={() => navigate('/signup')}
+                        >
+                          Start Your Free Trial
+                        </Button>
+                        
+                        <Button
+                          variant="outlined"
+                          size="large"
+                          component={motion.button}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                          sx={{
+                            borderRadius: 3,
+                            py: 1.8,
+                            px: 4,
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            color: 'white',
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                            borderWidth: 2,
+                            '&:hover': {
+                              borderColor: 'white',
+                              borderWidth: 2,
+                              background: 'rgba(255, 255, 255, 0.05)'
+                            }
+                          }}
+                        >
+                          Learn More
+                        </Button>
+                      </Stack>
+                    )}
+                  </Box>
+                  
+                  {/* Right side content - only visible on desktop & tablet */}
+                  {!isMobile && (
+                    <Box
+                      sx={{ 
+                        width: '40%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Paper
+                        elevation={0}
+                        component={motion.div}
+                        initial={{ opacity: 0, y: 30, rotateY: -10 }}
+                        whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
+                        transition={{ 
+                          duration: 0.8,
+                          type: "spring",
+                          stiffness: 100
+                        }}
+                        viewport={{ once: true }}
+                        sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          background: alpha('#fff', 0.15),
+                          backdropFilter: 'blur(15px)',
+                          border: '1px solid',
+                          borderColor: alpha('#fff', 0.2),
+                          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.2)',
+                          width: '100%',
+                          maxWidth: 340
+                        }}
+                      >
+                        <Stack spacing={2.5}>
+                          <Button
+                            variant="contained"
+                            size="large"
+                            component={motion.button}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            sx={{
+                              borderRadius: 3,
+                              py: 2,
+                              px: 3,
+                              fontSize: '1rem',
+                              fontWeight: 700,
+                              textTransform: 'none',
+                              bgcolor: 'white',
+                              color: 'primary.dark',
+                              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.12)',
+                              '&:hover': {
+                                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                boxShadow: '0 12px 25px rgba(0, 0, 0, 0.18)',
+                              }
+                            }}
+                            // navigate to signup page
+                            onClick={() => navigate('/signup')}
+                          >
+                            Start Your Free Trial
+                          </Button>
+                          
+                          <Button
+                            variant="outlined"
+                            size="large"
+                            component={motion.button}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            sx={{
+                              borderRadius: 3,
+                              py: 1.8,
+                              px: 3,
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              textTransform: 'none',
+                              color: 'white',
+                              borderColor: 'rgba(255, 255, 255, 0.6)',
+                              borderWidth: 2,
+                              '&:hover': {
+                                borderColor: 'white',
+                                borderWidth: 2,
+                                background: 'rgba(255, 255, 255, 0.1)'
+                              }
+                            }}
+                          >
+                            Learn More
+                          </Button>
+                          
+                          {/* Trust badges */}
+                          <Box 
+                            component={motion.div}
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            transition={{ delay: 0.3, duration: 0.5 }}
+                            viewport={{ once: true }}
+                            sx={{ mt: 2, textAlign: 'center' }}
+                          >
+                            <Typography 
+                              variant="caption" 
+                              component="p" 
+                              sx={{ 
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                mb: 1,
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              Trusted by 100+ businesses
+                            </Typography>
+                            
+                            <Stack 
+                              direction="row" 
+                              spacing={1.5} 
+                              justifyContent="center"
+                              alignItems="center"
+                            >
+                              {[...Array(5)].map((_, i) => (
+                                <Box 
+                                  key={`star-${i}`}
+                                  component={motion.div}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.4 + (i * 0.1) }}
+                                  sx={{ color: '#FFD700' }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                  </svg>
+                                </Box>
+                              ))}
+                            </Stack>
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    </Box>
+                  )}
+                </Stack>
+              </Container>
+            </Box>
+          </Box>
+        </AnimatedBox>
+        
+        {/* Features highlight below CTA */}
+        <Grid 
+          container 
+          spacing={{ xs: 2, md: 4 }}
+          sx={{ 
+            mt: { xs: 4, md: 6 },
+            justifyContent: 'center',
+            px: { xs: 1, md: 0 }
           }}
         >
-          {/* Background with blur effect */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: `linear-gradient(120deg, ${alpha(theme.palette.primary.dark, theme.palette.mode === 'dark' ? 0.8 : 0.9)} 0%, ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.8 : 0.9)} 100%)`,
-              zIndex: 0
-            }}
-          />
-          
-          {/* Decorative elements */}
-          <Box
-            component={motion.div}
-            animate={{
-              rotate: [0, 360],
-              x: [0, 10, -10, 0],
-              y: [0, 15, -5, 0]
-            }}
-            transition={{ duration: 20, repeat: Infinity }}
-            sx={{
-              position: 'absolute',
-              top: '10%',
-              right: '5%',
-              width: 300,
-              height: 300,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${alpha('#ffffff', 0.1)} 0%, transparent 70%)`,
-              zIndex: 1
-            }}
-          />
-          
-          <Box
-            component={motion.div}
-            animate={{
-              rotate: [0, -360],
-              x: [0, -20, 20, 0],
-              y: [0, -10, 20, 0]
-            }}
-            transition={{ duration: 25, repeat: Infinity }}
-            sx={{
-              position: 'absolute',
-              bottom: '15%',
-              left: '8%',
-              width: 250,
-              height: 250,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${alpha('#ffffff', 0.08)} 0%, transparent 70%)`,
-              zIndex: 1
-            }}
-          />
-          
-          <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2 }}>
-            <Typography
-              variant="h2"
-              align="center"
-              sx={{
-                color: 'white',
-                fontWeight: 800,
-                mb: 2,
-                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
-              }}
+          {[
+            { label: "Free 14-day trial", icon: <CalendarMonthIcon /> },
+            { label: "No credit card required", icon: <CreditCardIcon /> },
+            { label: "Cancel anytime", icon: <EventBusyIcon /> },
+            { label: "24/7 support", icon: <SupportAgentIcon /> }
+          ].map((item, index) => (
+            <Grid 
+              item 
+              xs={6} 
+              sm={3} 
+              key={item.label}
+              component={motion.div}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 + (index * 0.1) }}
+              viewport={{ once: true }}
             >
-              Ready to Transform Your Email Experience?
-            </Typography>
-            
-            <Typography
-              variant="h6"
-              align="center"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontWeight: 400,
-                mb: 5,
-                maxWidth: 800,
-                mx: 'auto'
-              }}
-            >
-              Join thousands of businesses already saving hours every day with Replai's
-              intelligent email automation.
-            </Typography>
-            
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2}
-              justifyContent="center"
-            >
-              <Button
-                variant="contained"
-                size="large"
+              <Box
                 sx={{
-                  borderRadius: 3,
-                  py: 1.8,
-                  px: 4,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  bgcolor: 'white',
-                  color: 'primary.main',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  }
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center'
                 }}
               >
-                Start Your Free Trial
-              </Button>
-              
-              <Button
-                variant="outlined"
-                size="large"
-                sx={{
-                  borderRadius: 3,
-                  py: 1.8,
-                  px: 4,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  color: 'white',
-                  borderColor: 'rgba(255, 255, 255, 0.5)',
-                  '&:hover': {
-                    borderColor: 'white',
-                  }
-                }}
-              >
-                Learn More
-              </Button>
-            </Stack>
-          </Container>
-        </Box>
-      </AnimatedBox>
-    </Container>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 1,
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main
+                  }}
+                >
+                  <Box component="span" className="material-icons-outlined" sx={{ fontSize: 20 }}>
+                    {item.icon}
+                  </Box>
+                </Box>
+                
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </Box>
   );
-}
+};
 
 export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
   return (
