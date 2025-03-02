@@ -16,7 +16,7 @@ import NotFoundPage from './templates/not-found/NotFoundPage';
 import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
-import PrivacyPage from './templates/marketing-page/PrivacyPage';
+import PrivacyTermsPage from './templates/marketing-page/PrivacyPage';
 import CalendarPage from './templates/dashboard/CalendarPage';
 
 export default function App() {
@@ -36,7 +36,7 @@ export default function App() {
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/privacy" element={<PrivacyTermsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>

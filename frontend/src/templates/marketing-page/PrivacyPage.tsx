@@ -260,7 +260,7 @@ export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }
                 Learn about our data practices and how we ensure your information remains secure.
               </Typography>
               
-              <Box sx={{ display: 'flex', gap: 2, mb: { xs: 4, md: 0 } }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: { xs: 4, md: 0 }, justifyContent: isMobile ? 'center' : 'flex-start' }}>
                 <Paper
                   component={motion.div}
                   variants={iconBoxVariants}
