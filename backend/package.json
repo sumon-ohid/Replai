@@ -32,6 +32,7 @@
     "pdfjs-dist": "^4.10.38",
     "pdfreader": "^3.0.7",
     "puppeteer": "^24.3.0",
+    "sitemap": "^8.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },

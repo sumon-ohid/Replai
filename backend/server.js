@@ -20,6 +20,10 @@ import feedback from "./routes/feedback.js";
 import userController from "./routes/userController.js";
 import deleteUser from "./routes/deleteUser.js";
 import googleCalendar from "./calendar/googleCalendar.js";
+import { SitemapStream } from 'sitemap';
+import { createGzip } from 'zlib';
+import { streamToPromise } from 'sitemap';
+import fs from 'fs';
 
 // import { handleSecurityEvent } from "./googleSecurity.js";
 
@@ -90,7 +94,6 @@ app.use("/api/calendar", googleCalendar);
 // Google security event
 // app.post("/security-events", handleSecurityEvent);
 
-
 app.use(express.static(path.join(__dirname, "dist")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
@@ -99,3 +102,51 @@ app.get("*", (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+
+
+// Sitemap
+// Fixed sitemap generation function
+async function generateSitemap() {
+  try {
+    const smStream = new SitemapStream({ hostname: 'https://replai.tech' });
+    
+    // Add URLs
+    smStream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
+    smStream.write({ url: '/login', changefreq: 'weekly', priority: 0.8 });
+    smStream.write({ url: '/signup', changefreq: 'weekly', priority: 0.8 });
+    smStream.write({ url: '/dashboard', changefreq: 'daily', priority: 0.9 });
+    smStream.write({ url: '/pricing', changefreq: 'weekly', priority: 0.8 });
+    smStream.write({ url: '/features', changefreq: 'weekly', priority: 0.8 });
+    smStream.write({ url: '/contact', changefreq: 'monthly', priority: 0.7 });
+    smStream.write({ url: '/privacy', changefreq: 'monthly', priority: 0.5 });
+
+    // Close the stream
+    smStream.end();
+    
+    // Create directory if it doesn't exist
+    const publicDir = path.join(__dirname, 'public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    
+    // Get the XML output and write to file
+    const sitemapOutput = await streamToPromise(smStream);
+    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapOutput);
+    console.log('Sitemap generated successfully');
+    
+    // Also generate a gzipped version for better performance
+    const pipeline = smStream.pipe(createGzip());
+    const sitemapGzip = await streamToPromise(pipeline);
+    fs.writeFileSync(path.join(publicDir, 'sitemap.xml.gz'), sitemapGzip);
+    console.log('Gzipped sitemap generated successfully');
+  } catch (error) {
+    console.error('Error generating sitemap:', error);
+  }
+}
+
+// Wrap in try-catch to avoid unhandled rejections
+try {
+  generateSitemap();
+} catch (error) {
+  console.error('Failed to generate sitemap:', error);
+}
