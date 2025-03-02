@@ -116,6 +116,8 @@ export default function EnhancedCalendar() {
   const [successMessage, setSuccessMessage] = React.useState<string | null>(
     null
   );
+  const [disconnectConfirmOpen, setDisconnectConfirmOpen] =
+    React.useState(false);
 
   // Check connection status on component mount
   React.useEffect(() => {
@@ -203,15 +205,25 @@ export default function EnhancedCalendar() {
     }
   };
 
-  // Disconnect from Google Calendar
-  const handleDisconnectCalendar = async () => {
+  // Update the handleDisconnectCalendar function to first show the confirmation
+  const handleDisconnectCalendar = () => {
+    setDisconnectConfirmOpen(true);
+  };
+
+  // Create a new function to actually perform the disconnection when confirmed
+  const confirmDisconnect = async () => {
     try {
       setIsLoading(true);
+      setDisconnectConfirmOpen(false);
       const token = localStorage.getItem("token");
-      await axios.post(`${API_URL}/api/calendar/disconnect`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
+      await axios.post(
+        `${API_URL}/api/calendar/disconnect`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       setIsConnected(false);
       setEvents([]);
       setIsLoading(false);
@@ -557,7 +569,7 @@ export default function EnhancedCalendar() {
         }}
       >
         <Typography variant="h6" component="h2"></Typography>
-      
+
         <Stack direction="row" spacing={1}>
           {isConnected ? (
             <>
@@ -928,6 +940,46 @@ export default function EnhancedCalendar() {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Disconnect Confirmation Dialog
+      Update the Dialog component to show a confirmation dialog when the user clicks the "Disconnect" button */}
+
+      <Dialog
+        open={disconnectConfirmOpen}
+        onClose={() => setDisconnectConfirmOpen(false)}
+        aria-labelledby="disconnect-dialog-title"
+        aria-describedby="disconnect-dialog-description"
+      >
+        <DialogTitle id="disconnect-dialog-title" sx={{ backgroundColor: "error.main", color: "error.contrastText" }}>
+          {"Disconnect Google Calendar?"}
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: theme.palette.background.paper}}>
+          <Typography id="disconnect-dialog-description" sx={{ mt: 2 }}>
+            Are you sure you want to disconnect your Google Calendar? You will
+            no longer be able to view or manage your calendar events from this
+            dashboard.
+          </Typography>
+        </DialogContent>
+        <DialogActions
+          sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }}
+        >
+          <Button
+            onClick={() => setDisconnectConfirmOpen(false)}
+            variant="outlined"
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDisconnect}
+            variant="contained"
+            color="error"
+            autoFocus
+          >
+            Disconnect
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Event Form Dialog */}
