@@ -403,8 +403,8 @@ const WorkflowSection = () => {
           right: 0,
           bottom: 0,
           backgroundImage: theme.palette.mode === 'dark' 
-            ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)'
-            : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 60%)',
+            ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0) 25%)'
+            : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 25%)',
           zIndex: 0
         }}
       />
@@ -457,7 +457,7 @@ const WorkflowSection = () => {
         </AnimatedBox>
         
         <Grid container spacing={5} alignItems="center">
-          <Grid xs={12} md={5} sx={{ order: { xs: 2, md: 1 } }}>
+          <Grid xs={12} md={5} sx={{ order: { xs: 2, md: 1 }, mt: { xs: 5, md: 0 }}}>
             <Box>
               {steps.map((step, index) => (
                 <Box
@@ -472,6 +472,7 @@ const WorkflowSection = () => {
                   transition={{ duration: 0.5 }}
                   onClick={() => setActiveStep(index)}
                   sx={{
+                    mr: 2,
                     mb: 4,
                     p: 3,
                     cursor: 'pointer',
@@ -550,7 +551,7 @@ const WorkflowSection = () => {
                   loop
                   animationData={steps[activeStep].animation}
                   play
-                  style={{ width: '100%', height: '100%', maxHeight: 400 }}
+                  style={{ width: '90%', height: '100%', maxHeight: 400 }}
                 />
               </Box>
             </AnimatePresence>
