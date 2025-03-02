@@ -455,9 +455,13 @@ const WorkflowSection = () => {
             automated workflow that saves hours every day.
           </Typography>
         </AnimatedBox>
-        
-        <Grid container spacing={5} alignItems="center">
-          <Grid xs={12} md={5} sx={{ order: { xs: 2, md: 1 }, mt: { xs: 5, md: 0 }}}>
+      <Grid 
+          container 
+          spacing={{ xs: 3, sm: 4, md: 5 }} 
+          alignItems="center"
+          direction={{ xs: 'column-reverse', md: 'row' }}
+        >
+          <Grid item xs={12} md={5}>
             <Box>
               {steps.map((step, index) => (
                 <Box
@@ -472,9 +476,9 @@ const WorkflowSection = () => {
                   transition={{ duration: 0.5 }}
                   onClick={() => setActiveStep(index)}
                   sx={{
-                    mr: 2,
+                    mr: { xs: 0, md: 2 },
                     mb: 4,
-                    p: 3,
+                    p: { xs: 2, sm: 3 },
                     cursor: 'pointer',
                     borderRadius: 2,
                     border: '1px solid',
@@ -483,48 +487,65 @@ const WorkflowSection = () => {
                     transition: 'all 0.3s ease',
                     backgroundColor: activeStep === index 
                       ? alpha(theme.palette.primary.main, 0.08)
-                      : 'transparent'
+                      : 'transparent',
+                    width: { xs: '100%', md: 'auto' }
                   }}
                 >
-                  <Box 
-                    component="span"
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      bgcolor: activeStep === index ? 'primary.main' : 'action.hover',
-                      color: activeStep === index ? 'white' : 'text.secondary',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      mb: 2
-                    }}
+                  <Stack 
+                    direction={{ xs: 'row', md: 'column' }} 
+                    alignItems={{ xs: 'center', md: 'flex-start' }}
+                    spacing={{ xs: 2, md: 0 }}
                   >
-                    {index + 1}
-                  </Box>
-                  
-                  <Typography 
-                    variant="h5" 
-                    sx={{ 
-                      fontWeight: 600, 
-                      mb: 1,
-                      color: activeStep === index ? 'primary.main' : 'text.primary' 
-                    }}
-                  >
-                    {step.title}
-                  </Typography>
-                  
-                  <Typography variant="body1" color="text.secondary">
-                    {step.description}
-                  </Typography>
+                    <Box 
+                      component="span"
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        bgcolor: activeStep === index ? 'primary.main' : 'action.hover',
+                        color: activeStep === index ? 'white' : 'text.secondary',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        mb: { xs: 0, md: 2 },
+                        flexShrink: 0
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                    
+                    <Box sx={{ flex: 1 }}>
+                      <Typography 
+                        variant="h5" 
+                        sx={{ 
+                          fontWeight: 600, 
+                          mb: 1,
+                          color: activeStep === index ? 'primary.main' : 'text.primary',
+                          fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' }
+                        }}
+                      >
+                        {step.title}
+                      </Typography>
+                      
+                      <Typography 
+                        variant="body1" 
+                        color="text.secondary"
+                        sx={{ 
+                          display: { xs: 'none', sm: 'block' } 
+                        }}
+                      >
+                        {step.description}
+                      </Typography>
+                    </Box>
+                  </Stack>
                 </Box>
               ))}
             </Box>
           </Grid>
           
-          <Grid xs={12} md={7} sx={{ order: { xs: 1, md: 2 } }}>
+          <Grid item xs={12} md={7}>
             <AnimatePresence mode="wait">
               <Box
                 key={`animation-${activeStep}`}
@@ -534,24 +555,32 @@ const WorkflowSection = () => {
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.5 }}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 3 },
                   borderRadius: 4,
                   background: theme.palette.background.paper,
                   boxShadow: `0 20px 60px ${alpha(theme.palette.common.black, theme.palette.mode === 'dark' ? 0.4 : 0.1)}`,
                   border: '1px solid',
                   borderColor: 'divider',
-                  aspectRatio: '4/3',
+                  width: '100%',
+                  height: { xs: 250, sm: 320, md: 'auto' },
+                  aspectRatio: { md: '4/3' },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  mx: 'auto'
                 }}
               >
                 <Lottie
                   loop
                   animationData={steps[activeStep].animation}
                   play
-                  style={{ width: '90%', height: '100%', maxHeight: 400 }}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    maxWidth: '90%',
+                    maxHeight: 400 
+                  }}
                 />
               </Box>
             </AnimatePresence>
@@ -974,13 +1003,41 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
       <AppAppBar />
       <Hero />
       <WorkflowSection />
-      <LogoCollection />
-      <Features />
-      <Testimonials />
-      <FAQ />
+      {/* <LogoCollection /> */}
+      {/* <Features /> */}
+      {/* <Testimonials /> */}
       <BenefitsSection />
       <StatsSection />
       <CtaSection />
+      <FAQ />
+      <Box
+          sx={{
+            pt: 6,
+            pb: 6,
+            m: 2,
+            borderRadius: 2,
+            border: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Typography variant="h4" align="center" gutterBottom>
+            <Policy sx={{ fontSize: 40 }} />
+          </Typography>
+          <Typography variant="h6" align="center" gutterBottom>
+            Privacy Policy
+          </Typography>
+          <Typography variant="body1" align="center" gutterBottom>
+            We take your privacy seriously. We do not share your data with third
+            parties.
+          </Typography>
+          <Typography variant="body1" align="center" gutterBottom>
+            Check our{" "}
+            <a href="/privacy" style={{ textDecoration: "underline" }}>
+              Privacy Policy{" "}
+            </a>
+            for more information.
+          </Typography>
+        </Box>
       <Footer />
     </AppTheme>
   );
