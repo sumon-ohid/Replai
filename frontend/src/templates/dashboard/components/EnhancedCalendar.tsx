@@ -18,6 +18,7 @@ import {
   Divider,
   useMediaQuery,
   alpha,
+  GlobalStyles,
 } from "@mui/material";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -100,6 +101,7 @@ export default function EnhancedCalendar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const calendarRef = React.useRef<FullCalendar | null>(null);
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const [isConnected, setIsConnected] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -365,7 +367,120 @@ export default function EnhancedCalendar() {
     }
   };
 
-  const isDarkMode = localStorage.getItem("theme") === "dark";
+  // Custom CSS for the calendar in dark mode
+  const calendarStyles = `
+    /* List View styles for both light and dark mode */
+    .fc-list {
+      border-color: ${theme.palette.divider} !important;
+    }
+    
+    .fc-list-day-cushion {
+      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[100]} !important;
+      color: ${theme.palette.text.primary} !important;
+    }
+    
+    .fc-list-event-title,
+    .fc-list-event-time {
+      color: ${theme.palette.text.primary} !important;
+    }
+    
+    .fc-list-event:hover td {
+      background-color: ${isDarkMode ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.08)} !important;
+    }
+    
+    .fc-list-event-dot {
+      border-color: ${theme.palette.primary.main} !important;
+    }
+    
+    .fc-list-table td {
+      border-color: ${theme.palette.divider} !important;
+    }
+    
+    .fc-list-empty {
+      background-color: ${theme.palette.background.paper} !important;
+      color: ${theme.palette.text.secondary} !important;
+    }
+    
+    /* Week/Day View styles */
+    .fc-timegrid-slot,
+    .fc-timegrid-axis,
+    .fc-col-header-cell {
+      background-color: ${theme.palette.background.paper} !important;
+      color: ${theme.palette.text.primary} !important;
+      border-color: ${theme.palette.divider} !important;
+    }
+    
+    .fc-timegrid-now-indicator-line {
+      border-color: ${theme.palette.error.main} !important;
+    }
+    
+    .fc-timegrid-now-indicator-arrow {
+      border-color: ${theme.palette.error.main} !important;
+      color: ${theme.palette.error.main} !important;
+    }
+    
+    /* Month View styles */
+    .fc-daygrid-day {
+      background-color: ${theme.palette.background.paper} !important;
+    }
+    
+    .fc-day-today {
+      background-color: ${isDarkMode ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.05)} !important;
+    }
+    
+    /* General styles */
+    .fc-theme-standard td, 
+    .fc-theme-standard th,
+    .fc-theme-standard .fc-scrollgrid {
+      border-color: ${theme.palette.divider} !important;
+    }
+    
+    .fc-button {
+      background-color: ${theme.palette.grey[isDarkMode ? 800 : 200]} !important;
+      color: ${theme.palette.text.primary} !important;
+      border-color: ${theme.palette.divider} !important;
+      box-shadow: none !important;
+    }
+    
+    .fc-button-active {
+      background-color: ${theme.palette.primary.main} !important;
+      color: ${theme.palette.primary.contrastText} !important;
+    }
+    
+    .fc-button:hover {
+      background-color: ${isDarkMode ? theme.palette.grey[700] : theme.palette.grey[300]} !important;
+    }
+    
+    .fc-button-primary:not(:disabled):active, 
+    .fc-button-primary:not(:disabled).fc-button-active {
+      background-color: ${theme.palette.primary.main} !important;
+      color: ${theme.palette.primary.contrastText} !important;
+      border-color: ${theme.palette.primary.dark} !important;
+    }
+    
+    /* Non-business days and other-month days */
+    .fc-day-other {
+      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[50]} !important;
+      opacity: 0.8 !important;
+    }
+    
+    /* Header typography */
+    .fc .fc-toolbar-title {
+      color: ${theme.palette.text.primary} !important;
+    }
+    
+    /* Popover for "more" link */
+    .fc-popover {
+      background-color: ${theme.palette.background.paper} !important;
+      border-color: ${theme.palette.divider} !important;
+      box-shadow: ${theme.shadows[3]} !important;
+    }
+    
+    .fc-popover-header {
+      background-color: ${isDarkMode ? theme.palette.background.default : theme.palette.grey[100]} !important;
+      color: ${theme.palette.text.primary} !important;
+    }
+  `;
 
   return (
     <Box
@@ -385,6 +500,10 @@ export default function EnhancedCalendar() {
         borderColor: "divider",
       }}
     >
+      {/* Global Styles for FullCalendar */}
+      <GlobalStyles styles={{ html: { overflow: 'auto' } }} />
+      <style>{calendarStyles}</style>
+
       {/* Header with controls */}
       <Box
         sx={{
@@ -487,10 +606,8 @@ export default function EnhancedCalendar() {
             position: "relative",
             borderRadius: 1,
             overflow: "hidden",
-            backgroundColor:
-              theme.palette.mode === "dark"
-                ? theme.palette.background.paper
-                : theme.palette.background.default,
+            backgroundColor: theme.palette.background.paper,
+            p: 2,
           }}
         >
           {isLoading && (
@@ -504,7 +621,7 @@ export default function EnhancedCalendar() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "rgba(0, 0, 0, 0.1)",
+                backgroundColor: alpha(theme.palette.background.paper, 0.7),
                 zIndex: 10,
               }}
             >
@@ -537,7 +654,6 @@ export default function EnhancedCalendar() {
             nowIndicator={true}
             navLinks={true}
             dayMaxEvents={true}
-            themeSystem="Litera"
             firstDay={1} // Monday as first day
             showNonCurrentDates={false}
             dayMaxEventRows={3}
@@ -549,6 +665,7 @@ export default function EnhancedCalendar() {
               minute: "2-digit",
               meridiem: false,
             }}
+            viewClassNames={isDarkMode ? "fc-theme-dark" : "fc-theme-light"}
           />
         </Paper>
       )}
