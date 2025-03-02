@@ -1,204 +1,682 @@
-import * as React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
-import InputLabel from "@mui/material/InputLabel";
-import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import visuallyHidden from "@mui/utils/visuallyHidden";
-import { styled } from "@mui/material/styles";
-import CustomizedTimeline from "./Timeline";
-import Chip from "@mui/material/Chip";
+import Link from "@mui/material/Link";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { Alert } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import { motion, useAnimation, useScroll, useTransform } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
-const StyledBox = styled("div")(({ theme }) => ({
-  alignSelf: "center",
-  width: "100%",
-  height: 400,
-  marginTop: theme.spacing(8),
-  borderRadius: theme.shape.borderRadius,
-  outline: "6px solid",
-  outlineColor: "hsla(220, 25%, 80%, 0.2)",
-  border: "1px solid",
-  borderColor: theme.palette.grey[200],
-  boxShadow: "0 0 12px 8px hsla(220, 25%, 80%, 0.2)",
-  backgroundImage: `url(${
-    import.meta.env.VITE_TEMPLATE_IMAGE_URL || "https://mui.com"
-  }/static/screenshots/material-ui/getting-started/templates/dashboard.jpg)`,
-  backgroundSize: "cover",
-  [theme.breakpoints.up("sm")]: {
-    marginTop: theme.spacing(10),
-    height: 700,
-  },
-  ...theme.applyStyles("dark", {
-    boxShadow: "0 0 24px 12px hsla(210, 100%, 25%, 0.2)",
-    backgroundImage: `url(${
-      import.meta.env.VITE_TEMPLATE_IMAGE_URL || "https://mui.com"
-    }/static/screenshots/material-ui/getting-started/templates/dashboard-dark.jpg)`,
-    outlineColor: "hsla(220, 20%, 42%, 0.1)",
-    borderColor: theme.palette.grey[700],
-  }),
-}));
+// Import icons
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import EmailIcon from '@mui/icons-material/Email';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WavingHandIcon from '@mui/icons-material/WavingHand';
+import Badge from "@mui/material/Badge";
+
+// Import assets
+import heroBackground from "../../../assets/animations/hero-grid.svg"; // Create or download this asset
+
+const AnimatedText: React.FC<{ text: React.ReactNode; delay?: number }> = ({ text, delay = 0 }) => {
+  const controls = useAnimation();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start({
+        opacity: 1,
+        y: 0,
+        transition: { 
+          delay,
+          duration: 0.8,
+          ease: [0.25, 0.1, 0.25, 1.0]
+        }
+      });
+    }
+  }, [controls, inView, delay]);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={controls}
+    >
+      {text}
+    </motion.div>
+  );
+};
+
+const GlowingButton: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
+  
+  return (
+    <Box
+      component={motion.div}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.98 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        position: 'relative',
+        zIndex: 1,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(circle closest-side, ${alpha(theme.palette.primary.main, 0.4)}, transparent)`,
+          opacity: isHovered ? 1 : 0,
+          transition: 'opacity 0.5s',
+          transform: 'scale(1.5)',
+          zIndex: -1,
+          borderRadius: '16px',
+        }
+      }}
+    >
+      <Button
+        component={motion.button}
+        variant="contained"
+        size="large"
+        color="primary"
+        onClick={onClick}
+        endIcon={<ArrowForwardIcon />}
+        sx={{
+          borderRadius: '12px',
+          px: 4,
+          py: 1.5,
+          position: 'relative',
+          overflow: 'hidden',
+          textTransform: 'none',
+          fontSize: '1.1rem',
+          fontWeight: 600,
+          background: isHovered 
+            ? `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+            : theme.palette.primary.main,
+          transition: 'background 0.3s',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent)',
+            transform: isHovered ? 'translateX(100%)' : 'translateX(-100%)',
+            transition: 'transform 0.6s',
+          }
+        }}
+      >
+        {children}
+      </Button>
+    </Box>
+  );
+};
+
+// Animated email notification component
+interface FloatingEmailProps {
+  delay: number;
+  position: { x: number; y: number };
+  scale?: number;
+}
+
+const FloatingEmail: React.FC<FloatingEmailProps> = ({ delay, position, scale = 1 }) => {
+  const theme = useTheme();
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, x: position.x }}
+      animate={{ 
+        opacity: 1, 
+        y: position.y,
+        x: position.x, 
+        transition: { 
+          delay,
+          duration: 0.8, 
+          ease: [0.25, 0.1, 0.25, 1.0] 
+        } 
+      }}
+      style={{
+        position: 'absolute',
+        zIndex: 2
+      }}
+    >
+      <motion.div
+        animate={{
+          y: [0, -10, 0],
+        }}
+        transition={{
+          duration: 4,
+          ease: "easeInOut",
+          repeat: Infinity,
+          repeatType: "reverse",
+        }}
+      >
+        <Box
+          sx={{
+            borderRadius: 3,
+            p: 1.5,
+            bgcolor: 'background.paper',
+            boxShadow: theme.shadows[10],
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, 0.2),
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <Badge color="error" variant="dot">
+            <EmailIcon sx={{ color: theme.palette.primary.main }} />
+          </Badge>
+          <Typography variant="body2" fontWeight={500}>
+            New email from client
+          </Typography>
+        </Box>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Animated AI response component
+interface FloatingResponseProps {
+  delay: number;
+  position: { x: number; y: number };
+  scale?: number;
+}
+
+const FloatingResponse: React.FC<FloatingResponseProps> = ({ delay, position, scale = 1 }) => {
+  const theme = useTheme();
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, x: position.x }}
+      animate={{ 
+        opacity: 1, 
+        y: position.y,
+        x: position.x, 
+        transition: { 
+          delay,
+          duration: 0.8, 
+          ease: [0.25, 0.1, 0.25, 1.0] 
+        } 
+      }}
+      style={{
+        position: 'absolute',
+        zIndex: 2
+      }}
+    >
+      <motion.div
+        animate={{
+          y: [0, -12, 0],
+        }}
+        transition={{
+          duration: 5,
+          ease: "easeInOut",
+          repeat: Infinity,
+          repeatType: "reverse",
+          delay: 1,
+        }}
+      >
+        <Box
+          sx={{
+            borderRadius: 3,
+            p: 1.5,
+            bgcolor: 'background.paper',
+            boxShadow: theme.shadows[10],
+            border: '1px solid',
+            borderColor: alpha(theme.palette.success.main, 0.3),
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <AutoAwesomeIcon sx={{ color: theme.palette.success.main }} />
+          <Typography variant="body2" fontWeight={500}>
+            AI drafting response
+          </Typography>
+          <motion.div
+            animate={{
+              opacity: [0, 1, 0]
+            }}
+            transition={{
+              duration: 1.5,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+          >
+            <Typography variant="body2">...</Typography>
+          </motion.div>
+        </Box>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Animated success notification
+interface FloatingSuccessProps {
+  delay: number;
+  position: { x: number; y: number };
+  scale?: number;
+}
+
+const FloatingSuccess: React.FC<FloatingSuccessProps> = ({ delay, position, scale = 1 }) => {
+  const theme = useTheme();
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, x: position.x }}
+      animate={{ 
+        opacity: 1, 
+        y: position.y,
+        x: position.x, 
+        transition: { 
+          delay,
+          duration: 0.8, 
+          ease: [0.25, 0.1, 0.25, 1.0] 
+        } 
+      }}
+      style={{
+        position: 'absolute',
+        zIndex: 2
+      }}
+    >
+      <motion.div
+        animate={{
+          y: [0, -8, 0],
+        }}
+        transition={{
+          duration: 4.5,
+          ease: "easeInOut",
+          repeat: Infinity,
+          repeatType: "reverse",
+          delay: 0.5,
+        }}
+      >
+        <Box
+          sx={{
+            borderRadius: 3,
+            p: 1.5,
+            bgcolor: 'background.paper',
+            boxShadow: theme.shadows[10],
+            border: '1px solid',
+            borderColor: alpha(theme.palette.success.main, 0.3),
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <CheckCircleIcon sx={{ color: theme.palette.success.main }} />
+          <Typography variant="body2" fontWeight={500}>
+            Response sent automatically
+          </Typography>
+        </Box>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 export default function Hero() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isDarkMode = localStorage.getItem("mui-mode") === "dark";
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // Parallax effect on scroll
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  
+  // Animated notification badge
+  const [showBadge, setShowBadge] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowBadge(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Animation for the hero image
+  const heroImageControls = useAnimation();
+  const [heroImageRef, heroImageInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  
+  useEffect(() => {
+    if (heroImageInView) {
+      heroImageControls.start({ 
+        opacity: 1, 
+        y: 0,
+        transition: { duration: 0.8, delay: 0.3 }
+      });
+    }
+  }, [heroImageControls, heroImageInView]);
 
   return (
     <Box
       id="hero"
-      sx={(theme) => ({
-        width: "100%",
-        backgroundRepeat: "no-repeat",
-
-        backgroundImage:
-          "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(210, 100%, 90%), transparent)",
-        ...theme.applyStyles("dark", {
-          backgroundImage:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(210, 100%, 16%), transparent)",
-        }),
-      })}
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        pt: { xs: 10, sm: 12, md: 16 },
+        pb: { xs: 8, sm: 10, md: 12 },
+        // backgroundColor: theme.palette.mode === 'dark' 
+        //   ? 'transparent'
+        //   : alpha(theme.palette.primary.light, 0.02),
+        backgroundImage: theme.palette.mode === 'dark' 
+          ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)'
+          : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 60%)',
+        zIndex: 0
+      }}
     >
-      <Container
+      {/* Background elements */}
+      <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          pt: { xs: 14, sm: 20 },
-          pb: { xs: 8, sm: 12 },
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `url(${heroBackground})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: theme.palette.mode === 'dark' ? 0.2 : 0.05,
+          zIndex: 0,
         }}
-      >
-        <Stack
-          spacing={2}
-          useFlexGap
-          sx={{ alignItems: "center", width: { xs: "100%", sm: "70%" } }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              border: 1,
-              borderColor: "divider",
-              borderRadius: 10,
-              pl: 1,
-              pr: 2,
-              position: "relative",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: -1,
-                left: 0,
-                width: "100%",
-                height: "5px",
-                borderTopLeftRadius: "10px",
-                borderTopRightRadius: "10px",
-                pointerEvents: "none",
-              },
-              boxShadow: `0px -3px 8px rgba(0, 119, 255, 0.4)`,
-            }}
-          >
-            <ErrorOutlineOutlinedIcon sx={{ml: 1, opacity: .6, fontSize: "0.9rem" }} fontSize="small" />
-            <Typography color="text.secondary" p={1} variant="body1" sx={{fontSize: "0.7rem"}}>
-              This website is still in development
+      />
+      
+      <Box
+        component={motion.div}
+        style={{ y }}
+        sx={{
+          position: 'absolute',
+          top: -100,
+          left: '10%',
+          width: '80%',
+          height: 300,
+          backgroundImage: theme.palette.mode === 'dark' 
+          ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)'
+          : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 60%)',
+          filter: 'blur(60px)',
+          zIndex: 0,
+        }}
+      />
+
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 6, md: 4 }} alignItems="center">
+          {/* Left content: Text and CTA */}
+          <Box sx={{ width: { xs: '100%', md: '50%' }, zIndex: 3, position: 'relative' }}>
+            {/* Beta badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Box 
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '20px',
+                  mb: 4,
+                  px: 2,
+                  py: 0.5,
+                  background: `linear-gradient(90deg, 
+                    ${alpha(theme.palette.primary.main, 0.1)} 0%, 
+                    ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                  boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.15)}`
+                }}
+              >
+                <WavingHandIcon sx={{ mr: 1, fontSize: '0.9rem', color: 'primary.main' }} />
+                <Typography 
+                  variant="caption" 
+                  sx={{ fontWeight: 500, letterSpacing: 1 }}
+                >
+                  NOW IN BETA
+                </Typography>
+              </Box>
+            </motion.div>
+            
+            {/* Main headline */}
+            <Typography 
+              variant="h1" 
+              component={motion.div}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+              sx={{
+                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                fontWeight: 800,
+                mb: 2,
+                lineHeight: 1.2,
+              }}
+            >
+              Your
+              <Typography 
+                component="span" 
+                variant="inherit" 
+                color="primary.main" 
+                sx={{
+                  position: 'relative',
+                  ml: 1.5,
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 4,
+                    height: '0.2em',
+                    background: `linear-gradient(90deg, 
+                      transparent 0%, 
+                      ${alpha(theme.palette.primary.main, 0.2)} 20%, 
+                      ${alpha(theme.palette.primary.main, 0.2)} 80%, 
+                      transparent 100%)`,
+                    zIndex: -1
+                  }
+                }}
+              >
+                Personal
+              </Typography>
+              <br />
+              AI Email Assistant
+            </Typography>
+            
+            {/* Subheadline with animated reveal */}
+            <AnimatedText
+              delay={0.3}
+              text={
+                <Typography 
+                  variant="h5" 
+                  color="text.secondary"
+                  sx={{
+                    fontWeight: 400,
+                    mb: 4,
+                    maxWidth: 500,
+                    lineHeight: 1.5
+                  }}
+                >
+                  Save hours every day with AI-powered email automation that understands your style and responds like you would.
+                </Typography>
+              }
+            />
+            
+            {/* CTA buttons section */}
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={2} 
+              component={motion.div}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              sx={{ mt: 5 }}
+            >
+              <GlowingButton onClick={() => navigate('/signin')}>
+                Get Started Free
+              </GlowingButton>
+              
+              <Button
+                variant="outlined"
+                size="large"
+                color="primary"
+                sx={{
+                  borderRadius: '12px',
+                  px: 3,
+                  py: 1.5,
+                  borderWidth: 2,
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                }}
+              >
+                Watch Demo
+              </Button>
+            </Stack>
+            
+            {/* Terms text */}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              component={motion.div}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              sx={{ 
+                display: 'block',
+                mt: 2,
+              }}
+            >
+              No credit card required. By signing up you agree to our&nbsp;
+              <Link href="/terms" underline="hover" sx={{ fontWeight: 500 }}>
+                Terms & Conditions
+              </Link>
             </Typography>
           </Box>
-          <Typography
-            variant="h1"
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: "center",
-              fontSize: "clamp(3rem, 10vw, 3.5rem)",
+          
+          {/* Right content: Interactive mail UI mockup */}
+          <Box 
+            ref={heroImageRef}
+            component={motion.div}
+            initial={{ opacity: 0, y: 40 }}
+            animate={heroImageControls}
+            sx={{ 
+              width: { xs: '100%', md: '50%' },
+              height: { xs: '350px', sm: '400px', md: '450px' },
+              position: 'relative',
             }}
           >
-            Our&nbsp;latest&nbsp;
-            <Typography
-              component="span"
-              variant="h1"
-              sx={(theme) => ({
-                fontSize: "inherit",
-                color: "primary.main",
-                ...theme.applyStyles("dark", {
-                  color: "primary.light",
-                }),
-              })}
-            >
-              email agent
-            </Typography>
-          </Typography>
-          <Typography
-            sx={{
-              textAlign: "center",
-              color: "text.secondary",
-              width: { sm: "100%", md: "80%" },
-            }}
-          >
-            No more frastration with your emails. If you are tired of managing
-            your emails, we are here to help. We will handle your emails so you
-            can do things you love. Each email will be analized and replied
-            using AI. Fast and easy.
-          </Typography>
-          <CustomizedTimeline />
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            useFlexGap
-            sx={{
-              pt: 2,
-              width: {
-                xs: "100%",
-                sm: "350px",
-                alignItems: "center",
-                justifyContent: "center",
-              },
-              mt: 5,
-            }}
-          >
-            {/* <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              sx={{ minWidth: 'fit-content' }}
-              onClick={() => {
-                navigate('/signin');
+            {/* Main device mockup */}
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                borderRadius: 4,
+                overflow: 'hidden',
+                boxShadow: theme.shadows[20],
+                border: '1px solid',
+                borderColor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.common.white, 0.1)
+                  : alpha(theme.palette.common.black, 0.1),
               }}
             >
-              Start now
-            </Button> */}
-
-            <button
-              className="relative inline-flex h-12 active:scale-95 transition overflow-hidden rounded-lg p-[1px] focus:outline-none"
-              onClick={() => {
-                navigate("/signin");
-              }}
+              {/* Mock UI image */}
+              <Box
+                component="img"
+                src="https://cdn.dribbble.com/userupload/10552986/file/original-c945550d20d9d0cd08540828b80006dc.jpg?resize=2400x1800&vertical=center"
+                alt="Replai Email Interface"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'top center',
+                }}
+              />
+              
+              {/* Overlay gradient */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '30%',
+                  background: `linear-gradient(to top, ${theme.palette.background.default}, transparent)`,
+                  opacity: 0.8,
+                }}
+              />
+            </Box>
+            
+            {/* Floating UI Elements - Only show on larger screens */}
+            {!isSmallScreen && (
+              <>
+                <FloatingEmail 
+                  delay={1.2} 
+                  position={{ x: isMobile ? -20 : -80, y: isMobile ? 30 : 60 }}
+                  scale={isMobile ? 0.8 : 1}
+                />
+                <FloatingResponse 
+                  delay={1.8} 
+                  position={{ x: isMobile ? 40 : 100, y: isMobile ? 120 : 180 }}
+                  scale={isMobile ? 0.8 : 1}
+                />
+                <FloatingSuccess 
+                  delay={2.4} 
+                  position={{ x: isMobile ? -30 : -60, y: isMobile ? 220 : 260 }}
+                  scale={isMobile ? 0.8 : 1}
+                />
+              </>
+            )}
+            
+            {/* Stats pill */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 2 }}
             >
-              <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,rgb(75,165,255)_0%,rgb(120,190,255)_50%,rgb(50,140,255)_100%)]"></span>
-              <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-lg bg-slate-950 px-7 text-sm font-medium text-white backdrop-blur-3xl gap-2">
-                <span>Let's get started</span>
-                <ArrowForwardIcon />
-              </span>
-            </button>
-          </Stack>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ textAlign: "center" }}
-          >
-            By clicking &quot;Start now&quot; you agree to our&nbsp;
-            <Link href="/privacy" color="primary">
-              Terms & Conditions
-            </Link>
-            .
-          </Typography>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  mx: 'auto',
+                  width: 'fit-content',
+                  borderRadius: 8,
+                  px: 3,
+                  py: 2,
+                  bgcolor: 'background.paper',
+                  boxShadow: theme.shadows[10],
+                  border: '1px solid',
+                  borderColor: theme.palette.divider,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  zIndex: 3,
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>3hrs+</Typography>
+                  <Typography variant="caption" color="text.secondary">Saved Daily</Typography>
+                </Box>
+                
+                <Box sx={{ height: 30, border: '1px solid', borderColor: 'divider' }} />
+                
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>93%</Typography>
+                  <Typography variant="caption" color="text.secondary">Accuracy</Typography>
+                </Box>
+              </Box>
+            </motion.div>
+          </Box>
         </Stack>
-        {/* <StyledBox id="image" /> */}
       </Container>
     </Box>
   );

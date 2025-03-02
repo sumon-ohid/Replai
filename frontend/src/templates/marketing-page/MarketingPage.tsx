@@ -219,7 +219,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, del
             right: 0,
             bottom: 0,
             opacity: 0.05,
-            backgroundImage: 'url(https://images.unsplash.com/photo-1557200134-90327ee9fafa?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8ZW1haWx8ZW58MHx8MHx8&ixlib=rb-1.2.1&w=1000&q=80)',
+            backgroundImage: 'url(https://cdn.dribbble.com/userupload/10552986/file/original-c945550d20d9d0cd08540828b80006dc.jpg?resize=2400x1800&vertical=center)',
             backgroundPosition: 'center',
             backgroundSize: 'cover',
             transition: 'transform 0.5s ease-out',
