@@ -559,7 +559,7 @@ export default function EnhancedCalendar() {
         onClose={() => setEventDetailsOpen(false)}
         maxWidth="sm"
         fullWidth
-        sx={{ backdropFilter: "blur(5px)", backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'}}
+        sx={{ backdropFilter: "blur(5px)"}}
       >
         {selectedEvent && (
           <>
@@ -569,6 +569,8 @@ export default function EnhancedCalendar() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 borderBottom: `1px solid ${theme.palette.divider}`,
+                backgroundColor: theme.palette.background.paper,
+          
               }}
             >
               <Typography variant="h6" component="div" sx={{ pr: 2 }}>
@@ -583,7 +585,7 @@ export default function EnhancedCalendar() {
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent>
+            <DialogContent sx={{ backgroundColor: theme.palette.background.paper }}>
               <Stack spacing={2} sx={{ pt: 2 }}>
                 {/* Date & Time */}
                 <Box>
@@ -726,6 +728,7 @@ export default function EnhancedCalendar() {
                 borderTop: `1px solid ${theme.palette.divider}`,
                 px: 3,
                 py: 2,
+                backgroundColor: theme.palette.background.paper,
               }}
             >
               <Button

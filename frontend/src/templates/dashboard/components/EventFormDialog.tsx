@@ -97,6 +97,7 @@ const colorOptions: ColorOption[] = [
 export default function EventFormDialog({ open, onClose, event, onSave, isNew }: EventFormProps) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDarkMode = localStorage.getItem('mui-mode') === 'dark';
   
   // Form state
   const [title, setTitle] = React.useState(event.title);
@@ -293,7 +294,8 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
           display: 'flex', 
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: `1px solid ${theme.palette.divider}`
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
         }}>
           <Typography variant="h6">
             {isNew ? 'Create Event' : 'Edit Event'}
@@ -303,11 +305,10 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
           </IconButton>
         </DialogTitle>
         
-        <DialogContent sx={{ pt: 3 }}>
-          <Stack spacing={3}>
+        <DialogContent sx={{ pt: 3, backgroundColor: theme.palette.background.paper }}>
+          <Stack spacing={3} sx={{ mt: 3 }}>
             {/* Title */}
             <TextField
-              label="Title"
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
@@ -343,12 +344,13 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
                 label="All day"
                 sx={{ mb: 2 }}
               />
-              
+              <Typography variant="subtitle2" gutterBottom sx={{ fontSize: '0.6rem', ml: 1 }}>
+                {allDay ? 'All-day event' : 'Start & end date'}
+              </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 {allDay ? (
                   // Date picker for all-day events
                   <DatePicker
-                    label="Start date"
                     value={startTime}
                     onChange={handleStartChange}
                     slotProps={{
@@ -370,7 +372,6 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
                 ) : (
                   // Date & time picker for regular events
                   <DateTimePicker
-                    label="Start date & time"
                     value={startTime}
                     onChange={handleStartChange}
                     slotProps={{
@@ -394,7 +395,6 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
                 {allDay ? (
                   // Date picker for all-day events
                   <DatePicker
-                    label="End date"
                     value={endTime}
                     onChange={handleEndChange}
                     slotProps={{
@@ -416,7 +416,6 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
                 ) : (
                   // Date & time picker for regular events
                   <DateTimePicker
-                    label="End date & time"
                     value={endTime}
                     onChange={handleEndChange}
                     slotProps={{
@@ -441,7 +440,6 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
             
             {/* Location */}
             <TextField
-              label="Location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               fullWidth
@@ -457,28 +455,27 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
             />
             
             {/* Description */}
-            <TextField
-              label="Description"
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              fullWidth
-              multiline
               rows={3}
               placeholder="Add description"
-              variant="outlined"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <DescriptionIcon color="action" sx={{ marginBottom: 'auto', mt: 1 }} />
-                  </InputAdornment>
-                ),
+              style={{
+                width: "100%",
+                height: "100%",
+                padding: "10px",
+                borderRadius: "5px",
+                border: ".2px solid rgba(255, 255, 255, 0.21)",
+                backgroundColor: isDarkMode ? "black" : "white",
+                resize: "none",
               }}
-            />
+            >
+                {description}
+            </textarea>
             
             {/* Color selection */}
             <TextField
               select
-              label="Color"
               value={colorId}
               onChange={(e) => setColorId(e.target.value)}
               fullWidth
@@ -543,7 +540,6 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
               
               <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                 <TextField
-                  label="Add attendee email"
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value.trim())}
                   placeholder="email@example.com"
@@ -606,11 +602,11 @@ export default function EventFormDialog({ open, onClose, event, onSave, isNew }:
           </Stack>
         </DialogContent>
         
-        <DialogActions sx={{ borderTop: `1px solid ${theme.palette.divider}`, px: 3, py: 2 }}>
+        <DialogActions sx={{ borderTop: `1px solid ${theme.palette.divider}`, px: 3, py: 2, backgroundColor: theme.palette.background.paper }}>
           <Button onClick={onClose}>Cancel</Button>
           <Button 
             variant="contained" 
-            color="primary" 
+            color="success" 
             onClick={handleSubmit}
             disabled={!title || !startTime}
           >
