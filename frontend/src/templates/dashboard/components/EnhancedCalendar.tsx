@@ -43,6 +43,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import dayjs from "dayjs";
 import EventFormDialog from "./EventFormDialog";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 // API URL
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -199,6 +200,26 @@ export default function EnhancedCalendar() {
     } catch (error) {
       console.error("Error initiating Google Calendar connection:", error);
       setError("Failed to connect to Google Calendar. Please try again.");
+    }
+  };
+
+  // Disconnect from Google Calendar
+  const handleDisconnectCalendar = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      await axios.post(`${API_URL}/api/calendar/disconnect`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setIsConnected(false);
+      setEvents([]);
+      setIsLoading(false);
+      setSuccessMessage("Google Calendar disconnected successfully!");
+    } catch (error) {
+      console.error("Error disconnecting from Google Calendar:", error);
+      setError("Failed to disconnect from Google Calendar. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -536,7 +557,7 @@ export default function EnhancedCalendar() {
         }}
       >
         <Typography variant="h6" component="h2"></Typography>
-
+      
         <Stack direction="row" spacing={1}>
           {isConnected ? (
             <>
@@ -563,6 +584,18 @@ export default function EnhancedCalendar() {
                   }}
                 >
                   Add Event
+                </Button>
+              </Tooltip>
+              <Tooltip title="Disconnect calendar" placement="top">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleDisconnectCalendar}
+                  disabled={isLoading}
+                >
+                  Disconnect
                 </Button>
               </Tooltip>
             </>
@@ -599,7 +632,7 @@ export default function EnhancedCalendar() {
         >
           <EventIcon sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
           <Typography variant="h5" gutterBottom>
-            Connect Your Google Calendar
+            Connect Google Calendar
           </Typography>
           <Typography
             variant="body1"
@@ -617,7 +650,7 @@ export default function EnhancedCalendar() {
             size="large"
             disabled={isLoading}
           >
-            {isLoading ? "Connecting..." : "Connect with Google Calendar"}
+            {isLoading ? "Connecting..." : "Connect Google Calendar"}
           </Button>
         </Paper>
       ) : (

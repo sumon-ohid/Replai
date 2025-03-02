@@ -99,7 +99,7 @@ router.get('/auth/google', auth, async (req, res) => {
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile'
       ],
-    //   prompt: 'consent',
+      prompt: 'consent',
       state: userId
     });
     
