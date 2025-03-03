@@ -90,9 +90,9 @@ export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }
           right: 0,
           bottom: 0,
           zIndex: -4,
-          background: theme.palette.mode === 'dark' 
-            ? `linear-gradient(180deg, ${alpha('#000', 0)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 50%, ${alpha('#000', 0)} 100%)`
-            : `linear-gradient(180deg, ${alpha('#fff', 0)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 50%, ${alpha('#fff', 0)} 100%)`
+          backgroundImage: theme.palette.mode === 'dark' 
+          ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(0, 0, 0, 0) 25%)'
+          : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.05) 0%, rgba(255, 255, 255, 0) 25%)',
         }}
       />
       
@@ -167,7 +167,7 @@ export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }
       />
       
       {/* Grid pattern with improved styling */}
-      <Box
+      {/* <Box
         sx={{
           position: 'fixed',
           top: 0,
@@ -183,7 +183,7 @@ export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }
           backgroundPosition: '-1px -1px',
           mask: 'linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)'
         }}
-      />
+      /> */}
       
       <AppAppBar />
       
