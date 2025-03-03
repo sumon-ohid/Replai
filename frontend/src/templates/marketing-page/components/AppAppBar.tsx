@@ -384,7 +384,7 @@ export default function AppAppBar() {
                   
                   <Stack spacing={0.5}>
                     {[
-                      { icon: <ArticleOutlinedIcon fontSize="small" />, label: 'Documentation' },
+                      { icon: <ArticleOutlinedIcon fontSize="small" />, label: 'Documentation', href: '/docs' },
                       { icon: <SupportOutlinedIcon fontSize="small" />, label: 'Support' },
                       { icon: <MailOutlinedIcon fontSize="small" />, label: 'Contact us' },
                     ].map((item) => (
@@ -397,6 +397,7 @@ export default function AppAppBar() {
                         color="inherit"
                         fullWidth
                         startIcon={item.icon}
+                        onClick={item.href ? () => navigate(item.href) : undefined}
                         sx={{
                           py: 1.2,
                           px: 1.5,
