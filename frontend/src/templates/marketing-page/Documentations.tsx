@@ -264,9 +264,9 @@ async function processIncomingEmail(emailData) {
           right: 0,
           bottom: 0,
           zIndex: -4,
-          background: theme.palette.mode === 'dark' 
-            ? `linear-gradient(135deg, ${alpha('#101630', 0.97)} 0%, ${alpha('#050b1f', 0.98)} 100%)`
-            : `linear-gradient(135deg, ${alpha('#f8faff', 0.97)} 0%, ${alpha('#ffffff', 0.98)} 100%)`,
+          backgroundImage: theme.palette.mode === 'dark' 
+          ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(0, 0, 0, 0) 25%)'
+          : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.05) 0%, rgba(255, 255, 255, 0) 25%)',
         }}
       />
       
@@ -331,7 +331,7 @@ async function processIncomingEmail(emailData) {
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: -2,
+          zIndex: -12,
           opacity: theme.palette.mode === 'dark' ? 0.07 : 0.04,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat',
@@ -340,14 +340,14 @@ async function processIncomingEmail(emailData) {
       />
       
       {/* Grid pattern */}
-      <Box
+      {/* <Box
         sx={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: -1,
+          zIndex: -11,
           opacity: theme.palette.mode === 'dark' ? 0.4 : 0.25,
           backgroundImage: `linear-gradient(${alpha(theme.palette.divider, 0.3)} 1px, transparent 1px), 
                            linear-gradient(90deg, ${alpha(theme.palette.divider, 0.3)} 1px, transparent 1px)`,
@@ -356,7 +356,7 @@ async function processIncomingEmail(emailData) {
           mask: 'linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)'
         }}
       />
-      
+       */}
       <AppAppBar />
       
       {/* Hero Section */}
