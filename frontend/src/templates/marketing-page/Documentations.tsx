@@ -240,7 +240,7 @@ async function processIncomingEmail(emailData) {
         const element = sectionRefs[section].current;
         if (!element) return;
         
-        const rect = element.getBoundingClientRect();
+        const rect = (element as HTMLElement).getBoundingClientRect();
         if (rect.top <= 100 && rect.bottom >= 100) {
           setActiveSection(section);
         }
@@ -266,7 +266,7 @@ async function processIncomingEmail(emailData) {
           zIndex: -4,
           background: theme.palette.mode === 'dark' 
             ? `linear-gradient(135deg, ${alpha('#101630', 0.97)} 0%, ${alpha('#050b1f', 0.98)} 100%)`
-            : `linear-gradient(135deg, ${alpha('#f8faff', 0.97)} 0%, ${alpha('#ffffff', 0.98)} 100%)`
+            : `linear-gradient(135deg, ${alpha('#f8faff', 0.97)} 0%, ${alpha('#ffffff', 0.98)} 100%)`,
         }}
       />
       
@@ -282,6 +282,7 @@ async function processIncomingEmail(emailData) {
           backgroundImage: theme.palette.mode === 'dark' 
             ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.15) 0%, rgba(0, 0, 0, 0) 50%)'
             : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 50%)',
+
         }}
       />
       
@@ -507,8 +508,6 @@ async function processIncomingEmail(emailData) {
                     {documentationSections.map((section) => (
                       <React.Fragment key={section.id}>
                         <ListItem 
-                          component="div"
-                          button
                           disablePadding
                           onClick={() => handleSectionChange(section.id)}
                           sx={{
