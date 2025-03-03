@@ -415,19 +415,37 @@ export default function SideMenu() {
 
       {/* Footer */}
       <Box 
-        component={motion.div}
-        variants={itemVariants}
-        sx={{ 
-          p: 2, 
-          mt: 'auto', 
-          textAlign: 'center', 
-          opacity: 0.5 
-        }}
-      >
-        <Typography variant="caption" sx={{ fontSize: '0.65rem', display: 'block' }}>
-          © 2025 Replai Tech, Inc.
-        </Typography>
-      </Box>
+              sx={{
+                mb: 2,
+                pt: 2, 
+                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                px: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <Typography 
+                variant="caption" 
+                color={alpha(theme.palette.text.secondary, 0.6)}
+                sx={{ fontSize: '0.7rem' }}
+              >
+                Replai © 2025 | v1.2.0 
+              </Typography>
+              
+              <Box 
+                component={motion.div}
+                whileHover={{ rotate: 180 }}
+                transition={{ duration: 0.4 }}
+                sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%',
+                  backgroundColor: theme.palette.success.main,
+                  boxShadow: `0 0 8px ${theme.palette.success.main}`
+                }} 
+              />
+            </Box>
     </Drawer>
   );
 }

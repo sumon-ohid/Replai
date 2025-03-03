@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Box,
   List,
@@ -11,140 +11,140 @@ import {
   Badge,
   useMediaQuery,
   IconButton,
-} from '@mui/material';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import AttachEmailIcon from '@mui/icons-material/AttachEmail';
-import StorageIcon from '@mui/icons-material/Storage';
-import CancelScheduleSendIcon from '@mui/icons-material/CancelScheduleSend';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
-import HelpRoundedIcon from '@mui/icons-material/HelpRounded';
-import { useTheme } from '@mui/material/styles';
+} from "@mui/material";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import AttachEmailIcon from "@mui/icons-material/AttachEmail";
+import StorageIcon from "@mui/icons-material/Storage";
+import CancelScheduleSendIcon from "@mui/icons-material/CancelScheduleSend";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import HelpRoundedIcon from "@mui/icons-material/HelpRounded";
+import { useTheme } from "@mui/material/styles";
+import { Button } from "@mui/material";
 
 // Main navigation items
 const mainNavItems = [
-  { 
-    text: 'Home', 
-    icon: <HomeRoundedIcon />, 
-    path: '/dashboard',
-    description: 'Dashboard overview'
+  {
+    text: "Home",
+    icon: <HomeRoundedIcon />,
+    path: "/dashboard",
+    description: "Dashboard overview",
   },
-  { 
-    text: 'Connected', 
-    icon: <AttachEmailIcon />, 
-    path: '/connected',
-    description: 'Connected email accounts',
-    badge: 1
+  {
+    text: "Connected",
+    icon: <AttachEmailIcon />,
+    path: "/connected",
+    description: "Connected email accounts",
+    badge: 1,
   },
-  { 
-    text: 'Data', 
-    icon: <StorageIcon />, 
-    path: '/data',
-    description: 'Data management'
+  {
+    text: "Data",
+    icon: <StorageIcon />,
+    path: "/data",
+    description: "Data management",
   },
-  { 
-    text: 'Blocklist', 
-    icon: <CancelScheduleSendIcon />, 
-    path: '/blocklist',
-    description: 'Email blocklist settings'
+  {
+    text: "Blocklist",
+    icon: <CancelScheduleSendIcon />,
+    path: "/blocklist",
+    description: "Email blocklist settings",
   },
-  { 
-    text: 'Plan & Billing', 
-    icon: <CreditCardIcon />, 
-    path: '/billing',
-    description: 'Subscription management'
+  {
+    text: "Plan & Billing",
+    icon: <CreditCardIcon />,
+    path: "/billing",
+    description: "Subscription management",
   },
-  { 
-    text: 'Calendar', 
-    icon: <CalendarMonthIcon />, 
-    path: '/calendar',
-    description: 'Schedule overview',
+  {
+    text: "Calendar",
+    icon: <CalendarMonthIcon />,
+    path: "/calendar",
+    description: "Schedule overview",
     // badge: 2
-  }
+  },
 ];
 
 // Secondary navigation items
 const secondaryNavItems = [
-  { 
-    text: 'Settings', 
-    icon: <SettingsRoundedIcon />, 
-    path: '/settings',
-    description: 'Account settings'
+  {
+    text: "Settings",
+    icon: <SettingsRoundedIcon />,
+    path: "/settings",
+    description: "Account settings",
   },
-  { 
-    text: 'About', 
-    icon: <InfoRoundedIcon />, 
-    path: '/about',
-    description: 'About Replai'
+  {
+    text: "About",
+    icon: <InfoRoundedIcon />,
+    path: "/about",
+    description: "About Replai",
   },
-  { 
-    text: 'Feedback', 
-    icon: <HelpRoundedIcon />, 
-    path: '/feedback',
-    description: 'Send us your feedback'
-  }
+  {
+    text: "Feedback",
+    icon: <HelpRoundedIcon />,
+    path: "/feedback",
+    description: "Send us your feedback",
+  },
 ];
 
 export default function MenuContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const handleNavigation = (path: string) => {
     navigate(path);
   };
 
   // Animation variants
   const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      x: -10
+    hidden: {
+      opacity: 0,
+      x: -10,
     },
-    visible: (index: number) => ({ 
-      opacity: 1, 
+    visible: (index: number) => ({
+      opacity: 1,
       x: 0,
       transition: {
         delay: index * 0.05,
         duration: 0.3,
-      }
+      },
     }),
     hover: {
       scale: 1.03,
-      transition: { duration: 0.2 }
+      transition: { duration: 0.2 },
     },
     tap: {
       scale: 0.97,
-      transition: { duration: 0.1 }
-    }
+      transition: { duration: 0.1 },
+    },
   };
 
   // Menu item component
-  const NavItem = ({ 
-    item, 
-    index, 
-    isActive 
-  }: { 
-    item: { 
-      text: string; 
-      icon: React.ReactNode; 
-      path: string; 
+  const NavItem = ({
+    item,
+    index,
+    isActive,
+  }: {
+    item: {
+      text: string;
+      icon: React.ReactNode;
+      path: string;
       description?: string;
       badge?: number;
-    }; 
-    index: number; 
-    isActive: boolean 
+    };
+    index: number;
+    isActive: boolean;
   }) => {
-    const activeGradient = `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`;
-    
+    const activeGradient = `linear-gradient(90deg, ${alpha(
+      theme.palette.primary.main,
+      0.1
+    )} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`;
+
     return (
-      <Tooltip 
-        title={item.description || item.text} 
-        placement="right"
-        arrow
-      >
+      <Tooltip title={item.description || item.text} placement="right" arrow>
         <Box
           component={motion.div}
           custom={index}
@@ -156,10 +156,10 @@ export default function MenuContent() {
           onClick={() => handleNavigation(item.path)}
           sx={{
             mb: 0.5,
-            position: 'relative',
+            position: "relative",
             borderRadius: 2,
-            overflow: 'hidden',
-            cursor: 'pointer',
+            overflow: "hidden",
+            cursor: "pointer",
           }}
         >
           {/* Active indicator */}
@@ -172,14 +172,17 @@ export default function MenuContent() {
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.3 }}
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   left: 0,
                   top: 0,
                   bottom: 0,
                   width: 4,
-                  borderRadius: '0 4px 4px 0',
+                  borderRadius: "0 4px 4px 0",
                   background: `linear-gradient(to bottom, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                  boxShadow: `0 0 8px ${alpha(theme.palette.primary.main, 0.6)}`,
+                  boxShadow: `0 0 8px ${alpha(
+                    theme.palette.primary.main,
+                    0.6
+                  )}`,
                 }}
               />
             )}
@@ -187,77 +190,95 @@ export default function MenuContent() {
 
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               px: 2,
               py: 1.5,
-              backgroundColor: isActive ? activeGradient : 'transparent',
+              backgroundColor: isActive ? activeGradient : "transparent",
               borderRadius: 2,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: isActive 
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: isActive
                   ? activeGradient
-                  : theme.palette.mode === 'dark' 
-                    ? alpha(theme.palette.action.hover, 0.15) 
-                    : alpha(theme.palette.action.hover, 0.08),
+                  : theme.palette.mode === "dark"
+                  ? alpha(theme.palette.action.hover, 0.15)
+                  : alpha(theme.palette.action.hover, 0.08),
               },
             }}
           >
             {/* Icon */}
             <Box
               component={motion.div}
-              animate={isActive ? {
-                scale: [1, 1.15, 1],
-                transition: { duration: 0.4, times: [0, 0.5, 1] }
-              } : {}}
+              animate={
+                isActive
+                  ? {
+                      scale: [1, 1.15, 1],
+                      transition: { duration: 0.4, times: [0, 0.5, 1] },
+                    }
+                  : {}
+              }
               sx={{
                 mr: 2,
                 width: 40,
                 height: 40,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
-                backgroundColor: isActive 
-                  ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.15 : 0.1)
-                  : 'transparent',
-                transition: 'all 0.3s ease',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                color: isActive
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
+                backgroundColor: isActive
+                  ? alpha(
+                      theme.palette.primary.main,
+                      theme.palette.mode === "dark" ? 0.15 : 0.1
+                    )
+                  : "transparent",
+                transition: "all 0.3s ease",
               }}
             >
               {item.icon}
             </Box>
-            
+
             {/* Text and badge */}
-            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Typography
                 variant="body2"
                 sx={{
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? theme.palette.text.primary : theme.palette.text.secondary,
-                  transition: 'color 0.2s ease',
+                  color: isActive
+                    ? theme.palette.text.primary
+                    : theme.palette.text.secondary,
+                  transition: "color 0.2s ease",
                 }}
               >
                 {item.text}
               </Typography>
-              
+
               {item.badge && (
                 <Box
                   component={motion.div}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   sx={{
                     minWidth: 22,
                     height: 22,
                     borderRadius: 11,
                     backgroundColor: theme.palette.error.main,
                     color: theme.palette.error.contrastText,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     ml: 1,
-                    fontSize: '0.75rem',
+                    fontSize: "0.75rem",
                     fontWeight: 600,
                   }}
                 >
@@ -272,46 +293,47 @@ export default function MenuContent() {
   };
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: '100%',
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
         p: 1.5,
         pt: 3,
         pb: 4,
-        borderRadius: '0 16px 16px 0',
-        backgroundColor: theme.palette.mode === 'dark' 
-          ? alpha(theme.palette.background.default, 0.6) 
-          : alpha(theme.palette.background.default, 0.8),
-        backdropFilter: 'blur(8px)',
-        overflow: 'auto',
+        borderRadius: "16px 16px 0 0",
+        backgroundColor:
+          theme.palette.mode === "dark"
+            ? alpha(theme.palette.background.default, 0.6)
+            : alpha(theme.palette.background.default, 0.8),
+        backdropFilter: "blur(8px)",
+        overflow: "auto",
       }}
     >
       {/* Main navigation */}
       <Box>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          sx={{ 
-            px: 2, 
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            px: 2,
             mb: 1.5,
-            display: 'block', 
+            display: "block",
             fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
           Main
         </Typography>
-        
+
         <List sx={{ p: 0 }}>
           {mainNavItems.map((item, index) => (
-            <NavItem 
-              key={item.text} 
-              item={item} 
-              index={index} 
-              isActive={location.pathname === item.path} 
+            <NavItem
+              key={item.text}
+              item={item}
+              index={index}
+              isActive={location.pathname === item.path}
             />
           ))}
         </List>
@@ -321,68 +343,99 @@ export default function MenuContent() {
       <Box sx={{ py: 2 }}>
         <Divider sx={{ opacity: 0.6 }} />
       </Box>
-      
+
       {/* Secondary navigation */}
       <Box mt="auto">
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          sx={{ 
-            px: 2, 
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            px: 2,
             mb: 1.5,
-            display: 'block', 
+            display: "block",
             fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
           Support
         </Typography>
-        
+
         <List sx={{ p: 0 }}>
           {secondaryNavItems.map((item, index) => (
-            <NavItem 
-              key={item.text} 
-              item={item} 
-              index={index} 
-              isActive={location.pathname === item.path} 
+            <NavItem
+              key={item.text}
+              item={item}
+              index={index}
+              isActive={location.pathname === item.path}
             />
           ))}
         </List>
       </Box>
-      
-      {/* Version info at bottom */}
-      <Box 
-        sx={{ 
-          mt: 4, 
-          pt: 2, 
+
+      {/* View documentations */}
+      <Box
+        sx={{
+          mt: 4,
           borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          px: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <Typography 
-          variant="caption" 
-          color={alpha(theme.palette.text.secondary, 0.6)}
-          sx={{ fontSize: '0.7rem' }}
-        >
-          Replai v1.2.0 • Enterprise Edition
-        </Typography>
-        
-        <Box 
-          component={motion.div}
-          whileHover={{ rotate: 180 }}
-          transition={{ duration: 0.4 }}
-          sx={{ 
-            width: 8, 
-            height: 8, 
-            borderRadius: '50%',
-            backgroundColor: theme.palette.success.main,
-            boxShadow: `0 0 8px ${theme.palette.success.main}`
-          }} 
-        />
+        <motion.div variants={itemVariants}>
+          <Box sx={{ p: 2 }}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                background:
+                  theme.palette.mode === "dark"
+                    ? `linear-gradient(145deg, ${alpha(
+                        theme.palette.info.dark,
+                        0.15
+                      )}, ${alpha("#121212", 0.3)})`
+                    : `linear-gradient(145deg, ${alpha(
+                        theme.palette.info.light,
+                        0.15
+                      )}, ${alpha("#e3f2fd", 0.3)})`,
+                border: "1px solid",
+                borderColor: alpha(theme.palette.info.main, 0.2),
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: theme.palette.info.main,
+                  fontWeight: 600,
+                  mb: 0.5,
+                }}
+              >
+                Need some help?
+              </Typography>
+              <Typography variant="caption" sx={{ display: "block", mb: 1.5 }}>
+                Check our documentation or contact support team
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  borderColor: alpha(theme.palette.info.main, 0.5),
+                  color: theme.palette.info.main,
+                  "&:hover": {
+                    borderColor: theme.palette.info.main,
+                    backgroundColor: alpha(theme.palette.info.main, 0.1),
+                  },
+                }}
+                onClick={() => handleNavigation("/docs")}
+              >
+                View Documentation
+              </Button>
+            </Box>
+          </Box>
+        </motion.div>
       </Box>
     </Box>
   );
