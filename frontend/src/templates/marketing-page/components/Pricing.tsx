@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -7,198 +8,579 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha, useTheme } from '@mui/material/styles';
+import { motion, AnimatePresence } from 'framer-motion';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import Switch from '@mui/material/Switch';
+import Link from '@mui/material/Link';
+
+// Icons
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import BusinessCenterOutlinedIcon from '@mui/icons-material/BusinessCenterOutlined';
+import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
+import DiamondOutlinedIcon from '@mui/icons-material/DiamondOutlined';
 
 const tiers = [
   {
     title: 'Free',
+    icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
     price: '0',
-    description: [
-      '1 email account',
-      '10 emails per month',
-      'Help center access',
-      'Email support',
-    ],
-    buttonText: 'Sign up for free',
+    priceDetails: {
+      monthly: '0',
+      yearly: '0',
+    },
+    buttonText: 'Get Started',
     buttonVariant: 'outlined',
     buttonColor: 'primary',
+    highlighted: false,
+    features: [
+      { title: '1 email account', included: true },
+      { title: '10 emails per month', included: true },
+      { title: 'Basic AI responses', included: true },
+      { title: 'Help center access', included: true },
+      { title: 'Email support', included: true },
+      { title: 'Advanced analytics', included: false },
+      { title: 'Customizable templates', included: false },
+      { title: 'Priority support', included: false },
+    ],
   },
   {
-    title: 'Professional',
-    subheader: 'Recommended',
-    price: '4.99',
-    description: [
-      '5 email accounts',
-      '1000 emails per month',
-      'Help center access',
-      'Priority email support',
-      'Dedicated team',
-      'Best deals',
-    ],
-    buttonText: 'Start now',
+    title: 'Pro',
+    icon: <DiamondOutlinedIcon sx={{ fontSize: 28 }} />,
+    subheader: 'Most Popular',
+    price: '5',
+    priceDetails: {
+      monthly: '5',
+      yearly: '50',
+    },
+    savings: '€10',
+    buttonText: 'Start Pro Plan',
     buttonVariant: 'contained',
-    buttonColor: 'secondary',
+    buttonColor: 'primary',
+    highlighted: true,
+    features: [
+      { title: '2 email accounts', included: true },
+      { title: 'Unlimited emails', included: true },
+      { title: 'Advanced AI responses', included: true },
+      { title: 'Custom email signatures', included: true },
+      { title: 'Priority email support', included: true },
+      { title: 'Advanced analytics', included: true },
+      { title: 'Customizable templates', included: true },
+      { title: 'API access', included: false },
+    ],
   },
   {
-    title: 'Enterprise',
-    price: '99.99',
-    description: [
-      'Unlimited email accounts',
-      'Unlimited emails per month',
-      'Help center access',
-      'Phone & email support',
-    ],
-    buttonText: 'Contact us',
+    title: 'Business',
+    icon: <BusinessCenterOutlinedIcon sx={{ fontSize: 28 }} />,
+    price: 'Custom',
+    priceDetails: {
+      monthly: 'Custom',
+      yearly: 'Custom',
+    },
+    buttonText: 'Contact Sales',
     buttonVariant: 'outlined',
     buttonColor: 'primary',
+    highlighted: false,
+    features: [
+      { title: 'Unlimited email accounts', included: true },
+      { title: 'Unlimited emails', included: true },
+      { title: 'Enterprise AI responses', included: true },
+      { title: 'Custom integrations', included: true },
+      { title: 'Dedicated account manager', included: true },
+      { title: 'Advanced analytics & reporting', included: true },
+      { title: 'White-labeling options', included: true },
+      { title: 'Priority 24/7 support', included: true },
+    ],
   },
 ];
 
 export default function Pricing() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (custom: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: custom * 0.1,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }),
+    hover: {
+      y: -8,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
     <Container
       id="pricing"
       sx={{
-        pt: { xs: 4, sm: 12 },
-        pb: { xs: 8, sm: 16 },
+        pt: { xs: 8, sm: 12, md: 16 },
+        pb: { xs: 8, sm: 12, md: 16 },
         position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: { xs: 3, sm: 6 },
+        overflow: 'hidden',
       }}
     >
+      {/* Background Elements */}
       <Box
         sx={{
-          width: { sm: '100%', md: '60%' },
-          textAlign: { sm: 'left', md: 'center' },
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          top: 0,
+          left: 0,
+          zIndex: -1,
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '5%',
+            right: '-10%',
+            width: { xs: '250px', md: '400px' },
+            height: { xs: '250px', md: '400px' },
+            background: theme.palette.mode === 'dark' 
+              ? `radial-gradient(circle, ${alpha(theme.palette.primary.dark, 0.3)} 0%, transparent 70%)`
+              : `radial-gradient(circle, ${alpha(theme.palette.primary.light, 0.15)} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            filter: 'blur(60px)',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '10%',
+            left: '-5%',
+            width: { xs: '200px', md: '350px' },
+            height: { xs: '200px', md: '350px' },
+            background: theme.palette.mode === 'dark' 
+              ? `radial-gradient(circle, ${alpha(theme.palette.secondary.dark, 0.3)} 0%, transparent 70%)`
+              : `radial-gradient(circle, ${alpha(theme.palette.secondary.light, 0.15)} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            filter: 'blur(60px)',
+          }}
+        />
+      </Box>
+      
+      {/* Header Section */}
+      <Box
+        component={motion.div}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        sx={{
+          mb: { xs: 6, md: 8 },
+          maxWidth: '1800px',
+          mx: 'auto',
+          textAlign: 'center',
         }}
       >
         <Typography
-          component="h2"
-          variant="h4"
-          gutterBottom
-          sx={{ color: 'text.primary' }}
+          component="span"
+          variant="overline"
+          sx={{
+            color: 'primary.main',
+            fontWeight: 600,
+            letterSpacing: 1.2,
+            mb: 2,
+            display: 'block',
+          }}
         >
-          Pricing
+          PRICING PLANS
         </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Quickly build an effective pricing table for your potential customers with
-          this layout. <br />
-          It&apos;s built with default Material UI components with little
-          customization.
+        
+        <Typography
+          component="h2"
+          variant="h2"
+          sx={{
+            fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
+            fontWeight: 800,
+            mb: 2,
+            background: theme.palette.mode === 'dark'
+              ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+              : `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Simple, Transparent Pricing
         </Typography>
+        
+        <Typography
+          variant="h6"
+          color="text.secondary"
+          sx={{
+            mb: 4,
+            fontWeight: 400,
+            maxWidth: '650px',
+            mx: 'auto',
+          }}
+        >
+          Choose the plan that works best for you. All plans include a 14-day free trial.
+        </Typography>
+        
+        {/* Billing Toggle */}
+        <Box 
+          sx={{
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            mb: 1,
+          }}
+        >
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontWeight: billingCycle === 'monthly' ? 600 : 400,
+              color: billingCycle === 'monthly' ? 'text.primary' : 'text.secondary'
+            }}
+          >
+            Monthly
+          </Typography>
+          
+          <Switch
+            checked={billingCycle === 'yearly'}
+            onChange={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+            color="primary"
+            sx={{ mx: 1.5 }}
+          />
+          
+          <Box sx={{ position: 'relative' }}>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                fontWeight: billingCycle === 'yearly' ? 600 : 400,
+                color: billingCycle === 'yearly' ? 'text.primary' : 'text.secondary'
+              }}
+            >
+              Yearly
+            </Typography>
+            
+            {/* Save label */}
+            {billingCycle === 'yearly' && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                sx={{
+                  position: 'absolute',
+                  top: -20,
+                  right: -40,
+                  background: theme.palette.success.main,
+                  color: '#fff',
+                  fontSize: '0.7rem',
+                  padding: '2px 8px',
+                  borderRadius: 1,
+                  fontWeight: 600,
+                }}
+              >
+                Save 17%
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Box>
+      
+      {/* Pricing Cards */}
       <Grid
         container
+        component={motion.div}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         spacing={3}
-        sx={{ alignItems: 'center', justifyContent: 'center', width: '100%' }}
+        sx={{ 
+          alignItems: 'stretch',  
+          justifyContent: 'center',
+          px: { xs: 0, md: 4 },
+        }}
       >
-        {tiers.map((tier) => (
+        {tiers.map((tier, index) => (
           <Grid
-            size={{ xs: 12, sm: tier.title === 'Enterprise' ? 12 : 6, md: 4 }}
+            item
+            xs={12}
+            sm={12}
+            md={4}
             key={tier.title}
+            component={motion.div}
+            variants={cardVariants}
+            custom={index}
+            whileHover={tier.highlighted ? {} : "hover"}
           >
             <Card
+              elevation={tier.highlighted ? 6 : 0}
               sx={[
                 {
-                  p: 2,
+                  height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 4,
+                  position: 'relative',
+                  overflow: 'visible',
+                  p: { xs: 3, md: 4 },
+                  borderRadius: 4,
+                  transition: 'all 0.3s ease-in-out',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  ...(tier.highlighted ? {
+                    transform: 'scale(1.05)',
+                    zIndex: 1,
+                    mt: { xs: 4, md: -2 },
+                    mb: { xs: 4, md: 2 },
+                  } : {}),
                 },
-                tier.title === 'Professional' &&
-                  ((theme) => ({
-                    border: 'none',
-                    background:
-                      'radial-gradient(circle at 50% 0%, hsl(220, 20%, 35%), hsl(220, 30%, 6%))',
-                    boxShadow: `0 8px 12px hsla(220, 20%, 42%, 0.2)`,
-                    ...theme.applyStyles('dark', {
-                      background:
-                        'radial-gradient(circle at 50% 0%, hsl(220, 20%, 20%), hsl(220, 30%, 16%))',
-                      boxShadow: `0 8px 12px hsla(0, 0%, 0%, 0.8)`,
-                    }),
-                  })),
+                tier.highlighted && {
+                  background: theme.palette.mode === 'dark'
+                    ? `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.primary.dark, 0.2)})`
+                    : `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.primary.light, 0.1)})`,
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid',
+                  borderColor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.primary.main, 0.3)
+                    : alpha(theme.palette.primary.main, 0.2),
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? `0 12px 30px ${alpha(theme.palette.common.black, 0.5)}`
+                    : `0 12px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
+                },
               ]}
             >
-              <CardContent>
+              {/* Ribbon for highlighted plan */}
+              {tier.highlighted && (
                 <Box
-                  sx={[
-                    {
-                      mb: 1,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: 2,
-                    },
-                    tier.title === 'Professional'
-                      ? { color: 'grey.100' }
-                      : { color: '' },
-                  ]}
+                  sx={{
+                    position: 'absolute',
+                    top: -12,
+                    right: 24,
+                    backgroundColor: 'primary.main',
+                    color: 'common.white',
+                    py: 0.5,
+                    px: 2,
+                    borderRadius: 1,
+                    boxShadow: `0 2px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                  }}
                 >
-                  <Typography component="h3" variant="h6">
+                  <Typography variant="caption" fontWeight="bold">
+                    {tier.subheader}
+                  </Typography>
+                </Box>
+              )}
+              
+              {/* Card Content */}
+              <CardContent sx={{ p: 0, flexGrow: 1 }}>
+                {/* Header */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 3,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 50,
+                      height: 50,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 2,
+                      backgroundColor: tier.highlighted
+                        ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.3 : 0.15)
+                        : alpha(theme.palette.action.hover, 0.12),
+                      color: tier.highlighted
+                        ? 'primary.main'
+                        : 'text.secondary',
+                    }}
+                  >
+                    {tier.icon}
+                  </Box>
+                  
+                  <Typography
+                    variant="h5"
+                    component="h3"
+                    sx={{
+                      fontWeight: 700,
+                      color: tier.highlighted ? 'primary.main' : 'text.primary',
+                    }}
+                  >
                     {tier.title}
                   </Typography>
-                  {tier.title === 'Professional' && (
-                    <Chip icon={<AutoAwesomeIcon />} label={tier.subheader} />
-                  )}
                 </Box>
-                <Box
-                  sx={[
-                    {
+                
+                {/* Price */}
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
                       display: 'flex',
                       alignItems: 'baseline',
-                    },
-                    tier.title === 'Professional'
-                      ? { color: 'grey.50' }
-                      : { color: null },
-                  ]}
-                >
-                  <Typography component="h3" variant="h2">
-                    ${tier.price}
-                  </Typography>
-                  <Typography component="h3" variant="h6">
-                    &nbsp; per month
+                    }}
+                  >
+                    {/* Show different styles based on whether it's a fixed or custom price */}
+                    {tier.price === 'Custom' ? (
+                      <Typography
+                        component="h3"
+                        variant="h3"
+                        sx={{
+                          fontWeight: 700,
+                          color: tier.highlighted ? 'primary.main' : 'text.primary',
+                        }}
+                      >
+                        {tier.price}
+                      </Typography>
+                    ) : (
+                      <>
+                        <Typography
+                          component="span"
+                          variant="h6"
+                          sx={{ fontWeight: 600, mr: 0.5 }}
+                        >
+                          €
+                        </Typography>
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={billingCycle}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Typography
+                              component="h3"
+                              variant="h3"
+                              sx={{
+                                fontWeight: 700,
+                                color: tier.highlighted ? 'primary.main' : 'text.primary',
+                              }}
+                            >
+                              {billingCycle === 'monthly' 
+                                ? tier.priceDetails.monthly
+                                : tier.priceDetails.yearly.toString().split('.')[0]}
+                            </Typography>
+                          </motion.div>
+                        </AnimatePresence>
+                      </>
+                    )}
+                    
+                    {tier.price !== 'Custom' && (
+                      <Typography component="span" variant="subtitle1" sx={{ ml: 1 }}>
+                        per month
+                      </Typography>
+                    )}
+                  </Box>
+                  
+                  {/* Billing details */}
+                  {tier.price !== 'Custom' && billingCycle === 'yearly' && tier.savings && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'success.main',
+                        fontWeight: 500,
+                        mt: 0.5,
+                        display: 'block',
+                      }}
+                    >
+                      Save {tier.savings} a year
+                    </Typography>
+                  )}
+                  
+                  {/* Description text */}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, minHeight: 40 }}
+                  >
+                    {tier.title === 'Free' && 'Get started with the basics for personal use'}
+                    {tier.title === 'Pro' && 'Everything you need for professional email automation'}
+                    {tier.title === 'Business' && 'Enterprise-grade features with dedicated support'}
                   </Typography>
                 </Box>
-                <Divider sx={{ my: 2, opacity: 0.8, borderColor: 'divider' }} />
-                {tier.description.map((line) => (
-                  <Box
-                    key={line}
-                    sx={{ py: 1, display: 'flex', gap: 1.5, alignItems: 'center' }}
-                  >
-                    <CheckCircleRoundedIcon
-                      sx={[
-                        {
-                          width: 20,
-                        },
-                        tier.title === 'Professional'
-                          ? { color: 'primary.light' }
-                          : { color: 'primary.main' },
-                      ]}
-                    />
-                    <Typography
-                      variant="subtitle2"
-                      component={'span'}
-                      sx={[
-                        tier.title === 'Professional'
-                          ? { color: 'grey.50' }
-                          : { color: null },
-                      ]}
+                
+                {/* Feature list */}
+                <Divider sx={{ my: 3, opacity: 0.6 }} />
+                <Stack spacing={2}>
+                  {tier.features.map((feature) => (
+                    <Box
+                      key={feature.title}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                      }}
                     >
-                      {line}
-                    </Typography>
-                  </Box>
-                ))}
+                      {feature.included ? (
+                        <CheckCircleRoundedIcon
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            color: tier.highlighted ? 'primary.main' : 'success.main',
+                          }}
+                        />
+                      ) : (
+                        <RemoveCircleOutlineIcon
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            color: 'text.disabled',
+                          }}
+                        />
+                      )}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: feature.included ? 'text.primary' : 'text.disabled',
+                          fontWeight: feature.included ? 500 : 400,
+                        }}
+                      >
+                        {feature.title}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
               </CardContent>
-              <CardActions>
+              
+              {/* Button */}
+              <CardActions sx={{ p: 0, mt: 4 }}>
                 <Button
                   fullWidth
+                  size="large"
                   variant={tier.buttonVariant as 'outlined' | 'contained'}
                   color={tier.buttonColor as 'primary' | 'secondary'}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    boxShadow: tier.highlighted ? 4 : 0,
+                    '&:hover': {
+                      boxShadow: tier.highlighted ? 8 : 1,
+                    },
+                  }}
                 >
                   {tier.buttonText}
                 </Button>
@@ -207,6 +589,31 @@ export default function Pricing() {
           </Grid>
         ))}
       </Grid>
+      
+      {/* Additional information */}
+      <Box
+        component={motion.div}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+        sx={{
+          mt: { xs: 6, md: 10 },
+          maxWidth: '700px',
+          mx: 'auto',
+          textAlign: 'center',
+        }}
+      >
+        <Typography
+          variant="subtitle1"
+          color="text.secondary"
+          sx={{ mb: 2 }}
+        >
+          All plans include a 14-day free trial. No credit card required.
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Need something specific? <Link href="#contact" color="primary" underline="hover" sx={{ fontWeight: 500 }}>Contact us</Link> for a custom quote.
+        </Typography>
+      </Box>
     </Container>
   );
 }

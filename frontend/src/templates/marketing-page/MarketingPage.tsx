@@ -2100,6 +2100,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import Pricing from "./components/Pricing";
 
 // Modern CTA Section with enhanced visuals and mobile optimization
 const CtaSection = () => {
@@ -2901,8 +2902,9 @@ export default function MarketingPage(props: { disableCustomTheme?: boolean }) {
       {/* <Features /> */}
       {/* <Testimonials /> */}
       <BenefitsSection />
+      <Pricing />
       <StatsSection />
-      <CtaSection />
+      {/* <CtaSection /> */}
       <FAQ />
       <PrivacyPolicySection />
       <Footer />
