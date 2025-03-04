@@ -42,6 +42,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import InsertEmoticonIcon from '@mui/icons-material/InsertEmoticon';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
+import emailpic from '../../assets/email-back.png';
+
 // Define animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -151,7 +153,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
               mt: { xs: 8, md: 0 },
             }}
           >
-            {/* <Header /> */}
+            <Header />
           </Stack>
           
           {/* Main content area */}
@@ -187,7 +189,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
               <Container maxWidth="lg">
                 <Grid container spacing={4} alignItems="center">
                   <Grid item xs={12} md={7}>
-                    <Box component={motion.div} variants={itemVariants}>
+                    <Box component={motion.div} variants={itemVariants} sx={{ position: 'relative', mt: 3, ml: { xs: 0, md: 3 } }}>
                       <Typography 
                         variant="h2" 
                         component="h1"
@@ -197,7 +199,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                           background: primaryGradient,
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          fontSize: { xs: '2.5rem', md: '3.5rem' }
+                          fontSize: { xs: '2.5rem', md: '3.5rem' },
                         }}
                       >
                         Revolutionizing Email <br /> With AI
@@ -225,18 +227,20 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                       variants={itemVariants}
                       sx={{ 
                         display: { xs: 'none', md: 'block' },
-                        position: 'relative'
+                        position: 'relative',
+                        ml: { xs: 0, md: 6 },
                       }}
                     >
                       
-                      {/* Can be replaced with an actual image file */}
+                      {/* { Can be replaced with an actual image file } */}
                       <Box 
                         sx={{
-                          width: '100%',
-                          height: 300,
+                          width: 300,
+                          height: 400,
                           borderRadius: 4,
-                          background: `url('https://img.freepik.com/premium-vector/aioptimized-communication-channels-abstract-concept-vector-illustration_107173-97809.jpg') center/cover`,
-                          boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                          backgroundImage: `url(${emailpic})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
                           display: { xs: 'none', md: 'block' }
                         }}
                       />
