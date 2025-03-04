@@ -307,9 +307,10 @@ export default function MainGrid() {
       ) : (
         <Grid
           container
-          spacing={3}
+          spacing={1}
           columns={12}
-          sx={{ mb: 4 }}
+          sx={{ mb: 4, display: 'flex', justifyContent: 'space-between' }}
+
         >
           <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <Box
@@ -320,107 +321,6 @@ export default function MainGrid() {
               <HighlightedCard />
             </Box>
           </Grid>
-          
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-            <Box
-              component={motion.div}
-              variants={itemVariants}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            >
-              <ConnectedEmails />
-            </Box>
-          </Grid>
-          
-          {loading ? (
-            <>
-              {[1, 2].map((index) => (
-                <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
-                  <Box component={motion.div} variants={itemVariants}>
-                    <Skeleton
-                      variant="rounded"
-                      height={160}
-                      animation="wave"
-                      sx={{ borderRadius: 3 }}
-                    />
-                  </Box>
-                </Grid>
-              ))}
-            </>
-          ) : (
-            <>
-              {data.map((card, index) => (
-                <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
-                  <Box
-                    component={motion.div}
-                    variants={itemVariants}
-                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        borderRadius: 3,
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: theme.palette.divider,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: alpha(theme.palette.primary.main, 0.3),
-                          boxShadow: theme.palette.mode === 'dark'
-                            ? `0 8px 24px ${alpha(theme.palette.common.black, 0.2)}`
-                            : `0 8px 24px ${alpha(theme.palette.common.black, 0.1)}`
-                        }
-                      }}
-                    >
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                          {card.title}
-                        </Typography>
-                        
-                        <Box
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '50%',
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          }}
-                        >
-                          <MailOutlineIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
-                        </Box>
-                      </Stack>
-                      
-                      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                        {card.value}
-                      </Typography>
-                      
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Chip
-                          icon={card.change > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                          label={`${Math.abs(card.change)}%`}
-                          size="small"
-                          color={card.change > 0 ? "success" : "error"}
-                          sx={{
-                            height: 24,
-                            fontWeight: 600,
-                            '& .MuiChip-label': { px: 1 },
-                            bgcolor: card.change > 0
-                              ? alpha(theme.palette.success.main, 0.1)
-                              : alpha(theme.palette.error.main, 0.1),
-                          }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          vs previous {timeRange}
-                        </Typography>
-                      </Stack>
-                    </Paper>
-                  </Box>
-                </Grid>
-              ))}
-            </>
-          )}
         </Grid>
       )}
 
