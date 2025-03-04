@@ -36,10 +36,6 @@ const xThemeComponents = {
 export default function Dashboard(props: { disableCustomTheme?: boolean }) {
 
     const handleCreateBot = async () => {
-        // if (!user) {
-        //   console.error('User not authenticated');
-        //   return;
-        // }
         const token = localStorage.getItem('token');
         if (!token) {
           console.error('No token found');

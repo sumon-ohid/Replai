@@ -618,29 +618,19 @@ export default function MainGrid() {
           sx={{ mb: 2 }}
         >
           <Typography component="h2" variant="h6" sx={{ fontWeight: 600 }}>
-            Recent Emails
+            Recent Emails Sent
           </Typography>
-          
-          <Button
-            size="small"
-            endIcon={<ExpandMoreIcon />}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 500,
-            }}
-          >
-            View All
-          </Button>
         </Stack>
         
         <Paper
           elevation={0}
           sx={{
-            borderRadius: 3,
+            borderRadius: 1,
             overflow: 'hidden',
             border: '1px solid',
             borderColor: theme.palette.divider,
-            mb: 4
+            mb: 4,
+            p: 3
           }}
         >
           <CustomizedDataGrid />
