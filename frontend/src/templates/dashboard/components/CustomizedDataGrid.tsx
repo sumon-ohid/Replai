@@ -144,7 +144,9 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({
           overflow: 'hidden',
           boxShadow: theme.palette.mode === 'dark'
             ? '0 8px 32px rgba(0, 0, 0, 0.5)'
-            : '0 8px 32px rgba(0, 0, 0, 0.1)'
+            : '0 8px 32px rgba(0, 0, 0, 0.1)',
+            // dark background color for dark mode
+          backgroundColor: 'background.paper',
         }
       }}
     >
@@ -157,9 +159,10 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({
           py: 2,
           borderBottom: '1px solid',
           borderColor: theme.palette.divider,
+          backgroundColor: 'background.paper'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1}}>
           <IconButton onClick={onClose} size="small">
             <ArrowBackIcon fontSize="small" />
           </IconButton>
@@ -214,7 +217,7 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({
         </Box>
       </Box>
       
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, backgroundColor: 'background.paper' }}>
         <Box sx={{ height: '70vh', display: 'flex', flexDirection: 'column' }}>
           {/* Email Header */}
           <Box 
@@ -414,7 +417,8 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({
           px: 3,
           py: 2,
           borderTop: '1px solid',
-          borderColor: theme.palette.divider
+          borderColor: theme.palette.divider,
+          backgroundColor: 'background.paper'
         }}
       >
         <Box>
@@ -423,6 +427,7 @@ const EmailDetailsModal: React.FC<EmailDetailsModalProps> = ({
             startIcon={<ReplyIcon />}
             disableElevation
             sx={{
+              mb: { xs: 1, sm: 0 },
               borderRadius: 2,
               mr: 2,
               textTransform: 'none',
