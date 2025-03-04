@@ -52,9 +52,10 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
               mt: { xs: 8, md: 0 },
             }}
           >
-            <Header />
+            {/* <Header /> */}
             <MainGrid />
           </Stack>
+          <Footer />
         </Box>
       </Box>
     </AppTheme>
