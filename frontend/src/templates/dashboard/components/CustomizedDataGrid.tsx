@@ -497,9 +497,9 @@ export default function CustomizedDataGrid() {
         to: email.receiver || 'No receiver',
         content: email.bodyPreview || 'No content',
         dateSent: new Date(email.timeSent).toLocaleString() || 'No date',
-        isRead: Math.random() > 0.3, // Mock data
-        hasAttachment: Math.random() > 0.7, // Mock data
-        isStarred: Math.random() > 0.8, // Mock data
+        isRead: true, //Math.random() > 0.3, // Mock data
+        hasAttachment: false, //Math.random() > 0.7, // Mock data
+        isStarred: true, //Math.random() > 0.8, // Mock data
         preview: email.bodyPreview?.substring(0, 100) + '...' || 'No preview available...',
       }));
 
