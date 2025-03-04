@@ -303,7 +303,10 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                         sx={{ 
                           mb: 1, 
                           fontWeight: 700,
-                          color: isDarkMode ? theme.palette.primary.light : theme.palette.primary.dark
+                          color: "primary.main",
+                          background: headerGradient,
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
                         }}
                       >
                         Train AI with Your Data
