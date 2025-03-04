@@ -398,7 +398,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                       orientation="vertical"
                       sx={{
                         '& .MuiTab-root': {
-                          alignItems: 'flex-start',
+                          alignItems: 'center',
                           justifyContent: 'flex-start',
                           minHeight: 60,
                           px: 2.5,
@@ -601,8 +601,10 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                         {/* Profile Information Form */}
                         <Grid container spacing={3}>
                           <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 100, mb: 0.5, ml: 2, fontSize: '0.6rem' }}>
+                              Full Name
+                            </Typography>
                             <TextField
-                              label="Full Name"
                               value={fullName}
                               onChange={(e) => setFullName(e.target.value)}
                               variant="outlined"
@@ -614,8 +616,10 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                             />
                           </Grid>
                           <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 100, mb: 0.5, ml: 2, fontSize: '0.6rem' }}>
+                              Email Address
+                            </Typography>
                             <TextField
-                              label="Email Address"
                               value={email}
                               variant="outlined"
                               fullWidth
@@ -638,9 +642,10 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                           </Grid>
                           <Grid item xs={12} sm={6}>
                             <FormControl fullWidth variant="outlined">
-                              <InputLabel id="language-select-label">Language</InputLabel>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 100, mb: 0.5, ml: 2, fontSize: '0.6rem' }}>
+                              Language
+                            </Typography>
                               <Select
-                                labelId="language-select-label"
                                 value={language}
                                 onChange={(e) => setLanguage(e.target.value as string)}
                                 label="Language"
@@ -648,16 +653,15 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                 sx={{ borderRadius: 2 }}
                               >
                                 <MenuItem value="en">English</MenuItem>
-                                <MenuItem value="es">Spanish</MenuItem>
-                                <MenuItem value="fr">French</MenuItem>
-                                <MenuItem value="de">German</MenuItem>
                               </Select>
                             </FormControl>
                           </Grid>
                           <Grid item xs={12} sm={6}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 100, mb: 0.5, ml: 2, fontSize: '0.6rem' }}>
+                              Timezone
+                            </Typography>
                             <TextField
-                              label="Time Zone"
-                              value="(UTC-05:00) Eastern Time (US & Canada)"
+                              value="(UTC-auto) Coordinated Universal Time"
                               variant="outlined"
                               fullWidth
                               disabled
@@ -730,7 +734,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
 
                         <Stack spacing={3}>
                           <TextField
-                            label="Current Password"
+                            placeholder="Current Password"
                             type={showCurrentPassword ? 'text' : 'password'}
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -742,6 +746,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                     edge="end"
+                                    sx={{ borderRadius: 10 }}
                                   >
                                     {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
@@ -752,7 +757,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                           />
                           
                           <TextField
-                            label="New Password"
+                            placeholder="New Password"
                             type={showNewPassword ? 'text' : 'password'}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
@@ -764,6 +769,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowNewPassword(!showNewPassword)}
                                     edge="end"
+                                    sx={{ borderRadius: 10 }}
                                   >
                                     {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
@@ -803,7 +809,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                           )}
                           
                           <TextField
-                            label="Confirm New Password"
+                            placeholder="Confirm New Password"
                             type={showConfirmPassword ? 'text' : 'password'}
                             value={confirmNewPassword}
                             onChange={(e) => setConfirmNewPassword(e.target.value)}
@@ -821,6 +827,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     edge="end"
+                                    sx={{ borderRadius: 10 }}
                                   >
                                     {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
@@ -832,7 +839,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                           
                           <Button 
                             variant="contained" 
-                            color="primary" 
+                            color="primary"
                             onClick={handlePasswordChange}
                             disabled={!currentPassword || !newPassword || !confirmNewPassword || isSaving}
                             sx={{ 
@@ -854,7 +861,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                 }}
                               />
                             )}
-                            <span style={{ visibility: isSaving ? 'hidden' : 'visible' }}>
+                            <span style={{ visibility: isSaving ? 'hidden' : 'visible', color: 'rgb(115, 115, 115)' }}>
                               Update Password
                             </span>
                           </Button>
