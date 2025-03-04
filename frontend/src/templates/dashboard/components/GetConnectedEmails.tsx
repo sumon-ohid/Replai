@@ -107,7 +107,6 @@ export default function GetConnectedEmails() {
           gutterBottom
           sx={{ fontWeight: '600', overflow: 'auto' }}
         >
-          Connected Emails
         </Typography>
         {loading && <Typography>Loading...</Typography>}
         {error && <Typography color="error">{error}</Typography>}
