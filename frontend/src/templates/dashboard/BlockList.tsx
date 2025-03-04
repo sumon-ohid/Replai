@@ -160,7 +160,7 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
                   variant="body1" 
                   sx={{ 
                     color: theme.palette.text.secondary,
-                    mb: 2 
+                    mb: 2
                   }}
                 >
                   Manage your email security by adding domains or specific addresses to your block list.
@@ -172,10 +172,10 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
                   sx={{ 
                     p: 2,
                     borderRadius: 2,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.5)}`,
                     backgroundColor: isDarkMode 
-                      ? alpha(theme.palette.error.dark, 0.1)
-                      : alpha(theme.palette.error.light, 0.1),
+                      ? alpha(theme.palette.primary.dark, 0.1)
+                      : alpha(theme.palette.primary.light, 0.1),
                     mb: 3
                   }}
                 >

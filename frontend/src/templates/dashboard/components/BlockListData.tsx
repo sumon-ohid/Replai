@@ -4,16 +4,20 @@ import {
   Button,
   TextField,
   Stack,
-  useMediaQuery,
   Typography,
   IconButton,
   Tooltip,
-  Fade,
   Collapse,
   Alert,
   alpha,
+  useTheme,
+  Chip,
+  Paper,
+  InputAdornment,
+  Avatar
 } from "@mui/material";
-import { Delete, Add, Info } from "@mui/icons-material";
+import { Delete, Add, Info, FilterList, Email, Language } from "@mui/icons-material";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from 'axios';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -22,16 +26,15 @@ export default function BlockListData() {
   const [entries, setEntries] = React.useState<string[]>([]);
   const [newEntry, setNewEntry] = React.useState("");
   const [error, setError] = React.useState("");
-  const isSmallScreen = useMediaQuery("(max-width: 600px)");
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === "dark";
 
   React.useEffect(() => {
     const fetchBlockList = async () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(`${apiBaseUrl}/api/blocklist`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
         setEntries(response.data as string[]);
       } catch (error) {
@@ -63,11 +66,7 @@ export default function BlockListData() {
       const token = localStorage.getItem('token');
       await axios.post(`${apiBaseUrl}/api/blocklist`, 
         { entry: newEntry },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setEntries([...entries, newEntry]);
       setNewEntry("");
@@ -81,9 +80,7 @@ export default function BlockListData() {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${apiBaseUrl}/api/blocklist`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        headers: { Authorization: `Bearer ${token}` },
         params: { entry: entryToDelete }
       });
       setEntries(entries.filter((entry) => entry !== entryToDelete));
@@ -92,41 +89,83 @@ export default function BlockListData() {
     }
   };
 
+  const isEmailAddress = (entry: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(entry);
+  };
+
   return (
-    <Box sx={{
-      width: 'auto',
-      margin: 2,
-      p: 4,
-      borderRadius: 2,
-      border: '1px solid',
-      borderColor: 'divider',
-      backgroundColor: 'background.paper'
-    }}>
-      <Stack spacing={3}>
-        <Typography variant="h6" fontWeight={600} color="text.primary">
-          Block List Management
+    <Paper
+      elevation={0}
+      sx={{
+        position: 'relative',
+        overflowX: 'hidden',
+        bgcolor: isDarkMode ? alpha(theme.palette.background.paper, 0.6) : theme.palette.background.paper,
+        p: { xs: 2, sm: 3 },
+        borderRadius: 3,
+      }}
+    >
+      {/* Header */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            Block List
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Block unwanted emails or entire domains from reaching your inbox
+          </Typography>
+        </Box>
+        <Chip 
+          label={`${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
+          color="primary" 
+          variant="outlined"
+          icon={<FilterList />}
+          sx={{ fontWeight: 500 }}
+        />
+      </Stack>
+      
+      {/* Add new entry */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 4,
+          borderRadius: 3,
+          border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+          bgcolor: isDarkMode 
+            ? alpha(theme.palette.background.paper, 0.3)
+            : alpha(theme.palette.background.paper, 1),
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={600} mb={2} sx={{ display: 'flex', alignItems: 'center' }}>
+          Add New Block Entry
           <Tooltip title="Add email addresses or domains to block. Use * for wildcard domains (e.g., *.example.com)">
             <Info sx={{ ml: 1, fontSize: 18, color: 'text.secondary' }} />
           </Tooltip>
         </Typography>
-
+        
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
             fullWidth
             variant="outlined"
-            size="small"
             value={newEntry}
-            placeholder="Enter email or domain..."
+            placeholder="Enter email address or domain to block"
             error={!!error}
             onChange={(e) => {
               setNewEntry(e.target.value);
-              setError(validateEntry(e.target.value) || "");
+              if (e.target.value) setError(validateEntry(e.target.value) || "");
             }}
             onKeyPress={(e) => e.key === 'Enter' && handleAddEntry()}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: 50,
-                fieldset: { borderColor: 'divider' },
+                borderRadius: 2,
               }
             }}
           />
@@ -134,75 +173,147 @@ export default function BlockListData() {
             variant="contained"
             startIcon={<Add />}
             onClick={handleAddEntry}
+            disableElevation
             sx={{
-              borderRadius: 50,
-              px: 4,
+              borderRadius: 2,
+              px: 3,
               textTransform: 'none',
-              color: (theme) => theme.palette.mode === 'dark' ? 'primary.main' : 'primary.contrastText',
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
             }}
           >
-            AddEntry
+            Block Entry
           </Button>
         </Stack>
-
+        
         <Collapse in={!!error}>
-          <Alert severity="error" sx={{ borderRadius: 50 }}>{error}</Alert>
+          <Alert 
+            severity="error" 
+            sx={{ mt: 2, borderRadius: 2 }}
+            variant="outlined"
+          >
+            {error}
+          </Alert>
         </Collapse>
+      </Paper>
 
-        {entries.length > 0 ? (
-          <Box sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            p: 2
-          }}>
-            <Stack spacing={1}>
-              {entries.map((entry, index) => (
-                <Fade in key={index}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 1.5,
-                    borderRadius: 1,
-                    backgroundColor: (theme) => alpha(theme.palette.primary.main, index % 2 ? 0.05 : 0),
-                    '&:hover': { backgroundColor: 'action.hover' }
-                  }}>
-                    <Typography variant="body2" fontFamily="monospace">
+      {/* Block list entries */}
+      {entries.length > 0 ? (
+        <AnimatePresence>
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            sx={{
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+              bgcolor: isDarkMode 
+                ? 'transparent' 
+                : alpha(theme.palette.background.default, 0.5),
+            }}
+          >
+            {entries.map((entry, index) => (
+              <Box
+                component={motion.div}
+                key={entry}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 2.5,
+                  borderBottom: index < entries.length - 1 ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
+                  '&:hover': { 
+                    bgcolor: isDarkMode 
+                      ? alpha(theme.palette.action.hover, 0.1) 
+                      : alpha(theme.palette.action.hover, 0.3) 
+                  },
+                  transition: 'background-color 0.2s ease'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: isEmailAddress(entry) 
+                        ? alpha(theme.palette.error.main, isDarkMode ? 0.2 : 0.1)
+                        : alpha(theme.palette.warning.main, isDarkMode ? 0.2 : 0.1),
+                      color: isEmailAddress(entry) 
+                        ? theme.palette.error.main 
+                        : theme.palette.warning.main
+                    }}
+                  >
+                    {isEmailAddress(entry) ? <Email /> : <Language />}
+                  </Avatar>
+                  <Box>
+                    <Typography 
+                      variant="body2" 
+                      fontWeight={500} 
+                      fontFamily="monospace"
+                      sx={{ 
+                        fontSize: '0.95rem',
+                        color: theme.palette.text.primary
+                      }}
+                    >
                       {entry}
                     </Typography>
-                    <Tooltip title="Remove entry">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteEntry(entry)}
-                        sx={{ color: 'error.main' }}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <Typography variant="caption" color="text.secondary">
+                      {isEmailAddress(entry) ? "Email Address" : "Domain"}
+                    </Typography>
                   </Box>
-                </Fade>
-              ))}
-            </Stack>
+                </Box>
+                <Tooltip title="Remove from block list">
+                  <IconButton
+                    onClick={() => handleDeleteEntry(entry)}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': { 
+                        color: theme.palette.error.main,
+                        bgcolor: alpha(theme.palette.error.main, 0.1)
+                      }
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ))}
           </Box>
-        ) : (
-          <Box sx={{
-            py: 4,
+        </AnimatePresence>
+      ) : (
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          sx={{
+            py: 5,
             textAlign: 'center',
-            border: '1px dashed',
-            borderColor: 'divider',
-            borderRadius: 2
-          }}>
-            <Typography variant="body2" color="text.secondary">
-              No blocked entries yet. Add your first entry above.
-            </Typography>
-          </Box>
-        )}
-
-        <Typography variant="caption" color="text.secondary" textAlign="center">
-          {entries.length} {entries.length === 1 ? 'entry' : 'entries'} in block list
-        </Typography>
-      </Stack>
-    </Box>
+            border: `1px dashed ${alpha(theme.palette.divider, 0.8)}`,
+            borderRadius: 3,
+            bgcolor: alpha(theme.palette.background.default, 0.4)
+          }}
+        >
+          <Email 
+            sx={{ 
+              fontSize: 48, 
+              color: alpha(theme.palette.text.secondary, 0.5),
+              mb: 2
+            }} 
+          />
+          <Typography variant="h6" color="text.secondary" fontWeight={500}>
+            No Blocked Entries
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 400, mx: 'auto' }}>
+            Your block list is empty. Add email addresses or domains above to prevent them from reaching your inbox.
+          </Typography>
+        </Box>
+      )}
+    </Paper>
   );
 }
