@@ -14,6 +14,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
+  const primaryColor = theme.palette.primary.main;
+
 
   React.useEffect(() => {
     const verifyAuth = async () => {
@@ -114,9 +116,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          background: isDarkMode
-            ? `linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.95)}, ${alpha(theme.palette.grey[900], 0.98)})`
-            : `linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.97)}, ${alpha(theme.palette.grey[50], 0.99)})`,
+          background: `radial-gradient(circle, ${alpha(primaryColor, 0.2)} 0%, transparent 70%)`,
           position: "relative",
           overflow: "hidden"
         }}
@@ -133,9 +133,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
             width: "300px",
             height: "300px",
             borderRadius: "50%",
-            background: isDarkMode
-              ? `radial-gradient(circle, ${alpha(theme.palette.primary.dark, 0.15)}, transparent 70%)`
-              : `radial-gradient(circle, ${alpha(theme.palette.primary.light, 0.12)}, transparent 70%)`,
+            background: `radial-gradient(circle, ${alpha(primaryColor, 0.2)} 0%, transparent 70%)`,
             filter: "blur(60px)",
             zIndex: 0
           }}
