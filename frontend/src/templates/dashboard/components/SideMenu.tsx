@@ -92,6 +92,10 @@ export default function SideMenu() {
     return nameParts[0][0];
   }, [user?.name]);
 
+  if (user?.name) {
+    localStorage.setItem("username", user.name);
+  }
+
   const planColor =
     theme.palette.mode === "dark"
       ? theme.palette.primary.light

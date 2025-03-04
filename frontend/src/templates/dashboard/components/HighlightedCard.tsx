@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { 
   Card, CardContent, Button, Typography, Box, 
-  CircularProgress, useMediaQuery, alpha 
+  CircularProgress, useMediaQuery, alpha,
+  Stack, Divider, Tab, Tabs
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
@@ -15,10 +18,16 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 export default function HighlightedCard() {
   const theme = useTheme();
   const [loading, setLoading] = React.useState(false);
+  const [emailProvider, setEmailProvider] = React.useState(0);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isDarkMode = theme.palette.mode === 'dark';
 
-  const handleCreateBot = async () => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setEmailProvider(newValue);
+  };
+
+  const handleGmailAuth = async () => {
     setLoading(true);
     const token = localStorage.getItem('token');
     if (!token) {
@@ -36,9 +45,38 @@ export default function HighlightedCard() {
       const authUrl = (response.data as { authUrl: string }).authUrl;
       window.location.href = authUrl;
     } catch (error) {
-      console.error('Error creating bot:', error);
+      console.error('Error connecting to Gmail:', error);
       setLoading(false);
     }
+  };
+
+  const handleOutlookAuth = async () => {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Placeholder for outlook auth endpoint
+      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/microsoft`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const authUrl = (response.data as { authUrl: string }).authUrl;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error connecting to Outlook:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleCustomEmail = () => {
+    // Navigate to custom email setup page or open modal
+    window.location.href = '/setup/custom-email';
   };
 
   return (
@@ -48,7 +86,6 @@ export default function HighlightedCard() {
       transition={{ type: "spring", stiffness: 300 }}
       sx={{
         height: '100%',
-        width: isSmallScreen ? '100%' : 360,
         borderRadius: 3,
         position: 'relative',
         overflow: 'hidden',
@@ -57,6 +94,8 @@ export default function HighlightedCard() {
           ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)}, ${alpha(theme.palette.background.paper, 0.4)})`
           : `linear-gradient(135deg, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.main, 0.05)})`,
         boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
+        mt: { xs: 2, sm: 0 },
+        mr: { xs: 0, sm: 1 },
       }}
     >
       {/* Background decoration */}
@@ -78,7 +117,7 @@ export default function HighlightedCard() {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            mb: 2.5
+            mb: 2
           }}
         >
           <Box
@@ -110,40 +149,146 @@ export default function HighlightedCard() {
           sx={{ 
             color: 'text.secondary', 
             mb: 3,
-            height: '2.5rem',
-            overflow: 'hidden'
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
-          Create your intelligent email assistant powered by AI
+          Create your intelligent email assistant powered by AI. Connect your preferred email provider to get started.
         </Typography>
-        
-        <Button
-          variant="contained"
-          startIcon={loading ? null : <GoogleIcon />}
-          endIcon={loading ? null : <ChevronRightRoundedIcon />}
-          fullWidth
-          onClick={handleCreateBot}
-          disabled={loading}
-          disableElevation
+
+        <Tabs 
+          value={emailProvider} 
+          onChange={handleTabChange}
+          centered
           sx={{
-            borderRadius: 2,
-            py: 1.2,
-            textTransform: 'none',
-            fontSize: '1rem',
-            fontWeight: 600,
-            background: theme.palette.primary.main,
-            '&:hover': {
-              background: theme.palette.primary.dark,
+            mb: 2,
+            '& .MuiTabs-flexContainer': {
+              justifyContent: 'space-around',
             },
-            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`
+            '& .MuiTab-root': {
+              minWidth: 'auto',
+              px: { xs: 1, sm: 2 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            }
           }}
         >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            "Connect Gmail"
-          )}
-        </Button>
+          <Tab 
+            icon={<GoogleIcon />} 
+            iconPosition="start" 
+            label={isMediumScreen ? "" : "Gmail"} 
+            sx={{ textTransform: 'none' }}
+          />
+          <Tab 
+            icon={<MicrosoftIcon />} 
+            iconPosition="start" 
+            label={isMediumScreen ? "" : "Outlook"} 
+            sx={{ textTransform: 'none' }}
+          />
+          <Tab 
+            icon={<AlternateEmailIcon />} 
+            iconPosition="start" 
+            label={isMediumScreen ? "" : "Custom"} 
+            sx={{ textTransform: 'none' }}
+          />
+        </Tabs>
+        
+        <Box sx={{ display: emailProvider === 0 ? 'block' : 'none' }}>
+          <Button
+            variant="contained"
+            startIcon={loading ? null : <GoogleIcon />}
+            endIcon={loading ? null : <ChevronRightRoundedIcon />}
+            fullWidth
+            onClick={handleGmailAuth}
+            disabled={loading}
+            disableElevation
+            sx={{
+              borderRadius: 2,
+              py: 1.2,
+              textTransform: 'none',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              fontWeight: 600,
+              background: "#DB4437", // Gmail red
+              '&:hover': {
+                background: "#C53929",
+              },
+              boxShadow: `0 4px 12px ${alpha('#DB4437', 0.25)}`
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Connect Gmail"
+            )}
+          </Button>
+        </Box>
+
+        <Box sx={{ display: emailProvider === 1 ? 'block' : 'none' }}>
+          <Button
+            variant="contained"
+            startIcon={loading ? null : <MicrosoftIcon />}
+            endIcon={loading ? null : <ChevronRightRoundedIcon />}
+            fullWidth
+            onClick={handleOutlookAuth}
+            disabled={loading}
+            disableElevation
+            sx={{
+              borderRadius: 2,
+              py: 1.2,
+              textTransform: 'none',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              fontWeight: 600,
+              background: "#0078D4", // Microsoft blue
+              '&:hover': {
+                background: "#006CBE",
+              },
+              boxShadow: `0 4px 12px ${alpha('#0078D4', 0.25)}`
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Connect Outlook"
+            )}
+          </Button>
+        </Box>
+
+        <Box sx={{ display: emailProvider === 2 ? 'block' : 'none' }}>
+          <Button
+            variant="contained"
+            startIcon={loading ? null : <AlternateEmailIcon />}
+            endIcon={loading ? null : <ChevronRightRoundedIcon />}
+            fullWidth
+            onClick={handleCustomEmail}
+            disabled={loading}
+            disableElevation
+            sx={{
+              borderRadius: 2,
+              py: 1.2,
+              textTransform: 'none',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              fontWeight: 600,
+              background: theme.palette.primary.main,
+              '&:hover': {
+                background: theme.palette.primary.dark,
+              },
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Setup Custom Email"
+            )}
+          </Button>
+        </Box>
+
+        <Divider sx={{ my: 2, opacity: 0.6 }} />
+        
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'center' }}>
+          Connect your email to enable AI-powered email interactions
+        </Typography>
       </CardContent>
     </Card>
   );
