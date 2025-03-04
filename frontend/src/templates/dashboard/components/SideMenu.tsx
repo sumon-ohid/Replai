@@ -276,7 +276,7 @@ export default function SideMenu() {
                 <IconButton 
                   size="small" 
                   component={motion.button}
-                  whileHover={{ scale: 1.1, rotate: 30 }}
+                  whileHover={{ scale: 1.1}}
                   whileTap={{ scale: 0.9 }}
                   sx={{
                     color: alpha(theme.palette.text.primary, 0.6),
