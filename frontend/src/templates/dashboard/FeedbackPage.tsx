@@ -298,7 +298,7 @@ export default function FeedbackPage(props: { disableCustomTheme?: boolean }) {
                   component="h1"
                   sx={{
                     fontWeight: 800,
-                    background: headerGradient,
+                    background: 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))',
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     mb: 1,
