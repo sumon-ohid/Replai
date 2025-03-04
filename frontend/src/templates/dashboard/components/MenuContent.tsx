@@ -23,6 +23,7 @@ import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 import HelpRoundedIcon from "@mui/icons-material/HelpRounded";
 import { useTheme } from "@mui/material/styles";
 import { Button } from "@mui/material";
+import DraftsIcon from '@mui/icons-material/Drafts';
 
 // Main navigation items
 const mainNavItems = [
@@ -33,11 +34,18 @@ const mainNavItems = [
     description: "Dashboard overview",
   },
   {
+    text: "Inbox",
+    icon: <DraftsIcon />,
+    path: "/inbox",
+    description: "Email inbox",
+    badge: 2,
+  },
+  {
     text: "Connected",
     icon: <AttachEmailIcon />,
     path: "/connected",
     description: "Connected email accounts",
-    badge: 1,
+    // badge: 1,
   },
   {
     text: "Data",

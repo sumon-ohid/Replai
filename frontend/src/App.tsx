@@ -4,6 +4,7 @@ import MarketingPage from './templates/marketing-page/MarketingPage';
 import SignIn from './templates/sign-in/SignIn';
 import Dashboard from './templates/dashboard/Dashboard';
 import EmailManager from './templates/dashboard/EmailManager';
+import InboxEmail from './templates/dashboard/InboxEmail';
 import SignUp from './templates/sign-up/SignUp';
 import DataManager from './templates/dashboard/DataManager';
 import BlockList from './templates/dashboard/BlockList';
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
+          <Route path="/inbox" element={<ProtectedRoute><InboxEmail /></ProtectedRoute>} />
           <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
           <Route path="/blocklist" element={<ProtectedRoute><BlockList /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
