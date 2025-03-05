@@ -141,19 +141,29 @@ const IconWrapper = styled(motion.div)(({ theme }) => ({
 
 // Step card
 const StepCard = styled(motion.div)(({ theme }) => ({
-  background: "rgba(30, 41, 59, 0.7)",
+  backgroundColor: alpha(
+    theme.palette.background.paper,
+    theme.palette.mode === "dark" ? 0.8 : 0.9
+  ),
+  "&:hover": {
+    boxShadow:
+      theme.palette.mode === "dark"
+        ? `0 15px 35px -10px ${alpha(theme.palette.primary.main, 0.3)}`
+        : "0 20px 40px -15px rgba(0, 0, 0, 0.15)",
+    borderColor: alpha(theme.palette.primary.main, 0.3),
+    "& .feature-icon": {
+      transform: "scale(1.1) rotate(5deg)",
+    },
+  },
+
   backdropFilter: "blur(10px)",
   padding: theme.spacing(4),
   borderRadius: "16px",
   boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
   width: "380px",
   position: "relative",
-  border: "1px solid rgba(255, 255, 255, 0.05)",
+  border: "1px solid rgba(0, 68, 255, 0.52)",
   transition: "all 0.3s ease",
-  "&:hover": {
-    transform: "translateY(-5px)",
-    boxShadow: "0 25px 65px rgba(0, 0, 0, 0.2)",
-  },
   [theme.breakpoints.down("md")]: {
     width: "100%",
     padding: theme.spacing(3),
@@ -190,7 +200,7 @@ const ControlBar = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(6),
   gap: theme.spacing(2),
   [theme.breakpoints.down("sm")]: {
-    flexDirection: "column",
+    // flexDirection: "column",
     gap: theme.spacing(1),
   },
 }));
@@ -229,12 +239,12 @@ const PropertyRow = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(1.5),
   "& .property-name": {
     minWidth: "100px",
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "text.secondary",
     fontWeight: 500,
     fontSize: "0.875rem",
   },
   "& .property-value": {
-    color: "#fff",
+    color: "text.secondary",
     fontWeight: 500,
     fontSize: "0.875rem",
   },
@@ -244,11 +254,11 @@ const PropertyRow = styled(Box)(({ theme }) => ({
 const MessagePreview = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
   borderRadius: "8px",
-  background: "rgba(255, 255, 255, 0.05)",
+  background: "background.paper",
   marginTop: theme.spacing(2),
-  border: "1px solid rgba(255, 255, 255, 0.1)",
+  border: "1px solid rgba(87, 87, 87, 0.35)",
   fontSize: "0.875rem",
-  color: "rgba(255, 255, 255, 0.9)",
+  color: "text.secondary",
 }));
 
 // "Let's see" button
@@ -271,7 +281,7 @@ const DemoButton = styled(Button)(({ theme }) => ({
 
 // Control button
 const ControlButton = styled(IconButton)(({ theme }) => ({
-  background: "rgba(255, 255, 255, 0.05)",
+  background: "rgba(255, 255, 255, 0.18)",
   border: "1px solid rgba(255, 255, 255, 0.1)",
   transition: "all 0.3s ease",
   "&:hover": {
@@ -616,7 +626,10 @@ export default function WorkflowSection() {
               <StepContainer>
                 <StepCard>
                   <IconWrapper
-                    style={{ background: steps[activeStep].iconBg }}
+                    style={{
+                      background: steps[activeStep].iconBg,
+                      textAlign: "center",
+                    }}
                     animate={{
                       scale: [1, 1.05, 1],
                       boxShadow: [
@@ -639,6 +652,7 @@ export default function WorkflowSection() {
                       mb: 2,
                       fontWeight: 700,
                       textAlign: "center",
+                      color: "text.secondary",
                     }}
                   >
                     {steps[activeStep].title}
@@ -647,7 +661,7 @@ export default function WorkflowSection() {
                     variant="body1"
                     sx={{
                       mb: 3,
-                      color: "rgba(255, 255, 255, 0.8)",
+                      color: "text.secondary",
                       textAlign: "center",
                     }}
                   >
@@ -657,17 +671,27 @@ export default function WorkflowSection() {
                   <Box sx={{ mt: 4 }}>
                     {steps[activeStep].details.map((detail, idx) => (
                       <PropertyRow key={idx}>
-                        <Typography className="property-name">
+                        <Typography
+                          className="property-name"
+                          color="text.secondary"
+                        >
                           {detail.name}
                         </Typography>
-                        <Typography className="property-value">
+                        <Typography
+                          className="property-value"
+                          color="text.secondary"
+                        >
                           {detail.value}
                         </Typography>
                       </PropertyRow>
                     ))}
                   </Box>
 
-                  <MessagePreview>{steps[activeStep].preview}</MessagePreview>
+                  <MessagePreview>
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {steps[activeStep].preview}
+                    </Typography>
+                  </MessagePreview>
                 </StepCard>
 
                 {activeStep < steps.length - 1 && (
@@ -702,7 +726,7 @@ export default function WorkflowSection() {
               onClick={changeSpeed}
               size="small"
               sx={{
-                color: "rgba(255, 255, 255, 0.8)",
+                color: 'text.secondary',
                 fontSize: "0.75rem",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 borderRadius: "4px",
@@ -715,7 +739,7 @@ export default function WorkflowSection() {
 
           <Typography
             variant="caption"
-            sx={{ ml: { xs: 0, sm: 2 }, color: "rgba(255, 255, 255, 0.5)" }}
+            sx={{ ml: { xs: 0, sm: 2 }, color: "text.secondary" }}
           >
             {activeStep + 1} of {steps.length}
           </Typography>
