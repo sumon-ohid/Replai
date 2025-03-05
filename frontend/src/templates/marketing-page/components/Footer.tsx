@@ -25,6 +25,7 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import logo from "../../../../logo/logo_light.png";
 
 function Copyright() {
   return (
@@ -206,7 +207,7 @@ export default function Footer() {
                 >
                   <Box 
                     component="img" 
-                    src="../../../../logo/logo_light.png" 
+                    src={logo}
                     alt="Replai" 
                     sx={{ 
                       height: 36,
