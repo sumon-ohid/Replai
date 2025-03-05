@@ -39,7 +39,7 @@ const AnimatedText: React.FC<{ text: React.ReactNode; delay?: number }> = ({
         y: 0,
         transition: {
           delay,
-          duration: 0.8,
+          duration: 0.5,
           ease: [0.25, 0.1, 0.25, 1.0],
         },
       });
@@ -152,7 +152,7 @@ const FloatingEmail: React.FC<FloatingEmailProps> = ({
         x: position.x,
         transition: {
           delay,
-          duration: 0.8,
+          duration: 0.5,
           ease: [0.25, 0.1, 0.25, 1.0],
         },
       }}
@@ -221,7 +221,7 @@ const FloatingResponse: React.FC<FloatingResponseProps> = ({
         x: position.x,
         transition: {
           delay,
-          duration: 0.8,
+          duration: 0.5,
           ease: [0.25, 0.1, 0.25, 1.0],
         },
       }}
@@ -301,7 +301,7 @@ const FloatingSuccess: React.FC<FloatingSuccessProps> = ({
         x: position.x,
         transition: {
           delay,
-          duration: 0.8,
+          duration: 0.5,
           ease: [0.25, 0.1, 0.25, 1.0],
         },
       }}
@@ -377,7 +377,7 @@ export default function Hero() {
       heroImageControls.start({
         opacity: 1,
         y: 0,
-        transition: { duration: 0.8, delay: 0.3 },
+        transition: { duration: 0.5, delay: 0.3 },
       });
     }
   }, [heroImageControls, heroImageInView]);
@@ -491,7 +491,7 @@ export default function Hero() {
               component={motion.div}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               sx={{
                 fontSize: { xs: "2.5rem", sm: "3rem", md: "3.5rem" },
                 fontWeight: 800,
@@ -557,7 +557,7 @@ export default function Hero() {
               component={motion.div}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
               sx={{ mt: 5 }}
             >
               <GlowingButton onClick={() => navigate("/signin")}>
@@ -591,7 +591,7 @@ export default function Hero() {
               component={motion.div}
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.8 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
               sx={{
                 display: "block",
                 mt: 2,
@@ -675,7 +675,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.5,
                       delay: 1.2,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
@@ -731,7 +731,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.5,
                       delay: 1.8,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
@@ -797,7 +797,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.5,
                       delay: 2.4,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
@@ -851,7 +851,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.5,
                       delay: 3,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
@@ -905,7 +905,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
-                      duration: 0.8,
+                      duration: 0.5,
                       delay: 3.5,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
@@ -952,7 +952,7 @@ export default function Hero() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 2 }}
+              transition={{ duration: 0.5, delay: 2 }}
             >
               <Box
                 sx={{
