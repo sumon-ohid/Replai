@@ -531,25 +531,21 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
                 mt: 2,
               }}
             >
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                sx={{ 
                   fontWeight: 700,
-                  color: "background.text",
-                  mb: -1,
+                  mb: 1,
+                  background: 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                 }}
               >
                 Email Inbox
               </Typography>
 
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "background.text",
-                  display: { xs: "none", md: "block" },
-                }}
-              >
+              <Typography variant="body1" color="text.secondary" mt={-1}>
                 View and manage your emails from different providers. Connect
                 your accounts to get started.
               </Typography>
