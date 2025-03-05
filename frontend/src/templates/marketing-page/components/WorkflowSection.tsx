@@ -532,10 +532,10 @@ export default function WorkflowSection() {
         </AnimatePresence>
       </EmailParticleContainer>
 
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ mt: -4 }}>
         {/* Header */}
         <Box textAlign="center" position="relative" zIndex={5}>
-          <GlowingTitle variant={isMobile ? "h3" : "h2"}>
+          <GlowingTitle variant={isMobile ? "h3" : "h1"}>
             How It Works
           </GlowingTitle>
           <Typography

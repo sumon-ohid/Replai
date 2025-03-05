@@ -541,6 +541,7 @@ export default function Hero() {
                     mb: 4,
                     maxWidth: 500,
                     lineHeight: 1.5,
+                    p: { xs: 1, sm: 0 },
                   }}
                 >
                   Save hours every day with AI-powered email automation that
@@ -575,6 +576,8 @@ export default function Hero() {
                   textTransform: "none",
                   fontSize: "1.1rem",
                   fontWeight: 600,
+                  height: isMobile ? 48 : 56,
+                  width: isMobile ? "50%" : "auto",
                 }}
               >
                 Watch Demo
@@ -663,8 +666,8 @@ export default function Hero() {
                 <Box
                   sx={{
                     position: "absolute",
-                    left: isMobile ? -20 : -80,
-                    top: isMobile ? 30 : 60,
+                    left: { xs: 10, md: 40 },
+                    top: { xs: 30, md: 60 },
                     zIndex: 2,
                   }}
                 >
