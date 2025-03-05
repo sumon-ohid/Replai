@@ -532,9 +532,21 @@ export default function WorkflowSection() {
         </AnimatePresence>
       </EmailParticleContainer>
 
-      <Container maxWidth="lg" sx={{ mt: -4 }}>
+      <Container
+        maxWidth="lg"
+        sx={{
+          mt: -4,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "center",
+        }}
+      >
         {/* Header */}
-        <Box textAlign="center" position="relative" zIndex={5}>
+        <Box
+          sx={{ textAlign: isMobile ? "center" : "left", mt: isMobile ? 0 : 20 }}
+          position="relative"
+          zIndex={5}
+        >
           <GlowingTitle variant={isMobile ? "h3" : "h1"}>
             How It Works
           </GlowingTitle>
@@ -557,6 +569,7 @@ export default function WorkflowSection() {
               maxWidth: "600px",
               mx: "auto",
               mb: 4,
+              ml: { xs: 0, sm: 0 },
               color: "text.secondary",
             }}
           >
@@ -577,173 +590,178 @@ export default function WorkflowSection() {
         </Box>
 
         {/* Step indicators */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            mt: 6,
-            mb: 3,
-            gap: 2,
-            flexWrap: "wrap",
-          }}
-        >
-          {steps.map((step, index) => (
-            <Box
-              key={index}
-              component={motion.div}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleStepChange(index)}
-              sx={{
-                width: "12px",
-                height: "12px",
-                borderRadius: "50%",
-                cursor: "pointer",
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-                background:
-                  activeStep === index
-                    ? "linear-gradient(to right,rgb(0, 115, 255),rgb(0, 157, 242))"
-                    : "rgba(0, 183, 255, 0.56)",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  boxShadow: "0 0 0 3px rgba(1, 83, 213, 0.3)",
-                },
-              }}
-            />
-          ))}
-        </Box>
-
-        {/* Main workflow display */}
-        <WorkflowContainer>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-            >
-              <StepContainer>
-                <StepCard>
-                  <IconWrapper
-                    style={{
-                      background: steps[activeStep].iconBg,
-                      textAlign: "center",
-                    }}
-                    animate={{
-                      scale: [1, 1.05, 1],
-                      boxShadow: [
-                        "0 8px 16px rgba(0, 0, 0, 0.2)",
-                        "0 12px 24px rgba(0, 0, 0, 0.3)",
-                        "0 8px 16px rgba(0, 0, 0, 0.2)",
-                      ],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatType: "loop",
-                    }}
-                  >
-                    {steps[activeStep].icon}
-                  </IconWrapper>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      mb: 2,
-                      fontWeight: 700,
-                      textAlign: "center",
-                      color: "text.secondary",
-                    }}
-                  >
-                    {steps[activeStep].title}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      mb: 3,
-                      color: "text.secondary",
-                      textAlign: "center",
-                    }}
-                  >
-                    {steps[activeStep].description}
-                  </Typography>
-
-                  <Box sx={{ mt: 4 }}>
-                    {steps[activeStep].details.map((detail, idx) => (
-                      <PropertyRow key={idx}>
-                        <Typography
-                          className="property-name"
-                          color="text.secondary"
-                        >
-                          {detail.name}
-                        </Typography>
-                        <Typography
-                          className="property-value"
-                          color="text.secondary"
-                        >
-                          {detail.value}
-                        </Typography>
-                      </PropertyRow>
-                    ))}
-                  </Box>
-
-                  <MessagePreview>
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {steps[activeStep].preview}
-                    </Typography>
-                  </MessagePreview>
-                </StepCard>
-
-                {activeStep < steps.length - 1 && (
-                  <ConnectionLine
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: isMobile ? 50 : 100, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                  />
-                )}
-              </StepContainer>
-            </motion.div>
-          </AnimatePresence>
-        </WorkflowContainer>
-
-        {/* Controls */}
-        <ControlBar>
-          <Tooltip title={isPlaying ? "Pause" : "Play"}>
-            <ControlButton onClick={togglePlay} color="primary">
-              {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-            </ControlButton>
-          </Tooltip>
-
-          <Tooltip title="Restart">
-            <ControlButton onClick={resetAnimation} color="primary">
-              <RestartAltIcon />
-            </ControlButton>
-          </Tooltip>
-
-          <Tooltip title={`Speed: ${speed}x`}>
-            <Button
-              variant="text"
-              onClick={changeSpeed}
-              size="small"
-              sx={{
-                color: 'text.secondary',
-                fontSize: "0.75rem",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "4px",
-                padding: "4px 8px",
-              }}
-            >
-              {speed}x Speed
-            </Button>
-          </Tooltip>
-
-          <Typography
-            variant="caption"
-            sx={{ ml: { xs: 0, sm: 2 }, color: "text.secondary" }}
+        <Box sx={{ mt: isMobile ? 0 : -6 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              mt: 6,
+              mb: 3,
+              gap: 2,
+              flexWrap: "wrap",
+            }}
           >
-            {activeStep + 1} of {steps.length}
-          </Typography>
-        </ControlBar>
+            {steps.map((step, index) => (
+              <Box
+                key={index}
+                component={motion.div}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleStepChange(index)}
+                sx={{
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  background:
+                    activeStep === index
+                      ? "linear-gradient(to right,rgb(0, 115, 255),rgb(0, 157, 242))"
+                      : "rgba(0, 183, 255, 0.56)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    boxShadow: "0 0 0 3px rgba(1, 83, 213, 0.3)",
+                  },
+                }}
+              />
+            ))}
+          </Box>
+
+          {/* Main workflow display */}
+          <WorkflowContainer>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+              >
+                <StepContainer>
+                  <StepCard>
+                    <IconWrapper
+                      style={{
+                        background: steps[activeStep].iconBg,
+                        textAlign: "center",
+                      }}
+                      animate={{
+                        scale: [1, 1.05, 1],
+                        boxShadow: [
+                          "0 8px 16px rgba(0, 0, 0, 0.2)",
+                          "0 12px 24px rgba(0, 0, 0, 0.3)",
+                          "0 8px 16px rgba(0, 0, 0, 0.2)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: "loop",
+                      }}
+                    >
+                      {steps[activeStep].icon}
+                    </IconWrapper>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        mb: 2,
+                        fontWeight: 700,
+                        textAlign: "center",
+                        color: "text.secondary",
+                      }}
+                    >
+                      {steps[activeStep].title}
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        mb: 3,
+                        color: "text.secondary",
+                        textAlign: "center",
+                      }}
+                    >
+                      {steps[activeStep].description}
+                    </Typography>
+
+                    <Box sx={{ mt: 4 }}>
+                      {steps[activeStep].details.map((detail, idx) => (
+                        <PropertyRow key={idx}>
+                          <Typography
+                            className="property-name"
+                            color="text.secondary"
+                          >
+                            {detail.name}
+                          </Typography>
+                          <Typography
+                            className="property-value"
+                            color="text.secondary"
+                          >
+                            {detail.value}
+                          </Typography>
+                        </PropertyRow>
+                      ))}
+                    </Box>
+
+                    <MessagePreview>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {steps[activeStep].preview}
+                      </Typography>
+                    </MessagePreview>
+                  </StepCard>
+
+                  {activeStep < steps.length - 1 && (
+                    <ConnectionLine
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: isMobile ? 50 : 100, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                    />
+                  )}
+                </StepContainer>
+              </motion.div>
+            </AnimatePresence>
+          </WorkflowContainer>
+
+          {/* Controls */}
+          <ControlBar>
+            <Tooltip title={isPlaying ? "Pause" : "Play"}>
+              <ControlButton onClick={togglePlay} color="primary">
+                {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              </ControlButton>
+            </Tooltip>
+
+            <Tooltip title="Restart">
+              <ControlButton onClick={resetAnimation} color="primary">
+                <RestartAltIcon />
+              </ControlButton>
+            </Tooltip>
+
+            <Tooltip title={`Speed: ${speed}x`}>
+              <Button
+                variant="text"
+                onClick={changeSpeed}
+                size="small"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.75rem",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "4px",
+                  padding: "4px 8px",
+                }}
+              >
+                {speed}x Speed
+              </Button>
+            </Tooltip>
+
+            <Typography
+              variant="caption"
+              sx={{ ml: { xs: 0, sm: 2 }, color: "text.secondary" }}
+            >
+              {activeStep + 1} of {steps.length}
+            </Typography>
+          </ControlBar>
+        </Box>
       </Container>
     </SectionWrapper>
   );
