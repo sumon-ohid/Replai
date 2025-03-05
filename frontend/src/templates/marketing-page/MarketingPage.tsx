@@ -358,536 +358,538 @@ const StatCounter: React.FC<StatCounterProps> = ({ value, label, icon, suffix = 
 // Interactive workflow section with animations
 // Interactive workflow section with enhanced scroll animations
 // Interactive workflow section with scroll-triggered transitions
-const WorkflowSection = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
-  const [activeStep, setActiveStep] = React.useState(0);
-  const controls = useAnimation();
-  const scrollRef = React.useRef<HTMLElement | null>(null);
-  const [inViewRef, inView] = useInView({
-    threshold: 0.2,
-  });
+// const WorkflowSection = () => {
+//   const theme = useTheme();
+//   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+//   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+//   const [activeStep, setActiveStep] = React.useState(0);
+//   const controls = useAnimation();
+//   const scrollRef = React.useRef<HTMLElement | null>(null);
+//   const [inViewRef, inView] = useInView({
+//     threshold: 0.2,
+//   });
   
-  // Create refs for each step
-  const stepRefs = React.useRef<React.RefObject<HTMLElement>[]>(Array(3).fill(null).map(() => React.createRef<HTMLElement>()) as React.RefObject<HTMLElement>[]);
+//   // Create refs for each step
+//   const stepRefs = React.useRef<React.RefObject<HTMLElement>[]>(Array(3).fill(null).map(() => React.createRef<HTMLElement>()) as React.RefObject<HTMLElement>[]);
   
-  // Combine multiple refs
-  interface SetRefs {
-    (element: HTMLElement | null): void;
-  }
+//   // Combine multiple refs
+//   interface SetRefs {
+//     (element: HTMLElement | null): void;
+//   }
 
-  const setRefs: SetRefs = React.useCallback(
-    (element) => {
-      scrollRef.current = element;
-      inViewRef(element);
-    },
-    [inViewRef],
-  );
+//   const setRefs: SetRefs = React.useCallback(
+//     (element) => {
+//       scrollRef.current = element;
+//       inViewRef(element);
+//     },
+//     [inViewRef],
+//   );
   
-  // Track scroll position to determine active step
-  React.useEffect(() => {
-    if (!scrollRef.current) return;
+//   // Track scroll position to determine active step
+//   React.useEffect(() => {
+//     if (!scrollRef.current) return;
     
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + window.innerHeight * 0.5;
+//     const handleScroll = () => {
+//       const scrollPosition = window.scrollY + window.innerHeight * 0.5;
       
-      // Find which step is in view based on scroll position
-      for (let i = 0; i < stepRefs.current.length; i++) {
-        const ref = stepRefs.current[i];
-        if (ref.current) {
-          const { top, bottom } = ref.current.getBoundingClientRect();
-          const offsetTop = window.scrollY + top;
-          const offsetBottom = window.scrollY + bottom;
+//       // Find which step is in view based on scroll position
+//       for (let i = 0; i < stepRefs.current.length; i++) {
+//         const ref = stepRefs.current[i];
+//         if (ref.current) {
+//           const { top, bottom } = ref.current.getBoundingClientRect();
+//           const offsetTop = window.scrollY + top;
+//           const offsetBottom = window.scrollY + bottom;
           
-          if (scrollPosition >= offsetTop && scrollPosition <= offsetBottom) {
-            setActiveStep(i);
-            break;
-          }
-        }
-      }
-    };
+//           if (scrollPosition >= offsetTop && scrollPosition <= offsetBottom) {
+//             setActiveStep(i);
+//             break;
+//           }
+//         }
+//       }
+//     };
     
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+//     window.addEventListener('scroll', handleScroll);
+//     return () => window.removeEventListener('scroll', handleScroll);
+//   }, []);
   
-  // Start animations when section comes into view
-  React.useEffect(() => {
-    if (inView) {
-      controls.start("visible");
-    } else {
-      controls.start("hidden");
-    }
-  }, [controls, inView]);
+//   // Start animations when section comes into view
+//   React.useEffect(() => {
+//     if (inView) {
+//       controls.start("visible");
+//     } else {
+//       controls.start("hidden");
+//     }
+//   }, [controls, inView]);
   
-  const steps = [
-    {
-      title: "Email Arrives",
-      description: "Replai monitors your inbox and detects incoming emails that need attention",
-      animation: emailAnimationData
-    },
-    {
-      title: "AI Analysis",
-      description: "Our intelligent AI analyzes the content, context, and intent of the email",
-      animation: aiProcessingData
-    },
-    {
-      title: "Smart Response",
-      description: "Replai drafts the perfect response in your tone and style for quick review",
-      animation: successAnimationData
-    }
-  ];
+//   const steps = [
+//     {
+//       title: "Email Arrives",
+//       description: "Replai monitors your inbox and detects incoming emails that need attention",
+//       animation: emailAnimationData
+//     },
+//     {
+//       title: "AI Analysis",
+//       description: "Our intelligent AI analyzes the content, context, and intent of the email",
+//       animation: aiProcessingData
+//     },
+//     {
+//       title: "Smart Response",
+//       description: "Replai drafts the perfect response in your tone and style for quick review",
+//       animation: successAnimationData
+//     }
+//   ];
   
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.2 }
-    }
-  };
+//   // Animation variants
+//   const containerVariants = {
+//     hidden: { opacity: 0 },
+//     visible: {
+//       opacity: 1,
+//       transition: { staggerChildren: 0.2 }
+//     }
+//   };
   
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.25, 0.1, 0.25, 1.0]
-      }
-    }
-  };
+//   const itemVariants = {
+//     hidden: { opacity: 0, y: 20 },
+//     visible: { 
+//       opacity: 1, 
+//       y: 0,
+//       transition: {
+//         duration: 0.6,
+//         ease: [0.25, 0.1, 0.25, 1.0]
+//       }
+//     }
+//   };
 
-  interface StepRef {
-    current: HTMLElement | null;
-  }
+//   interface StepRef {
+//     current: HTMLElement | null;
+//   }
 
-  interface HandleStepClick {
-    (index: number): void;
-  }
+//   interface HandleStepClick {
+//     (index: number): void;
+//   }
 
-  const handleStepClick: HandleStepClick = (index) => {
-    setActiveStep(index);
-    const targetRef = stepRefs.current[index];
-    let offset = targetRef.current?.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2;
-    if (targetRef && targetRef.current) {
-      if (targetRef.current instanceof HTMLElement) {
-        offset = targetRef.current.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2;
-        window.scrollTo({ top: offset, behavior: 'smooth' });
-      }
-      window.scrollTo({ top: offset, behavior: 'smooth' });
-    }
-  };
+//   const handleStepClick: HandleStepClick = (index) => {
+//     setActiveStep(index);
+//     const targetRef = stepRefs.current[index];
+//     let offset = targetRef.current?.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2;
+//     if (targetRef && targetRef.current) {
+//       if (targetRef.current instanceof HTMLElement) {
+//         offset = targetRef.current.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2;
+//         window.scrollTo({ top: offset, behavior: 'smooth' });
+//       }
+//       window.scrollTo({ top: offset, behavior: 'smooth' });
+//     }
+//   };
 
-  const navigate = useNavigate();
+//   const navigate = useNavigate();
   
-  return (
-    <Box 
-      ref={setRefs}
-      sx={{ 
-        py: { xs: 10, md: 15 },
-        overflow: 'hidden',
-        position: 'relative',
-        background: theme.palette.mode === 'dark' 
-          ? `linear-gradient(180deg, ${alpha('#000', 0)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 50%, ${alpha('#000', 0)} 100%)`
-          : `linear-gradient(180deg, ${alpha('#fff', 0)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 50%, ${alpha('#fff', 0)} 100%)`
-      }}
-    >
-      {/* Background gradients */}
-      <Box 
-        component="div" 
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: theme.palette.mode === 'dark' 
-            ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(0, 0, 0, 0) 25%)'
-            : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.05) 0%, rgba(255, 255, 255, 0) 25%)',
-          zIndex: 0
-        }}
-      />
+//   return (
+//     <Box 
+//       ref={setRefs}
+//       sx={{ 
+//         py: { xs: 10, md: 15 },
+//         overflow: 'hidden',
+//         position: 'relative',
+//         background: theme.palette.mode === 'dark' 
+//           ? `linear-gradient(180deg, ${alpha('#000', 0)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 50%, ${alpha('#000', 0)} 100%)`
+//           : `linear-gradient(180deg, ${alpha('#fff', 0)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 50%, ${alpha('#fff', 0)} 100%)`
+//       }}
+//     >
+//       {/* Background gradients */}
+//       <Box 
+//         component="div" 
+//         sx={{
+//           position: 'absolute',
+//           top: 0,
+//           left: 0,
+//           right: 0,
+//           bottom: 0,
+//           backgroundImage: theme.palette.mode === 'dark' 
+//             ? 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(0, 0, 0, 0) 25%)'
+//             : 'radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.05) 0%, rgba(255, 255, 255, 0) 25%)',
+//           zIndex: 0
+//         }}
+//       />
       
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        <Box
-          component={motion.div}
-          variants={containerVariants}
-          initial="hidden"
-          animate={controls}
-          sx={{ mb: { xs: 6, md: 10 } }}
-        >
-          <motion.div variants={itemVariants}>
-            <Typography
-              variant="overline"
-              align="center"
-              display="block"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-                letterSpacing: 2
-              }}
-            >
-              HOW IT WORKS
-            </Typography>
-          </motion.div>
+//       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+//         <Box
+//           component={motion.div}
+//           variants={containerVariants}
+//           initial="hidden"
+//           animate={controls}
+//           sx={{ mb: { xs: 6, md: 10 } }}
+//         >
+//           <motion.div variants={itemVariants}>
+//             <Typography
+//               variant="overline"
+//               align="center"
+//               display="block"
+//               sx={{
+//                 mb: 2,
+//                 fontWeight: 600,
+//                 color: theme.palette.primary.main,
+//                 letterSpacing: 2
+//               }}
+//             >
+//               HOW IT WORKS
+//             </Typography>
+//           </motion.div>
           
-          <motion.div variants={itemVariants}>
-            <Typography
-              variant="h3"
-              align="center"
-              sx={{
-                fontWeight: 800,
-                mb: 3,
-                fontSize: { xs: '2rem', md: '2.75rem' },
-                background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Seamless Email Automation
-            </Typography>
-          </motion.div>
+//           <motion.div variants={itemVariants}>
+//             <Typography
+//               variant="h3"
+//               align="center"
+//               sx={{
+//                 fontWeight: 800,
+//                 mb: 3,
+//                 fontSize: { xs: '2rem', md: '2.75rem' },
+//                 background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+//                 WebkitBackgroundClip: 'text',
+//                 WebkitTextFillColor: 'transparent',
+//               }}
+//             >
+//               Seamless Email Automation
+//             </Typography>
+//           </motion.div>
           
-          <motion.div variants={itemVariants}>
-            <Typography
-              variant="body1"
-              align="center"
-              color="text.secondary"
-              sx={{
-                maxWidth: 700,
-                mx: 'auto',
-                lineHeight: 1.8,
-                mb: 4,
-              }}
-            >
-              Replai transforms how you handle business email with a sophisticated yet simple 
-              automated workflow that saves hours every day.
-            </Typography>
-          </motion.div>
-        </Box>
+//           <motion.div variants={itemVariants}>
+//             <Typography
+//               variant="body1"
+//               align="center"
+//               color="text.secondary"
+//               sx={{
+//                 maxWidth: 700,
+//                 mx: 'auto',
+//                 lineHeight: 1.8,
+//                 mb: 4,
+//               }}
+//             >
+//               Replai transforms how you handle business email with a sophisticated yet simple 
+//               automated workflow that saves hours every day.
+//             </Typography>
+//           </motion.div>
+//         </Box>
         
-        {/* Steps navigation - Always visible and fixed on scroll on desktop */}
-        {!isMobile && (
-          <Box sx={{ 
-            position: 'sticky', 
-            top: 80, 
-            zIndex: 100,
-            mb: 4, 
-            px: 2,
-            py: 1.5, 
-            mx: 'auto', 
-            maxWidth: 'md',
-            borderRadius: 3,
-            backdropFilter: 'blur(8px)',
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            boxShadow: `0 4px 30px ${alpha(theme.palette.common.black, 0.1)}`,
-            border: '1px solid',
-            borderColor: alpha(theme.palette.divider, 0.1)
-          }}>
-            <Grid container spacing={2}>
-              {steps.map((step, index) => (
-                <Grid item xs={4} key={`nav-${step.title}`}>
-                  <Box
-                    onClick={() => handleStepClick(index)}
-                    sx={{
-                      px: 2,
-                      py: 1.5,
-                      borderRadius: 2,
-                      cursor: 'pointer',
-                      backgroundColor: activeStep === index 
-                        ? alpha(theme.palette.primary.main, 0.1) 
-                        : 'transparent',
-                      border: '1px solid',
-                      borderColor: activeStep === index 
-                        ? alpha(theme.palette.primary.main, 0.3)
-                        : 'transparent',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        backgroundColor: activeStep === index 
-                          ? alpha(theme.palette.primary.main, 0.15)
-                          : alpha(theme.palette.action.hover, 0.1),
-                      }
-                    }}
-                  >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Box 
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '50%',
-                          fontSize: '0.875rem',
-                          fontWeight: 700,
-                          backgroundColor: activeStep === index 
-                            ? 'primary.main'
-                            : alpha(theme.palette.action.selected, 0.12),
-                          color: activeStep === index ? 'white' : 'text.secondary',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        {index + 1}
-                      </Box>
+//         {/* Steps navigation - Always visible and fixed on scroll on desktop */}
+//         {!isMobile && (
+//           <Box sx={{ 
+//             position: 'sticky', 
+//             top: 80, 
+//             zIndex: 100,
+//             mb: 4, 
+//             px: 2,
+//             py: 1.5, 
+//             mx: 'auto', 
+//             maxWidth: 'md',
+//             borderRadius: 3,
+//             backdropFilter: 'blur(8px)',
+//             backgroundColor: alpha(theme.palette.background.paper, 0.8),
+//             boxShadow: `0 4px 30px ${alpha(theme.palette.common.black, 0.1)}`,
+//             border: '1px solid',
+//             borderColor: alpha(theme.palette.divider, 0.1)
+//           }}>
+//             <Grid container spacing={2}>
+//               {steps.map((step, index) => (
+//                 <Grid item xs={4} key={`nav-${step.title}`}>
+//                   <Box
+//                     onClick={() => handleStepClick(index)}
+//                     sx={{
+//                       px: 2,
+//                       py: 1.5,
+//                       borderRadius: 2,
+//                       cursor: 'pointer',
+//                       backgroundColor: activeStep === index 
+//                         ? alpha(theme.palette.primary.main, 0.1) 
+//                         : 'transparent',
+//                       border: '1px solid',
+//                       borderColor: activeStep === index 
+//                         ? alpha(theme.palette.primary.main, 0.3)
+//                         : 'transparent',
+//                       transition: 'all 0.3s ease',
+//                       '&:hover': {
+//                         backgroundColor: activeStep === index 
+//                           ? alpha(theme.palette.primary.main, 0.15)
+//                           : alpha(theme.palette.action.hover, 0.1),
+//                       }
+//                     }}
+//                   >
+//                     <Stack direction="row" spacing={1.5} alignItems="center">
+//                       <Box 
+//                         sx={{
+//                           width: 32,
+//                           height: 32,
+//                           display: 'flex',
+//                           alignItems: 'center',
+//                           justifyContent: 'center',
+//                           borderRadius: '50%',
+//                           fontSize: '0.875rem',
+//                           fontWeight: 700,
+//                           backgroundColor: activeStep === index 
+//                             ? 'primary.main'
+//                             : alpha(theme.palette.action.selected, 0.12),
+//                           color: activeStep === index ? 'white' : 'text.secondary',
+//                           transition: 'all 0.3s ease',
+//                         }}
+//                       >
+//                         {index + 1}
+//                       </Box>
                       
-                      <Box sx={{ flex: 1 }}>
-                        <Typography 
-                          variant="subtitle2"
-                          sx={{ 
-                            fontWeight: 600,
-                            color: activeStep === index ? 'primary.main' : 'text.primary',
-                            transition: 'color 0.3s ease'
-                          }}
-                        >
-                          {step.title}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        )}
+//                       <Box sx={{ flex: 1 }}>
+//                         <Typography 
+//                           variant="subtitle2"
+//                           sx={{ 
+//                             fontWeight: 600,
+//                             color: activeStep === index ? 'primary.main' : 'text.primary',
+//                             transition: 'color 0.3s ease'
+//                           }}
+//                         >
+//                           {step.title}
+//                         </Typography>
+//                       </Box>
+//                     </Stack>
+//                   </Box>
+//                 </Grid>
+//               ))}
+//             </Grid>
+//           </Box>
+//         )}
         
-        {/* Step content with scroll detection */}
-        {steps.map((step, index) => (
-          <Box 
-            key={`step-${step.title}`}
-            ref={stepRefs.current[index]}
-            sx={{ 
-              minHeight: { xs: 'auto', md: '80vh' },
-              py: { xs: 6, md: 12 },
-              scrollMarginTop: '80px'
-            }}
-          >
-            <Grid 
-              container 
-              spacing={{ xs: 4, md: 8 }} 
-              alignItems="center"
-              direction={{ xs: 'column-reverse', md: index % 2 === 0 ? 'row' : 'row-reverse' }}
-            >
-              {/* Text Content */}
-              <Grid item xs={12} md={5}>
-                <Box
-                  component={motion.div}
-                  initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-                  animate={{ 
-                    opacity: activeStep === index ? 1 : 0.4,
-                    x: 0
-                  }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                >
-                  <Box
-                    sx={{
-                      mb: { xs: 2, md: 4 },
-                      display: { xs: 'flex', md: 'block' },
-                      alignItems: { xs: 'center' },
-                      justifyContent: { xs: 'center' }
-                    }}
-                  >
-                    <Box 
-                      sx={{
-                        width: { xs: 50, md: 80 },
-                        height: { xs: 50, md: 80 },
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '50%',
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                        fontWeight: 700,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.3)}`,
-                        mb: { md: 4 },
-                        mr: { xs: 3, md: 0 }
-                      }}
-                    >
-                      {index + 1}
-                    </Box>
-                  </Box>
+//         {/* Step content with scroll detection */}
+//         {steps.map((step, index) => (
+//           <Box 
+//             key={`step-${step.title}`}
+//             ref={stepRefs.current[index]}
+//             sx={{ 
+//               minHeight: { xs: 'auto', md: '80vh' },
+//               py: { xs: 6, md: 12 },
+//               scrollMarginTop: '80px'
+//             }}
+//           >
+//             <Grid 
+//               container 
+//               spacing={{ xs: 4, md: 8 }} 
+//               alignItems="center"
+//               direction={{ xs: 'column-reverse', md: index % 2 === 0 ? 'row' : 'row-reverse' }}
+//             >
+//               {/* Text Content */}
+//               <Grid item xs={12} md={5}>
+//                 <Box
+//                   component={motion.div}
+//                   initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+//                   animate={{ 
+//                     opacity: activeStep === index ? 1 : 0.4,
+//                     x: 0
+//                   }}
+//                   transition={{ duration: 0.8, ease: "easeOut" }}
+//                 >
+//                   <Box
+//                     sx={{
+//                       mb: { xs: 2, md: 4 },
+//                       display: { xs: 'flex', md: 'block' },
+//                       alignItems: { xs: 'center' },
+//                       justifyContent: { xs: 'center' }
+//                     }}
+//                   >
+//                     <Box 
+//                       sx={{
+//                         width: { xs: 50, md: 80 },
+//                         height: { xs: 50, md: 80 },
+//                         display: 'flex',
+//                         alignItems: 'center',
+//                         justifyContent: 'center',
+//                         borderRadius: '50%',
+//                         fontSize: { xs: '1.5rem', md: '2rem' },
+//                         fontWeight: 700,
+//                         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+//                         color: 'white',
+//                         boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.3)}`,
+//                         mb: { md: 4 },
+//                         mr: { xs: 3, md: 0 }
+//                       }}
+//                     >
+//                       {index + 1}
+//                     </Box>
+//                   </Box>
                   
-                  <Typography 
-                    variant="h3" 
-                    sx={{ 
-                      fontWeight: 700, 
-                      mb: { xs: 2, md: 3 },
-                      fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
-                      textAlign: { xs: 'center', md: 'left' }
-                    }}
-                  >
-                    {step.title}
-                  </Typography>
+//                   <Typography 
+//                     variant="h3" 
+//                     sx={{ 
+//                       fontWeight: 700, 
+//                       mb: { xs: 2, md: 3 },
+//                       fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
+//                       textAlign: { xs: 'center', md: 'left' }
+//                     }}
+//                   >
+//                     {step.title}
+//                   </Typography>
                   
-                  <Typography 
-                    variant="body1" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: { xs: '1rem', md: '1.125rem' },
-                      lineHeight: 1.8,
-                      mb: 4,
-                      textAlign: { xs: 'center', md: 'left' }
-                    }}
-                  >
-                    {step.description}
-                  </Typography>
+//                   <Typography 
+//                     variant="body1" 
+//                     color="text.secondary"
+//                     sx={{ 
+//                       fontSize: { xs: '1rem', md: '1.125rem' },
+//                       lineHeight: 1.8,
+//                       mb: 4,
+//                       textAlign: { xs: 'center', md: 'left' }
+//                     }}
+//                   >
+//                     {step.description}
+//                   </Typography>
                   
-                  {/* Only show on mobile as an indicator of more content */}
-                  {isMobile && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                      <Box 
-                        component={motion.div}
-                        animate={{ y: [0, 8, 0] }}
-                        transition={{ 
-                          duration: 2, 
-                          repeat: Infinity,
-                          repeatType: "loop" 
-                        }}
-                      >
-                        <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path 
-                            d="M1 1L10 10L19 1" 
-                            stroke={theme.palette.text.secondary} 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                          />
-                        </svg>
-                      </Box>
-                    </Box>
-                  )}
-                </Box>
-              </Grid>
+//                   {/* Only show on mobile as an indicator of more content */}
+//                   {isMobile && (
+//                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+//                       <Box 
+//                         component={motion.div}
+//                         animate={{ y: [0, 8, 0] }}
+//                         transition={{ 
+//                           duration: 2, 
+//                           repeat: Infinity,
+//                           repeatType: "loop" 
+//                         }}
+//                       >
+//                         <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+//                           <path 
+//                             d="M1 1L10 10L19 1" 
+//                             stroke={theme.palette.text.secondary} 
+//                             strokeWidth="2" 
+//                             strokeLinecap="round" 
+//                           />
+//                         </svg>
+//                       </Box>
+//                     </Box>
+//                   )}
+//                 </Box>
+//               </Grid>
               
-              {/* Animation Content */}
-              <Grid item xs={12} md={7}>
-                <Box
-                  component={motion.div}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ 
-                    opacity: activeStep === index ? 1 : 0.3,
-                    scale: activeStep === index ? 1 : 0.9,
-                  }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  sx={{
-                    position: 'relative',
-                    borderRadius: 4,
-                    p: { xs: 2, md: 4 },
-                    background: theme.palette.mode === 'dark'
-                      ? `linear-gradient(145deg, ${alpha('#121212', 0.7)}, ${alpha('#272727', 0.7)})`
-                      : `linear-gradient(145deg, ${alpha('#ffffff', 0.7)}, ${alpha('#f5f5f5', 0.7)})`,
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: `0 20px 80px ${alpha(theme.palette.common.black, theme.palette.mode === 'dark' ? 0.25 : 0.1)}`,
-                    border: '1px solid',
-                    borderColor: theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.divider, 0.1)
-                      : theme.palette.divider,
-                    transition: 'all 0.5s ease-in-out',
-                    overflow: 'hidden',
-                    height: { xs: 280, sm: 350, md: 400 }
-                  }}
-                >
-                  {/* Decorative gradients */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: '-30%',
-                      left: '-20%',
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '50%',
-                      background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 70%)`,
-                      filter: 'blur(30px)',
-                      opacity: activeStep === index ? 0.8 : 0.3,
-                      transition: 'opacity 0.5s ease-in-out'
-                    }}
-                  />
+//               {/* Animation Content */}
+//               <Grid item xs={12} md={7}>
+//                 <Box
+//                   component={motion.div}
+//                   initial={{ opacity: 0, scale: 0.9 }}
+//                   animate={{ 
+//                     opacity: activeStep === index ? 1 : 0.3,
+//                     scale: activeStep === index ? 1 : 0.9,
+//                   }}
+//                   transition={{ duration: 0.8, ease: "easeOut" }}
+//                   sx={{
+//                     position: 'relative',
+//                     borderRadius: 4,
+//                     p: { xs: 2, md: 4 },
+//                     background: theme.palette.mode === 'dark'
+//                       ? `linear-gradient(145deg, ${alpha('#121212', 0.7)}, ${alpha('#272727', 0.7)})`
+//                       : `linear-gradient(145deg, ${alpha('#ffffff', 0.7)}, ${alpha('#f5f5f5', 0.7)})`,
+//                     backdropFilter: 'blur(10px)',
+//                     boxShadow: `0 20px 80px ${alpha(theme.palette.common.black, theme.palette.mode === 'dark' ? 0.25 : 0.1)}`,
+//                     border: '1px solid',
+//                     borderColor: theme.palette.mode === 'dark'
+//                       ? alpha(theme.palette.divider, 0.1)
+//                       : theme.palette.divider,
+//                     transition: 'all 0.5s ease-in-out',
+//                     overflow: 'hidden',
+//                     height: { xs: 280, sm: 350, md: 400 }
+//                   }}
+//                 >
+//                   {/* Decorative gradients */}
+//                   <Box
+//                     sx={{
+//                       position: 'absolute',
+//                       top: '-30%',
+//                       left: '-20%',
+//                       width: '100%',
+//                       height: '100%',
+//                       borderRadius: '50%',
+//                       background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 70%)`,
+//                       filter: 'blur(30px)',
+//                       opacity: activeStep === index ? 0.8 : 0.3,
+//                       transition: 'opacity 0.5s ease-in-out'
+//                     }}
+//                   />
                   
-                  <Lottie
-                    loop
-                    animationData={step.animation}
-                    play={activeStep === index}
-                    style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      maxHeight: 400,
-                      margin: '0 auto'
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-          </Box>
-        ))}
+//                   <Lottie
+//                     loop
+//                     animationData={step.animation}
+//                     play={activeStep === index}
+//                     style={{ 
+//                       width: '100%', 
+//                       height: '100%', 
+//                       maxHeight: 400,
+//                       margin: '0 auto'
+//                     }}
+//                   />
+//                 </Box>
+//               </Grid>
+//             </Grid>
+//           </Box>
+//         ))}
         
-        {/* Completion indicator */}
-        <Box sx={{ 
-          py: 6, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center'
-        }}>
-          <Box 
-            sx={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center', 
-              gap: 2, 
-              mb: 4 
-            }}
-          >
-            {steps.map((_, i) => (
-              <Box
-                key={i}
-                component={motion.div}
-                animate={{
-                  scale: activeStep === i ? 1.2 : 1,
-                  opacity: activeStep === i ? 1 : 0.5,
-                }}
-                transition={{ duration: 0.3 }}
-                onClick={() => handleStepClick(i)}
-                sx={{
-                  width: activeStep === i ? 30 : 12,
-                  height: 12,
-                  borderRadius: 6,
-                  bgcolor: activeStep === i ? 'primary.main' : 'divider',
-                  cursor: 'pointer',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            ))}
-          </Box>
+//         {/* Completion indicator */}
+//         <Box sx={{ 
+//           py: 6, 
+//           display: 'flex', 
+//           flexDirection: 'column', 
+//           alignItems: 'center', 
+//           justifyContent: 'center'
+//         }}>
+//           <Box 
+//             sx={{ 
+//               display: 'flex',
+//               alignItems: 'center',
+//               justifyContent: 'center', 
+//               gap: 2, 
+//               mb: 4 
+//             }}
+//           >
+//             {steps.map((_, i) => (
+//               <Box
+//                 key={i}
+//                 component={motion.div}
+//                 animate={{
+//                   scale: activeStep === i ? 1.2 : 1,
+//                   opacity: activeStep === i ? 1 : 0.5,
+//                 }}
+//                 transition={{ duration: 0.3 }}
+//                 onClick={() => handleStepClick(i)}
+//                 sx={{
+//                   width: activeStep === i ? 30 : 12,
+//                   height: 12,
+//                   borderRadius: 6,
+//                   bgcolor: activeStep === i ? 'primary.main' : 'divider',
+//                   cursor: 'pointer',
+//                   transition: 'width 0.3s ease',
+//                 }}
+//               />
+//             ))}
+//           </Box>
           
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              borderRadius: 3,
-              px: 4,
-              py: 1.5,
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 600,
-              background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
-              '&:hover': {
-                boxShadow: `0 10px 25px ${alpha(theme.palette.primary.main, 0.5)}`
-              }
-            }}
-            // onclick go to signup page
-            onClick={() => navigate('/signup')}
-          >
-            Get Started with Replai
-          </Button>
-        </Box>
-      </Container>
-    </Box>
-  );
-};
+//           <Button
+//             variant="contained"
+//             size="large"
+//             sx={{
+//               borderRadius: 3,
+//               px: 4,
+//               py: 1.5,
+//               textTransform: 'none',
+//               fontSize: '1rem',
+//               fontWeight: 600,
+//               background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+//               boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+//               '&:hover': {
+//                 boxShadow: `0 10px 25px ${alpha(theme.palette.primary.main, 0.5)}`
+//               }
+//             }}
+//             // onclick go to signup page
+//             onClick={() => navigate('/signup')}
+//           >
+//             Get Started with Replai
+//           </Button>
+//         </Box>
+//       </Container>
+//     </Box>
+//   );
+// };
+
+import WorkflowSection from "./components/WorkflowSection";
 
 import { Navigate, useNavigate } from "react-router-dom";
 

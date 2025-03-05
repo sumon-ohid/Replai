@@ -33,6 +33,8 @@
     "@mui/x-date-pickers": "^7.26.0",
     "@mui/x-date-pickers-pro": "^7.26.0",
     "@mui/x-tree-view": "^7.26.0",
+    "@tailwindcss/vite": "^4.0.10",
+    "@xyflow/react": "^12.4.4",
     "algoliasearch": "^5.20.3",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
@@ -50,12 +52,14 @@
     "react-intersection-observer": "^9.15.1",
     "react-lottie-player": "^2.1.0",
     "react-router-dom": "^7.1.5",
-    "react-syntax-highlighter": "^15.6.1"
+    "react-syntax-highlighter": "^15.6.1",
+    "reactflow": "^11.11.4",
+    "tailwindcss": "^4.0.10"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
     "@types/lodash": "^4.17.16",
-    "@types/node": "^22.13.1",
+    "@types/node": "^22.13.9",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/react-router-dom": "^5.3.3",
