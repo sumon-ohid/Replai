@@ -985,7 +985,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
 
                       <Box sx={{ p: 3 }}>
                         <Typography variant="body2" color="text.secondary">
-                          Customize the look and feel of the app to suit your preferences.
+                          Change the look and feel of the app.
                         </Typography>
                       </Box>
                     </CardContent>
