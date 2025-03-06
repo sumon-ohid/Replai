@@ -1,5 +1,5 @@
 {
-  "name": "easy-email",
+  "name": "replai-backend",
   "version": "1.0.0",
   "description": "A project for managing emails with Google APIs",
   "main": "server.js",
