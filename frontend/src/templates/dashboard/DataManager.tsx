@@ -44,7 +44,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
 import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
 import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
-import Footer from "../marketing-page/components/Footer";
+import Footer from "../homepage/components/Footer";
 
 const xThemeComponents = {
   ...chartsCustomizations,

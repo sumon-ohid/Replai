@@ -26,7 +26,7 @@ import {
   Paper,
   Button,
 } from '@mui/material';
-import Footer from '../marketing-page/components/Footer';
+import Footer from '../homepage/components/Footer';
 
 // Placeholder components – replace with your actual components
 import PlanDetailsWithCustomer from './components/PlanDetails';

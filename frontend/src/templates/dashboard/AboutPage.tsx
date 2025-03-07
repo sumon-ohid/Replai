@@ -23,7 +23,7 @@ import {
   Chip,
   Link
 } from '@mui/material';
-import Footer from '../marketing-page/components/Footer';
+import Footer from '../homepage/components/Footer';
 import { motion } from 'framer-motion';
 
 // Icons

@@ -24,7 +24,7 @@ import Stack from "@mui/material/Stack";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid"; // a plugin!
 import EnhancedCalendar from "./components/EnhancedCalendar";
-import Footer from '../marketing-page/components/Footer';
+import Footer from '../homepage/components/Footer';
 
 const xThemeComponents = {
   ...chartsCustomizations,

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import MarketingPage from './templates/marketing-page/MarketingPage';
+import MarketingPage from './templates/homepage/MarketingPage';
 import SignIn from './templates/sign-in/SignIn';
 import Dashboard from './templates/dashboard/Dashboard';
 import EmailManager from './templates/dashboard/EmailManager';
@@ -17,9 +17,9 @@ import NotFoundPage from './templates/not-found/NotFoundPage';
 import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
-import PrivacyTermsPage from './templates/marketing-page/PrivacyPage';
+import PrivacyTermsPage from './templates/homepage/PrivacyPage';
 import CalendarPage from './templates/dashboard/CalendarPage';
-import Documentations from './templates/marketing-page/Documentations';
+import Documentations from './templates/homepage/Documentations';
 
 export default function App() {
   return (

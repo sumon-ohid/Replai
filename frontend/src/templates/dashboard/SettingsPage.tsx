@@ -52,7 +52,7 @@ import {
   Chip,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import Footer from '../marketing-page/components/Footer';
+import Footer from '../homepage/components/Footer';
 // Icons
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import PersonIcon from '@mui/icons-material/Person';
