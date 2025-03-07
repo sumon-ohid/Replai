@@ -30,7 +30,7 @@ export default function App() {
           <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/connected" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
+          <Route path="/email-manager" element={<ProtectedRoute><EmailManager /></ProtectedRoute>} />
           <Route path="/inbox" element={<ProtectedRoute><InboxEmail /></ProtectedRoute>} />
           <Route path="/data" element={<ProtectedRoute><DataManager /></ProtectedRoute>} />
           <Route path="/blocklist" element={<ProtectedRoute><BlockList /></ProtectedRoute>} />

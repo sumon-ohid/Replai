@@ -16,7 +16,7 @@ export default function ConnectedEmails() {
   const isDarkMode = theme.palette.mode === 'dark';
 
   const handleViewConnectedEmails = () => {
-    navigate('/connected');
+    navigate('/email-manager');
   };
 
   return (

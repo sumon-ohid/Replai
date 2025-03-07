@@ -41,9 +41,9 @@ const mainNavItems = [
     badge: 2,
   },
   {
-    text: "Connected",
+    text: "Email Manager",
     icon: <AttachEmailIcon />,
-    path: "/connected",
+    path: "/email-manager",
     description: "Connected email accounts",
     // badge: 1,
   },
