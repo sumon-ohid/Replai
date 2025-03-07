@@ -60,10 +60,10 @@ const tiers = [
     subheader: "Most Popular",
     price: "5",
     priceDetails: {
-      monthly: "5",
-      yearly: "50",
+      monthly: "15",
+      yearly: "120",
     },
-    savings: "€10",
+    savings: "€30",
     buttonText: "Start Pro Plan",
     buttonVariant: "contained",
     buttonColor: "primary",
@@ -76,7 +76,6 @@ const tiers = [
       { title: "Priority email support", included: true },
       { title: "Advanced analytics", included: true },
       { title: "Customizable templates", included: true },
-      { title: "API access", included: false },
     ],
   },
   {
@@ -1078,7 +1077,10 @@ export default function Pricing() {
                           variant="subtitle1"
                           sx={{ ml: 1 }}
                         >
-                          per month
+                          {/* per month or per year */}
+                          {billingCycle === "monthly"
+                            ? "per month"
+                            : "per year"}
                         </Typography>
                       )}
                     </Box>
