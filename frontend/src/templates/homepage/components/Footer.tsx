@@ -69,10 +69,10 @@ export default function Footer() {
     {
       title: "Product",
       links: [
-        { name: "Features", href: "#" },
-        { name: "Pricing", href: "#" },
-        { name: "Use Cases", href: "#" },
-        { name: "Integrations", href: "#" },
+        { name: "Features", href: "#features" },
+        { name: "Pricing", href: "#pricing" },
+        { name: "Use Cases", href: "#workflow" },
+        { name: "Stats", href: "#stats" },
       ]
     },
     {
@@ -96,10 +96,10 @@ export default function Footer() {
     {
       title: "Legal",
       links: [
-        { name: "Terms of Service", href: "#" },
-        { name: "Privacy Policy", href: "#" },
-        { name: "Cookie Policy", href: "#" },
-        { name: "Security", href: "#" },
+        { name: "Terms of Service", href: "/privacy" },
+        { name: "Privacy Policy", href: "/privacy" },
+        { name: "Cookie Policy", href: "/privacy" },
+        { name: "Security", href: "/privacy" },
       ]
     }
   ];
