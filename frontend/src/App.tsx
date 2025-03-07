@@ -20,6 +20,7 @@ import PublicRoute from './PublicRoute';
 import PrivacyTermsPage from './templates/homepage/PrivacyPage';
 import CalendarPage from './templates/dashboard/CalendarPage';
 import Documentations from './templates/homepage/Documentations';
+import BlogPage from './templates/homepage/BlogPage';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/privacy" element={<PrivacyTermsPage />} />
           <Route path="/docs" element={<Documentations />} />
+          <Route path="/blog" element={<BlogPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>

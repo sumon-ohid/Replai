@@ -79,7 +79,7 @@ export default function Footer() {
       title: "Resources",
       links: [
         { name: "Documentation", href: "/docs" },
-        { name: "Blog", href: "#" },
+        { name: "Blog", href: "/blog" },
         { name: "Community", href: "#" },
         { name: "Knowledge Base", href: "#" },
       ]
