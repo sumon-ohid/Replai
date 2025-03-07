@@ -953,6 +953,7 @@ const BenefitsSection = () => {
 
   return (
     <Box 
+      id="features"
       sx={{ 
         py: { xs: 10, md: 15 },
         background: theme.palette.mode === 'dark' 
@@ -1533,6 +1534,7 @@ const StatsSection = () => {
   
   return (
     <Box 
+      id="stats"
       sx={{ 
         position: 'relative',
         py: { xs: 10, md: 15 },

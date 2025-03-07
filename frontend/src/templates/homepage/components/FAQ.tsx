@@ -108,6 +108,7 @@ export default function FAQ() {
 
   return (
     <Box
+      id="faq"
       sx={{
         py: { xs: 10, md: 16 },
         position: 'relative',
