@@ -106,12 +106,19 @@ export default function MenuContent({ collapsed }: MenuContentProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const handleNavigation = (path: string) => {
+    const handleNavigation = (path: string) => {
     navigate(path);
+    
     if (isMobile) {
       // Close the drawer when navigation is performed on mobile
       const event = new CustomEvent("close-drawer");
       window.dispatchEvent(event);
+    }
+    
+    // Store the current collapsed state in localStorage
+    // This ensures the state persists between navigation and page refreshes
+    if (localStorage) {
+      localStorage.setItem("sideMenuCollapsed", String(collapsed));
     }
   };
 

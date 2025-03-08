@@ -110,7 +110,12 @@ const DrawerToggleButton = styled(IconButton)(({ theme }) => ({
 export default function SideMenu() {
   const { user, logout } = useAuth();
   const theme = useTheme();
-  const [expanded, setExpanded] = React.useState(true);
+  const [expanded, setExpanded] = React.useState(() => {
+    // Read the saved collapsed state from localStorage
+    // Default to true (expanded) if no saved state exists
+    const savedState = localStorage.getItem("sideMenuCollapsed");
+    return savedState === null ? true : savedState !== "true";
+  });
   const navigate = useNavigate();
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
