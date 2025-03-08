@@ -77,10 +77,11 @@ const Drawer = styled(MuiDrawer, {
 // Component for the toggle button
 const DrawerToggleButton = styled(IconButton)(({ theme }) => ({
   position: "relative",
-  top: 10,
-  left: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   marginBottom: 10,
-  transform: "translateX(-50%)",
+  top: 10,
   overflow: "hidden",
   width: 32,
   height: 32,
@@ -88,7 +89,6 @@ const DrawerToggleButton = styled(IconButton)(({ theme }) => ({
   zIndex: 1000,
   backgroundColor: theme.palette.background.paper,
   color: theme.palette.text.secondary,
-  boxShadow: `0 2px 10px ${alpha(theme.palette.common.black, 0.15)}`,
   border: `1px solid ${theme.palette.divider}`,
   "&:hover": {
     backgroundColor:
@@ -184,19 +184,6 @@ export default function SideMenu() {
           backgroundColor: "background.default",
         }}
       >
-        {/* Toggle Button */}
-        <DrawerToggleButton onClick={handleToggleDrawer}>
-          <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            {expanded ? (
-              <ChevronLeftIcon fontSize="small" />
-            ) : (
-              <ChevronRightIcon fontSize="small" />
-            )}
-          </motion.div>
-          </Tooltip>
-        </DrawerToggleButton>
-
         {/* Logo and Brand Area */}
         {/* <Box
           sx={{
@@ -568,50 +555,45 @@ export default function SideMenu() {
         >
           <MenuContent collapsed={!expanded} />
         </Box>
-
+          
         {/* Footer - simplified when collapsed */}
         <Box
           sx={{
             mb: 2,
-            pt: 2,
             borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            px: expanded ? 2 : 1,
             display: "flex",
             alignItems: "center",
-            justifyContent: expanded ? "space-between" : "center",
+            flexDirection: "row",
+            justifyContent: "center",
+            gap: 1,
           }}
         >
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Typography
-                  variant="caption"
-                  color={alpha(theme.palette.text.secondary, 0.6)}
-                  sx={{ fontSize: "0.7rem" }}
-                >
-                  Replai &copy; {new Date().getFullYear()} | v1.2.0
-                </Typography>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Box
-            component={motion.div}
-            whileHover={{ rotate: 180 }}
-            transition={{ duration: 0.4 }}
+          <Typography
+            variant="caption"
             sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              backgroundColor: theme.palette.success.main,
-              boxShadow: `0 0 8px ${theme.palette.success.main}`,
+              color: alpha(theme.palette.text.primary, 0.6),
+              fontWeight: 500,
+              letterSpacing: 0.5,
+              display: expanded ? "block" : "none",
+              px: 2,
+              mr: 5,
+              mt: 2,
             }}
-          />
+          >
+            &copy; {new Date().getFullYear()} Replai.tech
+          </Typography>
+          <DrawerToggleButton onClick={handleToggleDrawer}>
+          <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            {expanded ? (
+              <ChevronLeftIcon fontSize="small" />
+            ) : (
+              <ChevronRightIcon fontSize="small" />
+            )}
+          </motion.div>
+          </Tooltip>
+        </DrawerToggleButton>
+          {/* Toggle Button */}
         </Box>
       </Drawer>
     </Box>
