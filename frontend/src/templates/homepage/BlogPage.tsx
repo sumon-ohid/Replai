@@ -124,7 +124,7 @@ const featuredPost = {
   title: "How AI is Revolutionizing Email Management in 2025",
   excerpt:
     "Discover how AI-powered email agents are transforming productivity and communication for businesses worldwide.",
-  imageUrl: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485",
+  imageUrl: "https://img.freepik.com/free-photo/robot-handshake-human-background-futuristic-digital-age_53876-129770.jpg?t=st=1741419874~exp=1741423474~hmac=ea5e6223c557bb74d794481686125d19854f3fa50e014353d0eaf0d86b7d51cb&w=2000",
   date: "March 4, 2025",
   author: {
     name: "Alex Johnson",
@@ -149,7 +149,7 @@ const blogPosts = [
     title: "Training Your AI Email Assistant with Custom Data",
     excerpt:
       "Learn how to optimize your email responses by training Replai with your company's unique data.",
-    imageUrl: "https://images.unsplash.com/photo-1555212697-194d092e3b8f",
+    imageUrl: "https://img.freepik.com/free-vector/robotic-artificial-intelligence-technology-smart-lerning-from-bigdata_1150-48136.jpg?t=st=1741419434~exp=1741423034~hmac=6fe412c0c6fe89d677058dc158a55f4eaa6a931c0fa21c9a5ecf2f3bca57ff25&w=1800",
     date: "February 28, 2025",
     author: {
       name: "Sarah Miller",
@@ -165,7 +165,7 @@ const blogPosts = [
     title: "Maximizing Productivity with Calendar Integration",
     excerpt:
       "See how Replai's Google Calendar integration helps you manage meetings and optimize your schedule.",
-    imageUrl: "https://images.unsplash.com/photo-1600267204091-5c1ab8b10c02",
+    imageUrl: "https://img.freepik.com/free-photo/ai-cloud-concept-with-robot-hand_23-2149739751.jpg?t=st=1741420331~exp=1741423931~hmac=01371157963ac1f4821bbed2f26102fc1ea3c821efc3c7d82fd7da6b9dd9a503&w=2000",
     date: "February 21, 2025",
     author: {
       name: "Mike Chen",
@@ -181,7 +181,7 @@ const blogPosts = [
     title: "Web Crawling for Smarter AI Responses",
     excerpt:
       "Explore how Replai can crawl websites to gather information and provide more accurate responses.",
-    imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31",
+    imageUrl: "https://img.freepik.com/free-photo/glass-smartphone-high-tech-innovation-ai-technology_53876-129775.jpg?t=st=1741420448~exp=1741424048~hmac=5704a50e8196f82366cafa9df535ace1d4c340758b91c7071576423267fe0782&w=1480",
     date: "February 18, 2025",
     author: {
       name: "David Wilson",
@@ -197,7 +197,7 @@ const blogPosts = [
     title: "5 Ways to Automate Your Email Workflow",
     excerpt:
       "Discover practical automation techniques to reduce manual email handling and save hours every week.",
-    imageUrl: "https://images.unsplash.com/photo-1591017403286-fd8493524e1e",
+    imageUrl: "https://img.freepik.com/free-photo/hands-multitasking-with-laptop-notebook_23-2149311907.jpg?t=st=1741420387~exp=1741423987~hmac=9c50987ee3412d681a59304e35efbc67c01a0fe914ff5cf40b9123531b3394ce&w=2000",
     date: "February 10, 2025",
     author: {
       name: "Emma Davis",
@@ -213,7 +213,7 @@ const blogPosts = [
     title: "The Future of Email: AI Predictions for 2026",
     excerpt:
       "Our experts share insights on upcoming trends and developments in AI email management technology.",
-    imageUrl: "https://images.unsplash.com/photo-1496096265110-f83ad7f96608",
+    imageUrl: "https://img.freepik.com/free-photo/hands-holding-neon-sign_23-2151922470.jpg?t=st=1741420575~exp=1741424175~hmac=f0b2b7c7f5605096339465d6d410bff82c731b9d74bf30baade68bedd9e6e3c9&w=2000",
     date: "January 30, 2025",
     author: {
       name: "James Roberts",
@@ -409,6 +409,7 @@ export default function BlogPage() {
                 sx={{
                   height: "100%",
                   objectFit: "cover",
+                  borderRadius: 2,
                 }}
               />
               <CardOverlay>
@@ -517,6 +518,10 @@ export default function BlogPage() {
               "& .MuiTabs-indicator": {
                 height: 3,
                 borderRadius: 3,
+                border: 1,
+                borderColor: "divider",
+                backgroundColor: theme.palette.primary.main,
+
               },
             }}
           >
@@ -557,7 +562,7 @@ export default function BlogPage() {
                           height="200"
                           image={post.imageUrl}
                           alt={post.title}
-                          sx={{ objectFit: "cover" }}
+                          sx={{ objectFit: "cover", borderRadius: 1, mb: 1, height: 200, width: "100%" }}
                         />
                         <CardContent
                           sx={{
