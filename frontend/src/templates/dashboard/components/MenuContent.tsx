@@ -112,7 +112,7 @@ export default function MenuContent({ collapsed }: MenuContentProps) {
       // Close the drawer when navigation is performed on mobile
       const event = new CustomEvent("close-drawer");
       window.dispatchEvent(event);
-    } 
+    }
   };
 
   // Animation variants

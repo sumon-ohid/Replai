@@ -23,6 +23,7 @@ import TuneIcon from "@mui/icons-material/Tune";
 import StorageIcon from "@mui/icons-material/Storage";
 import { drawerClasses } from "@mui/material/Drawer";
 import { useNavigate } from "react-router-dom";
+import ReplaiIcon from "../../../assets/logoIcon.png";
 
 // Two drawer widths for expanded and collapsed states
 const drawerWidthExpanded = 280;
@@ -233,15 +234,17 @@ export default function SideMenu() {
               whileHover={{ rotate: 10, scale: 1.05 }}
               transition={{ duration: 0.2 }}
               sx={{ 
-                bgcolor: 'primary.main', 
+                bgcolor: 'background.paper', 
                 borderRadius: 2, 
                 p: 0.8,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                border: 1,
+                borderColor: 'divider',
               }}
             >
-              <StorageIcon sx={{ color: 'white', fontSize: 24 }} />
+              <Box component={motion.img} src={ReplaiIcon} alt="Replai Logo" sx={{ width: 32, height: 32 }} />
             </Box>
             
             <AnimatePresence>
@@ -561,6 +564,16 @@ export default function SideMenu() {
             height: "100%",
             display: "flex",
             flexDirection: "column",
+            background:
+                theme.palette.mode === "dark"
+                  ? `linear-gradient(145deg, ${alpha(
+                      theme.palette.background.default,
+                      0.8
+                    )}, ${alpha(theme.palette.grey[900], 0.9)})`
+                  : `linear-gradient(145deg, ${alpha(
+                      theme.palette.background.default,
+                      0.8
+                    )}, ${alpha(theme.palette.grey[100], 0.9)})`,
           }}
           component={motion.div}
           variants={itemVariants}
