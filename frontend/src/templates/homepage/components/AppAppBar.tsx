@@ -777,7 +777,7 @@ export default function AppAppBar() {
                       fontSize: "0.85rem",
                     }}
                   >
-                    © 2025 Replai. All rights reserved.
+                    &copy; {new Date().getFullYear()} Replai. All rights reserved.
                   </Typography>
                 </Box>
               </Box>

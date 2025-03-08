@@ -474,7 +474,7 @@ export default function SideMenu() {
           color={alpha(theme.palette.text.secondary, 0.6)}
           sx={{ fontSize: "0.7rem" }}
         >
-          Replai © 2025 | v1.2.0
+          Replai &copy; {new Date().getFullYear()} | v1.2.0
         </Typography>
 
         <Box
