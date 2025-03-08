@@ -24,6 +24,7 @@ import {
   Tabs,
   Snackbar,
   Alert,
+  Breadcrumbs,
 } from "@mui/material";
 import Footer from "./components/Footer";
 import { motion } from "framer-motion";
@@ -44,6 +45,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import BusinessIcon from "@mui/icons-material/Business";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 import emailpic from "../../assets/Contact-us.svg";
 import AppAppBar from "./components/AppAppBar";
@@ -381,6 +383,7 @@ export default function ContactUsPage(props: { disableCustomTheme?: boolean }) {
             minHeight: "100vh",
           })}
         >
+          
           <Stack
             spacing={2}
             sx={{
@@ -398,10 +401,12 @@ export default function ContactUsPage(props: { disableCustomTheme?: boolean }) {
             animate="visible"
             mt={isMobile ? 5 : 12}
           >
+            
             {/* Hero Section */}
-              <Container maxWidth="lg">
+              <Container maxWidth="lg">         
                 <Grid container spacing={4} alignItems="center">
                   <Grid item xs={12} md={7}>
+    
                     <Box
                       component={motion.div}
                       variants={itemVariants}
@@ -508,6 +513,7 @@ export default function ContactUsPage(props: { disableCustomTheme?: boolean }) {
                         display: { xs: "none", md: "block" },
                         position: "relative",
                         ml: { xs: 0, md: 6 },
+                        mt: { xs: 3, md: 10 },
                       }}
                     >
                       <Box

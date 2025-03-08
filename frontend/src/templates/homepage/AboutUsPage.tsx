@@ -41,6 +41,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 import emailpic from '../../assets/email-back.png';
 import AppAppBar from './components/AppAppBar';
+import ceopic from '../../assets/ceopic.png';
 
 // Define animation variants
 const containerVariants = {
@@ -68,15 +69,14 @@ const teamMembers = [
   {
     name: 'Md Ohiduzzaman Sumon',
     role: 'Founder & Lead Developer',
-    image: 'https://img.freepik.com/premium-photo/3d-portrait-businessman_849407-6268.jpg',
+    image: ceopic,
     bio: 'Great problem solver, passionate about technology, and always eager to learn new things.',
     quote: '"The best way to predict the future is to create it."',
     website: "https://msumon.vercel.app/",
-    skills: ['Full-Stack Development'],
+    skills: ['Full-Stack Development', 'Self-tought Programmer', 'Problem Solver'],
     socialLinks: {
-      linkedin: 'https://linkedin.com/',
-      github: 'https://github.com/',
-      twitter: 'https://twitter.com/'
+      linkedin: 'https://www.linkedin.com/in/sumon-md-ohiduzzaman/',
+      github: 'https://github.com/sumon-ohid',
     }
   },
   // You can uncomment and add more team members when needed
@@ -238,7 +238,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                           backgroundImage: `url(${emailpic})`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",
-                          display: { xs: 'none', md: 'block' }
+                          display: { xs: 'none', md: 'block', opacity: 0.8 },
                         }}
                       />
                     </Box>
@@ -821,23 +821,6 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                                           }}
                                         >
                                           <GitHubIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                    {member.socialLinks.twitter && (
-                                      <Tooltip title="Twitter">
-                                        <IconButton 
-                                          size="small" 
-                                          component={Link} 
-                                          href={member.socialLinks.twitter}
-                                          target="_blank"
-                                          rel="noopener"
-                                          sx={{ 
-                                            color: 'primary.main',
-                                            '&:hover': { color: '#1DA1F2' }
-                                          }}
-                                        >
-                                          <TwitterIcon fontSize="small" />
                                         </IconButton>
                                       </Tooltip>
                                     )}

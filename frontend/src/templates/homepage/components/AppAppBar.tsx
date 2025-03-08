@@ -32,6 +32,9 @@ import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import TwitterIcon from "@mui/icons-material/X";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import RssFeedOutlinedIcon from "@mui/icons-material/RssFeedOutlined";
+import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import TextField from "@mui/material/TextField";
 
 // Navigation click handler
@@ -57,13 +60,33 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   padding: "8px 12px",
 }));
 
-// Navigation links
+// Navigation links with icons
 const navItems = [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#workflow" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Stats", href: "#stats" },
-  { label: "FAQ", href: "#faq" },
+  {
+    label: "Docs",
+    href: "/docs",
+    icon: <ArticleOutlinedIcon fontSize="small" />,
+  },
+  {
+    label: "Contacts",
+    href: "/contact",
+    icon: <MailOutlinedIcon fontSize="small" />,
+  },
+  {
+    label: "Privacy",
+    href: "/privacy",
+    icon: <LockOutlinedIcon fontSize="small" />,
+  },
+  {
+    label: "About Us",
+    href: "/about-us",
+    icon: <InfoRoundedIcon fontSize="small" />,
+  },
+  {
+    label: "Blogs",
+    href: "/blog",
+    icon: <RssFeedOutlinedIcon fontSize="small" />,
+  },
 ];
 
 export default function AppAppBar() {
@@ -191,9 +214,7 @@ export default function AppAppBar() {
                       background: "transparent",
                     },
                   }}
-                  onClick={
-                    item.href.startsWith("#") ? handleNavClick : undefined
-                  }
+                  onClick={() => navigate(item.href)}
                 >
                   {item.label}
                 </Button>
@@ -375,20 +396,21 @@ export default function AppAppBar() {
                     flexDirection: "column",
                   }}
                 >
-                  {/* <Typography
+                  <Typography
                     variant="overline"
                     sx={{
                       color: theme.palette.text.secondary,
                       fontWeight: 600,
                       letterSpacing: 1,
-                      fontSize: '0.75rem',
+                      fontSize: "0.75rem",
                       mb: 1.5,
                     }}
                   >
                     NAVIGATION
-                  </Typography> */}
+                  </Typography>
 
-                  {/* <Stack spacing={0.5}>
+                  {/* Mobile navigation items with icons */}
+                  <Stack spacing={0.5}>
                     {navItems.map((item, index) => (
                       <Button
                         key={`mobile-${item.label}`}
@@ -396,30 +418,37 @@ export default function AppAppBar() {
                         whileHover={{ x: 4 }}
                         whileTap={{ scale: 0.98 }}
                         href={item.href}
-                        // onclick for smooth scroll and close drawer both
-                        onClick={toggleDrawer(false)}      
                         variant="text"
                         color="inherit"
                         fullWidth
+                        startIcon={item.icon}
                         sx={{
                           py: 1.5,
                           px: 1.5,
-                          justifyContent: 'flex-start',
+                          justifyContent: "flex-start",
                           color: theme.palette.text.primary,
-                          fontSize: '1.1rem',
+                          fontSize: "1.1rem",
                           fontWeight: 600,
-                          textTransform: 'none',
+                          textTransform: "none",
                           borderRadius: 2,
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                          "&:hover": {
+                            backgroundColor: alpha(
+                              theme.palette.primary.main,
+                              0.08
+                            ),
                             color: theme.palette.primary.main,
-                          }
+                          },
                         }}
+                        onClick={
+                          item.href ? () => navigate(item.href) : undefined
+                        }
                       >
                         {item.label}
                       </Button>
                     ))}
-                  </Stack> */}
+                  </Stack>
+
+                  <Divider sx={{ my: 3, opacity: 0.6 }} />
 
                   {/* Drawer footer */}
                   <Stack spacing={0.5}>
@@ -533,9 +562,9 @@ export default function AppAppBar() {
                       </Button>
                     </Box>
                   </Stack>
-                  <Divider sx={{ my: 3, opacity: 0.6 }} />
+                  <Divider sx={{ my: 3, opacity: 0.5 }} />
 
-                  <Typography
+                  {/* <Typography
                     variant="overline"
                     sx={{
                       color: theme.palette.text.secondary,
@@ -558,10 +587,12 @@ export default function AppAppBar() {
                       {
                         icon: <SupportOutlinedIcon fontSize="small" />,
                         label: "Support",
+                        href: "/contact",
                       },
                       {
                         icon: <MailOutlinedIcon fontSize="small" />,
                         label: "Contact us",
+                        href: "/contact",
                       },
                     ].map((item) => (
                       <Button
@@ -597,11 +628,11 @@ export default function AppAppBar() {
                         {item.label}
                       </Button>
                     ))}
-                  </Stack>
+                  </Stack> */}
                 </Box>
 
                 {/* social media with icons*/}
-          
+
                 <Box
                   sx={{
                     position: "relative",
@@ -777,7 +808,8 @@ export default function AppAppBar() {
                       fontSize: "0.85rem",
                     }}
                   >
-                    &copy; {new Date().getFullYear()} Replai. All rights reserved.
+                    &copy; {new Date().getFullYear()} Replai. All rights
+                    reserved.
                   </Typography>
                 </Box>
               </Box>
