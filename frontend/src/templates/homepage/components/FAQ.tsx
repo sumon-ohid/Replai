@@ -555,6 +555,7 @@ export default function FAQ() {
                 bgcolor: alpha(theme.palette.primary.main, 0.04)
               }
             }}
+            onClick={() => window.open('mailto:support@replai.tech')}
           >
             Contact Support
           </Button>
