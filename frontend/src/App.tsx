@@ -40,8 +40,8 @@ export default function App() {
           <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/billing" element={<ProtectedRoute><PlanBillingManagement /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>}/>
+          <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
           <Route path="/privacy" element={<PrivacyTermsPage />} />
           <Route path="/docs" element={<Documentations />} />
           <Route path="/blog" element={<BlogPage />} />
