@@ -65,16 +65,7 @@ const Drawer = styled(MuiDrawer, {
   "& .MuiDrawer-paper": {
     boxSizing: "border-box",
     borderRight: "none",
-    background:
-      theme.palette.mode === "dark"
-        ? `linear-gradient(180deg, ${alpha(
-            theme.palette.background.paper,
-            0.96
-          )} 0%, ${alpha(theme.palette.background.paper, 0.98)} 100%)`
-        : `linear-gradient(180deg, ${alpha(
-            theme.palette.background.paper,
-            0.96
-          )} 0%, ${alpha("#f8f9fa", 0.98)} 100%)`,
+    background: theme.palette.background.default,
     boxShadow:
       theme.palette.mode === "dark"
         ? `1px 0 20px 0 ${alpha("#000", 0.3)}`
@@ -178,6 +169,7 @@ export default function SideMenu() {
 
         // Hide the drawer on mobile
         display: { xs: "none", md: "block" },
+        backgroundColor: "background.default",
       }}
     >
       <Drawer
@@ -187,8 +179,9 @@ export default function SideMenu() {
           mb: (isExpanded) => (isExpanded ? 0 : 2),
           display: { xs: "none", md: "block" },
           [`& .${drawerClasses.paper}`]: {
-            backgroundColor: "background.paper",
+            backgroundColor: "background.default",
           },
+          backgroundColor: "background.default",
         }}
       >
         {/* Toggle Button */}
@@ -569,16 +562,6 @@ export default function SideMenu() {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            background:
-                theme.palette.mode === "dark"
-                  ? `linear-gradient(145deg, ${alpha(
-                      theme.palette.background.default,
-                      0.8
-                    )}, ${alpha(theme.palette.grey[900], 0.9)})`
-                  : `linear-gradient(145deg, ${alpha(
-                      theme.palette.background.default,
-                      0.8
-                    )}, ${alpha(theme.palette.grey[100], 0.9)})`,
           }}
           component={motion.div}
           variants={itemVariants}

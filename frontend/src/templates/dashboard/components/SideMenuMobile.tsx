@@ -18,6 +18,7 @@ import MenuContent from "./MenuContent";
 import CardAlert from "./CardAlert";
 import { useAuth } from "../../../AuthContext";
 import axios from "axios";
+import logo from "../../../../logo/logo_light.png";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -138,36 +139,12 @@ export default function SideMenuMobile({
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box
-                      component={motion.div}
-                      whileHover={{ rotate: 10, scale: 1.05 }}
-                      sx={{
-                        bgcolor: "primary.main",
-                        borderRadius: 1.5,
-                        p: 0.7,
-                        mr: 1.5,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <StorageRoundedIcon
-                        sx={{ color: "white", fontSize: 18 }}
-                      />
-                    </Box>
-
-                    <Typography
-                      component="h1"
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 700,
-                        background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}
-                    >
-                      Replai.tech
-                    </Typography>
+                    <Box 
+                      component={motion.img}
+                      src={logo}
+                      alt="Replai"
+                      sx={{ width: 110, height: 40 }}
+                    />
                   </Box>
 
                   <IconButton
