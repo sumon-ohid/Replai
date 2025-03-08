@@ -34,7 +34,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
         clearInterval(interval);
         setLoadingProgress(100);
         setTimeout(() => setLoading(false), 500); // Small delay after reaching 100%
-      }, 2000);
+      }, 1000);
     };
 
     verifyAuth();
