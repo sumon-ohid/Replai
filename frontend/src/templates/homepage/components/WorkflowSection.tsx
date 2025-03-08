@@ -47,15 +47,15 @@ const SectionWrapper = styled(Box)(({ theme }) => ({
     right: 0,
     height: "1px",
     background:
-      theme.palette.mode === "dark"
-        ? `linear-gradient(180deg, ${alpha("#000", 0)} 0%, ${alpha(
-            theme.palette.primary.dark,
-            0.15
-          )} 50%, ${alpha("#000", 0)} 100%)`
-        : `linear-gradient(180deg, ${alpha("#fff", 0)} 0%, ${alpha(
-            theme.palette.primary.light,
-            0.12
-          )} 50%, ${alpha("#fff", 0)} 100%)`,
+    theme.palette.mode === "dark"
+      ? `linear-gradient(180deg, ${alpha("#000", 0)} 0%, ${alpha(
+          theme.palette.primary.dark,
+          0.15
+        )} 50%, ${alpha("#000", 0)} 100%)`
+      : `linear-gradient(180deg, ${alpha("#fff", 0)} 0%, ${alpha(
+          theme.palette.primary.light,
+          0.12
+        )} 50%, ${alpha("#fff", 0)} 100%)`,
   },
 }));
 
@@ -172,11 +172,8 @@ const StepCard = styled(motion.div)(({ theme }) => ({
 
 // Flowing particle container
 const EmailParticleContainer = styled(Box)(({ theme }) => ({
-  position: "absolute",
   width: "100%",
   height: "100%",
-  top: 0,
-  left: 0,
   zIndex: 1,
   pointerEvents: "none",
   overflow: "hidden",
@@ -492,46 +489,6 @@ export default function WorkflowSection() {
         }}
       />
 
-      {/* Email particles animation */}
-      <EmailParticleContainer>
-        <AnimatePresence>
-          {emailParticles.map((particle) => (
-            <EmailParticle
-              key={particle.id}
-              initial={{
-                x: `${particle.x}%`,
-                y: "-5%",
-                opacity: 0,
-                scale: 0.5,
-              }}
-              animate={{
-                x: `${particle.x + (Math.random() * 20 - 10)}%`,
-                y: "105%",
-                opacity: [0, 1, 1, 0],
-                scale: [0.5, 1, 1, 0.7],
-              }}
-              exit={{ opacity: 0 }}
-              transition={{
-                y: { duration: 10 / particle.speed, ease: "linear" },
-                opacity: {
-                  times: [0, 0.1, 0.9, 1],
-                  duration: 10 / particle.speed,
-                },
-                scale: {
-                  times: [0, 0.1, 0.9, 1],
-                  duration: 10 / particle.speed,
-                },
-              }}
-              style={{
-                backgroundColor: particle.color,
-                width: `${particle.size}px`,
-                height: `${particle.size * 0.7}px`,
-              }}
-            />
-          ))}
-        </AnimatePresence>
-      </EmailParticleContainer>
-
       <Container
         maxWidth="lg"
         sx={{
@@ -543,7 +500,10 @@ export default function WorkflowSection() {
       >
         {/* Header */}
         <Box
-          sx={{ textAlign: isMobile ? "center" : "left", mt: isMobile ? 0 : 20 }}
+          sx={{
+            textAlign: isMobile ? "center" : "left",
+            mt: isMobile ? 0 : 20,
+          }}
           position="relative"
           zIndex={5}
         >
