@@ -80,17 +80,17 @@ export default function Footer() {
       links: [
         { name: "Documentation", href: "/docs" },
         { name: "Blog", href: "/blog" },
-        { name: "Community", href: "#" },
-        { name: "Knowledge Base", href: "#" },
+        { name: "Community", href: "/community" },
+        { name: "Knowledge Base", href: "/knowledge" },
       ]
     },
     {
       title: "Company",
       links: [
-        { name: "About Us", href: "#" },
-        { name: "Careers", href: "#" },
-        { name: "Contact", href: "#" },
-        { name: "Press", href: "#" },
+        { name: "About Us", href: "/about-us" },
+        { name: "Careers", href: "/careers" },
+        { name: "Contact", href: "/contact" },
+        { name: "Press", href: "/press" },
       ]
     },
     {
