@@ -25,6 +25,10 @@ import { useTheme } from "@mui/material/styles";
 import { Button } from "@mui/material";
 import DraftsIcon from '@mui/icons-material/Drafts';
 
+interface MenuContentProps {
+  collapsed: boolean;
+}
+
 // Main navigation items
 const mainNavItems = [
   {
@@ -96,7 +100,7 @@ const secondaryNavItems = [
   },
 ];
 
-export default function MenuContent() {
+export default function MenuContent({ collapsed }: MenuContentProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -104,6 +108,11 @@ export default function MenuContent() {
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    if (isMobile) {
+      // Close the drawer when navigation is performed on mobile
+      const event = new CustomEvent("close-drawer");
+      window.dispatchEvent(event);
+    } 
   };
 
   // Animation variants
@@ -121,11 +130,11 @@ export default function MenuContent() {
       },
     }),
     hover: {
-      scale: 1.03,
+      scale: collapsed ? 1.1 : 1.03,
       transition: { duration: 0.2 },
     },
     tap: {
-      scale: 0.97,
+      scale: collapsed ? 0.9 : 0.97,
       transition: { duration: 0.1 },
     },
   };
@@ -148,11 +157,15 @@ export default function MenuContent() {
   }) => {
     const activeGradient = `linear-gradient(90deg, ${alpha(
       theme.palette.primary.main,
-      0.1
-    )} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`;
+      collapsed ? 0.2 : 0.1
+    )} 0%, ${alpha(theme.palette.primary.light, collapsed ? 0.1 : 0.05)} 100%)`;
 
     return (
-      <Tooltip title={item.description || item.text} placement="right" arrow>
+      <Tooltip 
+        title={collapsed ? item.text : item.description || item.text} 
+        placement={isMobile ? "top" : "right"}
+        arrow
+      >
         <Box
           component={motion.div}
           custom={index}
@@ -176,7 +189,7 @@ export default function MenuContent() {
               <Box
                 component={motion.div}
                 initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 4 }}
+                animate={{ opacity: 1, width: collapsed ? 3 : 4 }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.3 }}
                 sx={{
@@ -184,7 +197,6 @@ export default function MenuContent() {
                   left: 0,
                   top: 0,
                   bottom: 0,
-                  width: 4,
                   borderRadius: "0 4px 4px 0",
                   background: `linear-gradient(to bottom, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   boxShadow: `0 0 8px ${alpha(
@@ -200,8 +212,9 @@ export default function MenuContent() {
             sx={{
               display: "flex",
               alignItems: "center",
-              px: 2,
-              py: 1.5,
+              justifyContent: collapsed ? "center" : "flex-start",
+              px: collapsed ? 0.5 : 2,
+              py: collapsed ? 1 : 1.5,
               backgroundColor: isActive ? activeGradient : "transparent",
               borderRadius: 2,
               transition: "all 0.2s ease",
@@ -226,9 +239,9 @@ export default function MenuContent() {
                   : {}
               }
               sx={{
-                mr: 2,
-                width: 40,
-                height: 40,
+                mr: collapsed ? 0 : 2,
+                width: collapsed ? 36 : 40,
+                height: collapsed ? 36 : 40,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -243,57 +256,87 @@ export default function MenuContent() {
                     )
                   : "transparent",
                 transition: "all 0.3s ease",
+                position: "relative",
               }}
             >
               {item.icon}
-            </Box>
-
-            {/* Text and badge */}
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive
-                    ? theme.palette.text.primary
-                    : theme.palette.text.secondary,
-                  transition: "color 0.2s ease",
-                }}
-              >
-                {item.text}
-              </Typography>
-
-              {item.badge && (
+              {/* Badge in collapsed mode */}
+              {collapsed && item.badge && (
                 <Box
                   component={motion.div}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   sx={{
-                    minWidth: 22,
-                    height: 22,
-                    borderRadius: 11,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
                     backgroundColor: theme.palette.error.main,
                     color: theme.palette.error.contrastText,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    ml: 1,
-                    fontSize: "0.75rem",
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    fontSize: "0.65rem",
                     fontWeight: 600,
+                    border: `2px solid ${theme.palette.background.paper}`,
                   }}
                 >
                   {item.badge}
                 </Box>
               )}
             </Box>
+
+            {/* Text and badge - only when not collapsed */}
+            {!collapsed && (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive
+                      ? theme.palette.text.primary
+                      : theme.palette.text.secondary,
+                    transition: "color 0.2s ease",
+                  }}
+                >
+                  {item.text}
+                </Typography>
+
+                {item.badge && (
+                  <Box
+                    component={motion.div}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    sx={{
+                      minWidth: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: theme.palette.error.main,
+                      color: theme.palette.error.contrastText,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      ml: 1,
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {item.badge}
+                  </Box>
+                )}
+              </Box>
+            )}
           </Box>
         </Box>
       </Tooltip>
@@ -306,34 +349,37 @@ export default function MenuContent() {
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        p: 1.5,
-        pt: 3,
-        pb: 4,
+        p: collapsed ? 0.5 : 1.5,
+        pt: collapsed ? 2 : 3,
+        pb: collapsed ? 2 : 4,
         borderRadius: "16px 16px 0 0",
         backgroundColor:
           theme.palette.mode === "dark"
             ? alpha(theme.palette.background.default, 0.6)
             : alpha(theme.palette.background.default, 0.8),
         backdropFilter: "blur(8px)",
-        overflow: "auto",
+        overflow: collapsed ? "visible" : "auto",
+        transition: "all 0.3s ease",
       }}
     >
       {/* Main navigation */}
       <Box>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            px: 2,
-            mb: 1.5,
-            display: "block",
-            fontWeight: 500,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Main
-        </Typography>
+        {!collapsed && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              px: 2,
+              mb: 1.5,
+              display: "block",
+              fontWeight: 500,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Main
+          </Typography>
+        )}
 
         <List sx={{ p: 0 }}>
           {mainNavItems.map((item, index) => (
@@ -348,26 +394,28 @@ export default function MenuContent() {
       </Box>
 
       {/* Divider */}
-      <Box sx={{ py: 2 }}>
-        <Divider sx={{ opacity: 0.6 }} />
+      <Box sx={{ py: collapsed ? 1 : 2 }}>
+        <Divider sx={{ opacity: 0.6, mx: collapsed ? 1 : 0 }} />
       </Box>
 
       {/* Secondary navigation */}
-      <Box mt="auto">
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            px: 2,
-            mb: 1.5,
-            display: "block",
-            fontWeight: 500,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Support
-        </Typography>
+      <Box mt={collapsed ? 0 : "auto"}>
+        {!collapsed && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              px: 2,
+              mb: 1.5,
+              display: "block",
+              fontWeight: 500,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Support
+          </Typography>
+        )}
 
         <List sx={{ p: 0 }}>
           {secondaryNavItems.map((item, index) => (
@@ -381,70 +429,72 @@ export default function MenuContent() {
         </List>
       </Box>
 
-      {/* View documentations */}
-      <Box
-        sx={{
-          mt: 4,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <motion.div variants={itemVariants}>
-          <Box sx={{ p: 2 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                background:
-                  theme.palette.mode === "dark"
-                    ? `linear-gradient(145deg, ${alpha(
-                        theme.palette.info.dark,
-                        0.15
-                      )}, ${alpha("#121212", 0.3)})`
-                    : `linear-gradient(145deg, ${alpha(
-                        theme.palette.info.light,
-                        0.15
-                      )}, ${alpha("#e3f2fd", 0.3)})`,
-                border: "1px solid",
-                borderColor: alpha(theme.palette.info.main, 0.2),
-              }}
-            >
-              <Typography
-                variant="subtitle2"
+      {/* View documentations - only when not collapsed */}
+      {!collapsed && (
+        <Box
+          sx={{
+            mt: 4,
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <motion.div variants={itemVariants}>
+            <Box sx={{ p: 2}}>
+              <Box
                 sx={{
-                  color: theme.palette.info.main,
-                  fontWeight: 600,
-                  mb: 0.5,
+                  p: 2,
+                  borderRadius: 3,
+                  background:
+                    theme.palette.mode === "dark"
+                      ? `linear-gradient(145deg, ${alpha(
+                          theme.palette.info.dark,
+                          0.15
+                        )}, ${alpha("#121212", 0.3)})`
+                      : `linear-gradient(145deg, ${alpha(
+                          theme.palette.info.light,
+                          0.15
+                        )}, ${alpha("#e3f2fd", 0.3)})`,
+                  border: "1px solid",
+                  borderColor: alpha(theme.palette.info.main, 0.2),
                 }}
               >
-                Need some help?
-              </Typography>
-              <Typography variant="caption" sx={{ display: "block", mb: 1.5 }}>
-                Check our documentation or contact support team
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                fullWidth
-                sx={{
-                  borderRadius: 2,
-                  borderColor: alpha(theme.palette.info.main, 0.5),
-                  color: theme.palette.info.main,
-                  "&:hover": {
-                    borderColor: theme.palette.info.main,
-                    backgroundColor: alpha(theme.palette.info.main, 0.1),
-                  },
-                }}
-                onClick={() => handleNavigation("/docs")}
-              >
-                View Documentation
-              </Button>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: theme.palette.info.main,
+                    fontWeight: 600,
+                    mb: 0.5,
+                  }}
+                >
+                  Need some help?
+                </Typography>
+                <Typography variant="caption" sx={{ display: "block", mb: 1.5 }}>
+                  Check our documentation or contact <br/> support team
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: alpha(theme.palette.info.main, 0.5),
+                    color: theme.palette.info.main,
+                    "&:hover": {
+                      borderColor: theme.palette.info.main,
+                      backgroundColor: alpha(theme.palette.info.main, 0.1),
+                    },
+                  }}
+                  onClick={() => handleNavigation("/docs")}
+                >
+                  View Documentation
+                </Button>
+              </Box>
             </Box>
-          </Box>
-        </motion.div>
-      </Box>
+          </motion.div>
+        </Box>
+      )}
     </Box>
   );
 }

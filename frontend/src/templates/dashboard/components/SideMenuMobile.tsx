@@ -378,49 +378,10 @@ export default function SideMenuMobile({
               component={motion.div}
               variants={itemVariants}
             >
-              <MenuContent />
+              <MenuContent collapsed={false} />
             </Box>
 
             {/* View Documentation */}
-
-            {/* <motion.div variants={itemVariants}>
-              <Box sx={{ p: 2 }}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    background: theme.palette.mode === 'dark'
-                      ? `linear-gradient(145deg, ${alpha(theme.palette.info.dark, 0.15)}, ${alpha('#121212', 0.3)})`
-                      : `linear-gradient(145deg, ${alpha(theme.palette.info.light, 0.15)}, ${alpha('#e3f2fd', 0.3)})`,
-                    border: '1px solid',
-                    borderColor: alpha(theme.palette.info.main, 0.2),
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ color: theme.palette.info.main, fontWeight: 600, mb: 0.5 }}>
-                    Need some help?
-                  </Typography>
-                  <Typography variant="caption" sx={{ display: 'block', mb: 1.5 }}>
-                    Check our documentation or contact support team
-                  </Typography>
-                  <Button 
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    sx={{ 
-                      borderRadius: 2,
-                      borderColor: alpha(theme.palette.info.main, 0.5),
-                      color: theme.palette.info.main,
-                      '&:hover': {
-                        borderColor: theme.palette.info.main,
-                        backgroundColor: alpha(theme.palette.info.main, 0.1),
-                      }
-                    }}
-                  >
-                    View Documentation
-                  </Button>
-                </Box>
-              </Box>
-            </motion.div> */}
 
             {/* Footer with logout */}
             <motion.div variants={itemVariants}>
