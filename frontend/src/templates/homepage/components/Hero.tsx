@@ -395,7 +395,7 @@ export default function Hero() {
         //   : alpha(theme.palette.primary.light, 0.02),
         backgroundImage:
           theme.palette.mode === "dark"
-            ? "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)"
+            ? "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.28) 0%, rgba(0, 0, 0, 0) 45%)"
             : "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.08) 0%, rgba(255, 255, 255, 0) 60%)",
         zIndex: 0,
       }}
