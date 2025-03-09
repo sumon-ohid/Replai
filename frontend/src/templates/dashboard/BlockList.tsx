@@ -224,9 +224,9 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
               </Box>
             </Box>
           </Container>
+          <Footer />
         </Box>
       </Box>
-        <Footer />
     </AppTheme>
   );
 }

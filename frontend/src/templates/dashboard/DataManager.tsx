@@ -123,15 +123,14 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
             flexGrow: 1,
             backgroundColor: alpha(theme.palette.background.default, 1),
             overflow: "auto",
-            minHeight: "100vh",
           })}
         >
           <Stack
             spacing={2}
             sx={{
               alignItems: "center",
-              mx: { xs: 1, sm: 2, md: 3 },
-              pb: 2,
+              mx: 3,
+              pb: 5,
               mt: { xs: 8, md: 0 },
             }}
           >

@@ -24,6 +24,8 @@ import StorageIcon from "@mui/icons-material/Storage";
 import { drawerClasses } from "@mui/material/Drawer";
 import { useNavigate } from "react-router-dom";
 import ReplaiIcon from "../../../assets/logoIcon.png";
+import ReplaiLogo from "../../../../logo/logo_light.png";
+import { Collapse } from "@mui/material";
 
 // Two drawer widths for expanded and collapsed states
 const drawerWidthExpanded = 280;
@@ -185,75 +187,89 @@ export default function SideMenu() {
         }}
       >
         {/* Logo and Brand Area */}
-        {/* <Box
+        <Box
           sx={{
-            display: 'flex',
-            justifyContent: expanded ? 'flex-start' : 'center',
-            alignItems: 'center',
-            mt: 'calc(var(--template-frame-height, 0px) + 4px)',
+            display: "flex",
+            justifyContent: expanded ? "flex-start" : "center",
+            alignItems: "center",
+            mt: "calc(var(--template-frame-height, 0px) + 4px)",
             pt: 2,
             px: expanded ? 2 : 1,
             height: 64,
-            transition: theme => theme.transitions.create('all'),
+            transition: (theme) => theme.transitions.create("all"),
           }}
           component={motion.div}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <Stack 
-            direction="row" 
-            spacing={expanded ? 2 : 0} 
+          <Stack
+            direction="row"
+            spacing={expanded ? 2 : 0}
             alignItems="center"
-            justifyContent={expanded ? 'flex-start' : 'center'}
-            sx={{ 
-              py: 1, 
+            justifyContent={expanded ? "flex-start" : "center"}
+            sx={{
+              py: 1,
               px: expanded ? 1.5 : 0,
-              width: '100%' 
+              width: "100%",
             }}
             component={motion.div}
             variants={itemVariants}
           >
-            <Box 
+            <Box
               component={motion.div}
               whileHover={{ rotate: 10, scale: 1.05 }}
               transition={{ duration: 0.2 }}
-              sx={{ 
-                bgcolor: 'background.paper', 
-                borderRadius: 2, 
+              sx={{
+                bgcolor: "background.paper",
+                borderRadius: 2,
                 p: 0.8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: expanded ? "none" : "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 border: 1,
-                borderColor: 'divider',
+                borderColor: "divider",
               }}
             >
-              <Box component={motion.img} src={ReplaiIcon} alt="Replai Logo" sx={{ width: 32, height: 32 }} />
+              <Box
+                component={motion.img}
+                src={ReplaiIcon}
+                alt="Replai Logo"
+                sx={{ width: 32, height: 32 }}
+              />
             </Box>
-            
+
             <AnimatePresence>
               {expanded && (
                 <motion.div
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Typography variant="h6" sx={{ 
-                    fontWeight: 700, 
-                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    Replai<Box component="span" sx={{ color: theme.palette.text.primary, fontWeight: 300 }}>.tech</Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {/* Replai<Box component="span" sx={{ color: theme.palette.text.primary, fontWeight: 300 }}>.tech</Box> */}
+                    <Box
+                      component={motion.img}
+                      src={ReplaiLogo}
+                      alt="Replai Logo"
+                      sx={{ width: 120, height: 50, ml: 2, mt: -1 }}
+                    />
                   </Typography>
                 </motion.div>
               )}
             </AnimatePresence>
           </Stack>
-        </Box> */}
+        </Box>
 
         {/* User Profile Card */}
         <Box sx={{ px: expanded ? 1 : 0.5, py: 1 }}>
@@ -319,7 +335,10 @@ export default function SideMenu() {
               sx={{ position: "relative", zIndex: 1, width: "100%" }}
             >
               <Box position="relative">
-                <Tooltip title={!expanded ? user?.name || "User" : ""} placement="right">
+                <Tooltip
+                  title={!expanded ? user?.name || "User" : ""}
+                  placement="right"
+                >
                   <Box>
                     {user?.profilePicture ? (
                       <Avatar
@@ -435,7 +454,7 @@ export default function SideMenu() {
                 sx={{ mt: expanded ? 0 : 1 }}
               >
                 {expanded && (
-                  <Tooltip title="Settings" >
+                  <Tooltip title="Settings">
                     <IconButton
                       size="small"
                       component={motion.button}
@@ -555,7 +574,7 @@ export default function SideMenu() {
         >
           <MenuContent collapsed={!expanded} />
         </Box>
-          
+
         {/* Footer - simplified when collapsed */}
         <Box
           sx={{
@@ -583,16 +602,16 @@ export default function SideMenu() {
             &copy; {new Date().getFullYear()} Replai.tech
           </Typography>
           <DrawerToggleButton onClick={handleToggleDrawer}>
-          <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            {expanded ? (
-              <ChevronLeftIcon fontSize="small" />
-            ) : (
-              <ChevronRightIcon fontSize="small" />
-            )}
-          </motion.div>
-          </Tooltip>
-        </DrawerToggleButton>
+            <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                {expanded ? (
+                  <ChevronLeftIcon fontSize="small" />
+                ) : (
+                  <ChevronRightIcon fontSize="small" />
+                )}
+              </motion.div>
+            </Tooltip>
+          </DrawerToggleButton>
           {/* Toggle Button */}
         </Box>
       </Drawer>

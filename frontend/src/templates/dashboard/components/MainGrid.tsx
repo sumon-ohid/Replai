@@ -348,9 +348,9 @@ export default function MainGrid() {
             </Button>
           </Tooltip>
 
-          {!isMobile && (
+          {/* {!isMobile && (
             <ColorModeIconDropdown />
-          )}
+          )} */}
         </Stack>
       </Box>
 
