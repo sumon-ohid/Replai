@@ -39,24 +39,24 @@ export default function SideMenuMobile({
     hidden: { x: "100%" },
     visible: {
       x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
+      // transition: {
+      //   type: "spring",
+      //   stiffness: 300,
+      //   damping: 30,
+      //   when: "beforeChildren",
+      //   staggerChildren: 0.1,
+      // },
     },
     exit: {
       x: "100%",
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 40,
-        when: "afterChildren",
-        staggerChildren: 0.05,
-        staggerDirection: -1,
-      },
+      // transition: {
+      //   type: "spring",
+      //   stiffness: 400,
+      //   damping: 40,
+      //   when: "afterChildren",
+      //   staggerChildren: 0.05,
+      //   staggerDirection: -1,
+      // },
     },
   };
 
@@ -321,7 +321,7 @@ export default function SideMenuMobile({
                       </Box>
                     </Box>
 
-                    <IconButton
+                    {/* <IconButton
                       size="small"
                       sx={{
                         bgcolor: alpha(theme.palette.action.hover, 0.1),
@@ -341,7 +341,7 @@ export default function SideMenuMobile({
                           border: `2px solid ${theme.palette.background.paper}`,
                         }}
                       />
-                    </IconButton>
+                    </IconButton> */}
                   </Stack>
                 </Box>
               </Box>
