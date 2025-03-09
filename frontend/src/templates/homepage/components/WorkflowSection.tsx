@@ -603,6 +603,8 @@ export default function WorkflowSection() {
                       style={{
                         background: steps[activeStep].iconBg,
                         textAlign: "center",
+                        margin: "auto",      
+                        marginBottom: "20px",                  
                       }}
                       animate={{
                         scale: [1, 1.05, 1],
