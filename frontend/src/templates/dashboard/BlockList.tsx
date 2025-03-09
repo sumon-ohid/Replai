@@ -40,7 +40,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import HomeIcon from '@mui/icons-material/Home';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ShieldIcon from '@mui/icons-material/Shield';
-import Footer from '../homepage/components/Footer';
+import Footer from './components/Footer';
 
 const xThemeComponents = {
   ...chartsCustomizations,

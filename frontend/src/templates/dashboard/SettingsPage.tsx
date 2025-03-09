@@ -52,7 +52,8 @@ import {
   Chip,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import Footer from '../homepage/components/Footer';
+import Footer from './components/Footer';
+
 // Icons
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import PersonIcon from '@mui/icons-material/Person';
@@ -1028,6 +1029,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
               </Box>
             </Box>
           </Box>
+          <Footer />
         </Box>
       </Box>
       

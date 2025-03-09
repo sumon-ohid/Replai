@@ -35,7 +35,7 @@ import {
   treeViewCustomizations,
 } from './theme/customizations';
 import axios from 'axios';
-import Footer from '../homepage/components/Footer';
+import Footer from './components/Footer';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 

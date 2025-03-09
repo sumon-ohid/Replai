@@ -32,7 +32,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import Footer from "../homepage/components/Footer";
+import Footer from './components/Footer';
 import FeedbackIcon from "@mui/icons-material/Feedback";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
