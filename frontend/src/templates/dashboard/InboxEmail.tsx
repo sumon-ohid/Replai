@@ -54,7 +54,7 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from "./theme/customizations";
-import Footer from "../homepage/components/Footer";
+import Footer from "./components/Footer";
 import CustomizedDataGrid from "./components/CustomizedDataGrid";
 
 // Email components
