@@ -572,36 +572,6 @@ export default function MainGrid() {
         </Grid>
       </Grid>
 
-      {/* Recent Emails Table */}
-      <Box component={motion.div} variants={itemVariants} sx={{ mb: 4 }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            fontWeight: 600, 
-            mb: 2,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
-          <MailOutlineIcon fontSize="small" color="primary" />
-          Recent Emails
-        </Typography>
-        
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            overflow: 'hidden',
-            border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
-          }}
-        >
-          <Box sx={{ p: 3 }}>
-            
-          </Box>
-        </Paper>
-      </Box>
-
       {/* Footer with branding */}
       <Box
         component={motion.div}
