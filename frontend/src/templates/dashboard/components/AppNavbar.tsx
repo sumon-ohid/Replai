@@ -214,10 +214,9 @@ export default function AppNavbar() {
         WebkitBackdropFilter: "blur(6px)",
         backgroundImage: "none",
         top: "var(--template-frame-height, 0px)",
-        borderRadius: 2,
-        border: 1,
-        borderColor: "divider",
-        mt: 1,
+        // borderRadius: 2,
+        // border: 1,
+        // borderColor: "divider",
       }}
     >
       <Toolbar variant="regular">
