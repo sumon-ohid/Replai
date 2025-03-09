@@ -42,7 +42,7 @@ const mainNavItems = [
     icon: <DraftsIcon />,
     path: "/inbox",
     description: "Email inbox",
-    badge: 2,
+    // badge: 2,
   },
   {
     text: "Email Manager",

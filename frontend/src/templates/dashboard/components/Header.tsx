@@ -182,25 +182,17 @@ export default function Header() {
   const notifications = [
     { 
       id: 1, 
-      title: "New email processed", 
-      message: "AI successfully replied to client inquiry",
-      time: "5 minutes ago", 
-      read: false,
+      title: "Welcome to Replai",
+      message: "You have successfully signed up", 
+      time: "Just now", 
+      read: true,
       type: "success"
     },
     { 
       id: 2, 
-      title: "Subscription renewal", 
-      message: "Your plan will renew in 3 days",
-      time: "2 hours ago", 
-      read: false,
-      type: "important"
-    },
-    { 
-      id: 3, 
       title: "System update", 
       message: "New features are available",
-      time: "Yesterday", 
+      time: "Just now", 
       read: true,
       type: "info"
     }
