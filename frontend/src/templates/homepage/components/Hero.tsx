@@ -480,7 +480,7 @@ export default function Hero() {
                   variant="caption"
                   sx={{ fontWeight: 500, letterSpacing: 1 }}
                 >
-                  NOW IN BETA
+                  NOW IN BETA TESTING
                 </Typography>
               </Box>
             </motion.div>
@@ -676,7 +676,7 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: 0.5,
-                      delay: 1.2,
+                      delay: 0.2,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
                   >
@@ -732,7 +732,7 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: 0.5,
-                      delay: 1.8,
+                      delay: 0.6,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
                   >
@@ -798,7 +798,7 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: 0.5,
-                      delay: 2.4,
+                      delay: 1,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
                   >
@@ -852,7 +852,7 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: 0.5,
-                      delay: 3,
+                      delay: 1.5,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
                   >
@@ -906,7 +906,7 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{
                       duration: 0.5,
-                      delay: 3.5,
+                      delay: 2,
                       ease: [0.25, 0.1, 0.25, 1.0],
                     }}
                   >
@@ -952,7 +952,7 @@ export default function Hero() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 2 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
             >
               <Box
                 sx={{
