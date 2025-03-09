@@ -435,7 +435,7 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const providers = [
-    { name: "Gmail", icon: <GoogleIcon />, connected: true, count: 124 },
+    { name: "Gmail", icon: <GoogleIcon />, connected: true, count: 0 },
     { name: "Outlook", icon: <MicrosoftIcon />, connected: false },
     { name: "Custom", icon: <AlternateEmailIcon />, connected: false },
   ];
@@ -444,25 +444,25 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
     {
       icon: <InboxIcon fontSize="small" />,
       label: "Inbox",
-      count: 87,
+      count: 0,
       color: "primary" as const,
     },
     {
       icon: <StarIcon fontSize="small" />,
       label: "Starred",
-      count: 14,
+      count: 0,
       color: "warning" as const,
     },
     {
       icon: <SendIcon fontSize="small" />,
       label: "Sent",
-      count: 36,
+      count: 0,
       color: "success" as const,
     },
     {
       icon: <AttachmentIcon fontSize="small" />,
       label: "Attachments",
-      count: 19,
+      count: 0,
       color: "info" as const,
     },
   ];
