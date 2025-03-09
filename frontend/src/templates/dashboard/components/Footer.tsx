@@ -56,7 +56,6 @@ export default function DashboardFooter() {
   
   // Quick access links for dashboard context
   const quickLinks = [
-    { name: "Help Center", href: "/help", icon: <HelpOutlineIcon fontSize="small" /> },
     { name: "Documentation", href: "/docs", icon: <DocumentIcon fontSize="small" /> },
     { name: "Support", href: "/contact", icon: <SupportOutlinedIcon fontSize="small" /> }
   ];

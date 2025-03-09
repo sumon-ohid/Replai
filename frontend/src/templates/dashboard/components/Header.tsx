@@ -286,7 +286,7 @@ export default function Header() {
           alignItems="center"
         >
           {/* Search */}
-          {!isMobile ? (
+          {/* {!isMobile ? (
             <Search>
               <SearchIconWrapper>
                 <SearchRoundedIcon fontSize="small" />
@@ -329,7 +329,7 @@ export default function Header() {
             >
               <SearchRoundedIcon fontSize="small" />
             </HeaderButton>
-          )}
+          )} */}
           
           {/* Date Picker */}
           {!isMobile && <CustomDatePicker />}
