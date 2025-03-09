@@ -111,6 +111,7 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
               mx: { xs: 2, sm: 3 },
               pb: 2,
               mt: { xs: 8, md: 0 },
+              mb: { xs: 2, sm: 3},
             }}
           >
             <Header />
@@ -126,7 +127,7 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
                 px: { xs: 1, sm: 2, md: 3 }, 
                 py: 3,
                 maxWidth: 1200,
-                mx: 'auto'
+                mx: 'auto',
               }}
             >
               {/* Page Header */}
@@ -160,7 +161,7 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
                 <Typography 
                   variant="body1" 
                   sx={{ 
-                    color: theme.palette.text.secondary,
+                    color: "text.secondary",
                     mb: 2
                   }}
                 >
@@ -204,24 +205,12 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
               </Box>
 
               {/* Block List Content */}
-              <Box 
-                component={motion.div}
-                variants={itemVariants}
-                sx={{
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                  boxShadow: isDarkMode
-                    ? `0 8px 32px ${alpha(theme.palette.common.black, 0.2)}`
-                    : `0 8px 32px ${alpha(theme.palette.primary.main, 0.1)}`,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
-                }}
-              >
+              
                 <Card elevation={0}>
                   <CardContent sx={{ p: 0 }}>
                     <BlockListData />
                   </CardContent>
                 </Card>
-              </Box>
             </Box>
           </Container>
           <Footer />

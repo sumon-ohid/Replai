@@ -260,7 +260,7 @@ export default function MainGrid() {
           gap: 2
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', mt: { xs: 2, md: 4 } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', mt: { xs: 7, md: 4 } }}>
           <Typography 
             variant="h4" 
             sx={{ 
@@ -288,7 +288,7 @@ export default function MainGrid() {
           spacing={2} 
           sx={{ alignSelf: { xs: 'stretch', sm: 'auto' }, mt: { xs: 2, md: 0 } }}
         >
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<DateRangeIcon />}
             endIcon={<ExpandMoreIcon />}
@@ -308,7 +308,7 @@ export default function MainGrid() {
             {timeRange === 'weekly' && 'This Week'}
             {timeRange === 'monthly' && 'This Month'}
             {timeRange === 'yearly' && 'This Year'}
-          </Button>
+          </Button> */}
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -597,7 +597,7 @@ export default function MainGrid() {
           }}
         >
           <Box sx={{ p: 3 }}>
-            <CustomizedDataGrid />
+            
           </Box>
         </Paper>
       </Box>

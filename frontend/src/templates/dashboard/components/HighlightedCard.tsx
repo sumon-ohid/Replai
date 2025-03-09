@@ -52,6 +52,8 @@ export default function HighlightedCard() {
 
   const handleOutlookAuth = async () => {
     setLoading(true);
+    window.location.href = '/dashboard';
+    return;
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('No token found');
@@ -76,7 +78,7 @@ export default function HighlightedCard() {
 
   const handleCustomEmail = () => {
     // Navigate to custom email setup page or open modal
-    window.location.href = '/setup/custom-email';
+    window.location.href = '/dashboard';
   };
 
   return (
@@ -249,7 +251,7 @@ export default function HighlightedCard() {
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Connect Outlook"
+              "coming soon"
             )}
           </Button>
         </Box>
@@ -279,7 +281,7 @@ export default function HighlightedCard() {
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Setup Custom Email"
+              "coming soon"
             )}
           </Button>
         </Box>
