@@ -86,11 +86,7 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
   
   const primaryColor = theme.palette.primary.main;
   const secondaryColor = theme.palette.secondary.main;
-  const headerGradient = `linear-gradient(90deg, ${primaryColor} 0%, ${
-    theme.palette.mode === "dark"
-      ? lighten(primaryColor, 0.1)
-      : primaryColor
-  } 100%)`;
+  const headerGradient = 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))';
 
   const benefitItems = [
     {
@@ -167,7 +163,7 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                       sx={{ 
                         fontSize: 40, 
                         mr: 1.5,
-                        color: theme.palette.primary.main 
+                        color: 'rgb(0, 118, 236)',
                       }} 
                     />
                     <Typography 
@@ -201,11 +197,11 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                         sx={{
                           height: '100%',
                           borderRadius: 3,
-                          border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+                          border: `1px solid 'rgb(0, 118, 236)',`,
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
-                            borderColor: alpha(theme.palette.primary.main, 0.3),
+                            borderColor: 'rgb(0, 118, 236)',
                             transform: 'translateY(-4px)'
                           }
                         }}
@@ -224,7 +220,7 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                                 bgcolor: isDarkMode 
                                   ? alpha(theme.palette.primary.main, 0.2) 
                                   : alpha(theme.palette.primary.light, 0.2),
-                                color: theme.palette.primary.main,
+                                color: 'rgb(0, 118, 236)',
                                 width: 48,
                                 height: 48,
                                 mr: 1.5
@@ -288,11 +284,11 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                           background: isDarkMode
                             ? `linear-gradient(135deg, ${alpha(primaryColor, 0.3)}, ${alpha(secondaryColor, 0.15)})`
                             : `linear-gradient(135deg, ${alpha(primaryColor, 0.15)}, ${alpha(secondaryColor, 0.05)})`,
-                          boxShadow: `0 8px 32px ${alpha(primaryColor, 0.25)}`,
+                          boxShadow: `0 8px 32px ${alpha('rgb(0, 118, 236)', 0.25)}`,
                           border: `1px solid ${alpha(primaryColor, 0.2)}`,
                         }}
                       >
-                        <TipsAndUpdatesOutlinedIcon sx={{ fontSize: 40, color: primaryColor }} />
+                        <TipsAndUpdatesOutlinedIcon sx={{ fontSize: 40, color: 'rgb(0, 118, 236)' }} />
                       </Box>
                     </Box>
                     
@@ -331,12 +327,6 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                         />
                         <Chip 
                           label="Outlook" 
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                        />
-                        <Chip 
-                          label="CSV Files" 
                           color="primary"
                           variant="outlined"
                           size="small"
@@ -474,21 +464,6 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
                       </Grid>
                     ))}
                   </Grid>
-                  
-                  <Box sx={{ mt: 2, textAlign: 'center' }}>
-                    <Link 
-                      href="#" 
-                      underline="hover"
-                      sx={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        fontWeight: 500
-                      }}
-                    >
-                      Learn more about data quality guidelines
-                    </Link>
-                  </Box>
                 </Paper>
               </Box>
             </Box>
