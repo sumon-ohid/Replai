@@ -131,11 +131,12 @@ export default function AITraining() {
   const [trainingError, setTrainingError] = React.useState("");
   const [selectedSources, setSelectedSources] = React.useState<string[]>([]);
   const [dataPreviewReady, setDataPreviewReady] = React.useState(false);
+  
+  // Training statistics
   const [trainingStats, setTrainingStats] = React.useState({
-    accuracy: 0,
-    dataPoints: 0,
-    tokensProcessed: 0,
-    trainingTime: 0,
+    dataSize: 0,
+    duration: 0,
+    accuracy: 0
   });
 
   // Pre-training configurations
@@ -195,10 +196,9 @@ export default function AITraining() {
               
               // Set mock training stats
               setTrainingStats({
-                accuracy: 92.5,
-                dataPoints: 15842,
-                tokensProcessed: 2356720,
-                trainingTime: 186,
+                dataSize: 2048576 + Math.floor(Math.random() * 1000000), // 2MB + random bytes
+                duration: 60 + Math.floor(Math.random() * 120), // 1-3 minutes
+                accuracy: 92.5 + (Math.random() * 5.5), // 92.5-98% accuracy
               });
               
               setTrainingComplete(true);
@@ -219,6 +219,14 @@ export default function AITraining() {
   // Training configuration handler
   const handleConfigChange = (config: any) => {
     setTrainingConfig(config);
+    setTrainingProgress(1);
+    setTrainingComplete(false);
+  };
+
+  // Handler for starting to use the trained model
+  const handleStartUsingModel = () => {
+    console.log("Start using trained model");
+    // Navigate to chat or implementation page
   };
 
   // Render step content based on active step
@@ -248,7 +256,13 @@ export default function AITraining() {
         );
       case 3:
         return trainingComplete ? (
-          <TrainingComplete stats={trainingStats} />
+          <TrainingComplete 
+            dataSize={trainingStats.dataSize}
+            duration={trainingStats.duration}
+            accuracy={trainingStats.accuracy}
+            onReset={handleReset}
+            onStart={handleStartUsingModel}
+          />
         ) : (
           <TrainingProgress 
             progress={trainingProgress} 
@@ -505,10 +519,7 @@ export default function AITraining() {
                     <Button
                       variant="contained"
                       endIcon={<RocketLaunchIcon />}
-                      onClick={() => {
-                        // Navigate to dashboard or models page
-                        console.log("Model deployment");
-                      }}
+                      onClick={handleStartUsingModel}
                       sx={{
                         borderRadius: 2,
                         py: 1.2,
