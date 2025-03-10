@@ -148,11 +148,17 @@ export default function AITraining() {
 
   // Handle next step in the training process
   const handleNext = () => {
-    if (activeStep === 2) {
-      // Start training
+    // Fix 1: Move to the next step first
+    const nextStep = activeStep + 1;
+    setActiveStep(nextStep);
+    
+    // Fix 2: If we're now on the training step, start training
+    if (nextStep === 2) {
+      // We'll start training when the user clicks "Start Training" button
+      // Not automatically when reaching this step
+    } else if (nextStep === 3) {
+      // If we're moving to the Results step, start the training
       handleStartTraining();
-    } else {
-      setActiveStep((prevStep) => prevStep + 1);
     }
   };
 
@@ -218,15 +224,22 @@ export default function AITraining() {
 
   // Training configuration handler
   const handleConfigChange = (config: any) => {
-    setTrainingConfig(config);
-    setTrainingProgress(1);
-    setTrainingComplete(false);
+    setTrainingConfig({
+      ...trainingConfig,
+      ...config
+    });
   };
 
   // Handler for starting to use the trained model
   const handleStartUsingModel = () => {
     console.log("Start using trained model");
     // Navigate to chat or implementation page
+  };
+
+  // Fix 3: Add a dedicated handler for the "Start Training" button
+  const handleStartTrainingButtonClick = () => {
+    setActiveStep(3); // Move to results step
+    handleStartTraining(); // Start the training process
   };
 
   // Render step content based on active step
@@ -500,6 +513,8 @@ export default function AITraining() {
                         py: 1,
                         px: 3,
                       }}
+                      // Fix 4: Disable back button during training
+                      disabled={activeStep === 3 && !trainingComplete}
                     >
                       Back
                     </Button>
@@ -540,7 +555,8 @@ export default function AITraining() {
                     endIcon={
                       activeStep === 2 ? <AutoFixHighIcon /> : <CheckCircleIcon />
                     }
-                    onClick={handleNext}
+                    // Fix 5: Use different handler for step 2 (Start Training button)
+                    onClick={activeStep === 2 ? handleStartTrainingButtonClick : handleNext}
                     disabled={
                       (activeStep === 0 && selectedSources.length === 0) ||
                       (activeStep === 1 && !dataPreviewReady)
