@@ -463,17 +463,9 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
             </Alert>
           )}
 
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 2,
-              border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
-              mb: 3,
-              overflow: "hidden"
-            }}
-          >
+          
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ position: "relative", p: 2 }}>
+              <Box sx={{ position: "relative", p: 0 }}>
                 <textarea
                   placeholder="Enter your text data here..."
                   value={textData}
@@ -494,14 +486,14 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                 />
                 <Typography
                   variant="caption"
-                  color={textData.length > 5000 ? "error" : "text.secondary"}
+                  color={textData.length > 2000 ? "error" : "text.secondary"}
                   sx={{
                     position: "absolute",
                     bottom: 16,
                     right: 16,
                   }}
                 >
-                  {textData.length}/5000
+                  {textData.length}/2000
                 </Typography>
               </Box>
 
@@ -535,7 +527,6 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                 </Button>
               </Box>
             </CardContent>
-          </Card>
 
           <Box sx={{ mt: 4 }}>
             <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>

@@ -4,9 +4,26 @@ import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Function to extract email address from a string
+// Improved function to extract email address from a string
 const extractEmail = (str) => {
-  const match = str.match(/<([^>]+)>/);
+  // Check if str is a string or an object
+  if (!str) return '';
+  
+  // Handle case where 'from' or 'to' is an object with email property
+  if (typeof str === 'object') {
+    if (str.email) return str.email;
+    // If it's an array (like the 'to' field might be)
+    if (Array.isArray(str) && str.length > 0) {
+      const firstRecipient = str[0];
+      return typeof firstRecipient === 'object' && firstRecipient.email 
+        ? firstRecipient.email 
+        : String(firstRecipient);
+    }
+    return '';
+  }
+  
+  // Process string as normal
+  const match = String(str).match(/<([^>]+)>/);
   return match ? match[1] : str;
 };
 
