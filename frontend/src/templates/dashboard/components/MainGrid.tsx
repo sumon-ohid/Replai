@@ -1,43 +1,44 @@
-import * as React from 'react';
-import Grid from '@mui/material/Grid';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Avatar from '@mui/material/Avatar';
-import Tooltip from '@mui/material/Tooltip';
-import Badge from '@mui/material/Badge';
-import LinearProgress from '@mui/material/LinearProgress';
-import { motion } from 'framer-motion';
-import { alpha, useTheme } from '@mui/material/styles';
+import * as React from "react";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Avatar from "@mui/material/Avatar";
+import Tooltip from "@mui/material/Tooltip";
+import Badge from "@mui/material/Badge";
+import LinearProgress from "@mui/material/LinearProgress";
+import { motion } from "framer-motion";
+import { alpha, useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 // Icons
-import RefreshIcon from '@mui/icons-material/RefreshRounded';
-import DateRangeIcon from '@mui/icons-material/DateRangeRounded';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMoreRounded';
-import TrendingUpIcon from '@mui/icons-material/TrendingUpRounded';
-import TrendingDownIcon from '@mui/icons-material/TrendingDownRounded';
-import MailOutlineIcon from '@mui/icons-material/MailOutlineRounded';
-import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
-import SourceRoundedIcon from '@mui/icons-material/SourceRounded';
-import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
-import PriorityHighRoundedIcon from '@mui/icons-material/PriorityHighRounded';
-import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
-import WorkspacePremiumRoundedIcon from '@mui/icons-material/WorkspacePremiumRounded';
-import AttachEmailRoundedIcon from '@mui/icons-material/AttachEmailRounded';
-import TimerIcon from '@mui/icons-material/Timer';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
+import RefreshIcon from "@mui/icons-material/RefreshRounded";
+import DateRangeIcon from "@mui/icons-material/DateRangeRounded";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMoreRounded";
+import TrendingUpIcon from "@mui/icons-material/TrendingUpRounded";
+import TrendingDownIcon from "@mui/icons-material/TrendingDownRounded";
+import MailOutlineIcon from "@mui/icons-material/MailOutlineRounded";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
+import SourceRoundedIcon from "@mui/icons-material/SourceRounded";
+import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
+import PriorityHighRoundedIcon from "@mui/icons-material/PriorityHighRounded";
+import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
+import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
+import AttachEmailRoundedIcon from "@mui/icons-material/AttachEmailRounded";
+import TimerIcon from "@mui/icons-material/Timer";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 
 // Components
-import HighlightedCard from './HighlightedCard';
-import CustomizedDataGrid from './CustomizedDataGrid';
-import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
-import axios from 'axios';
+import HighlightedCard from "./HighlightedCard";
+import CustomizedDataGrid from "./CustomizedDataGrid";
+import ColorModeIconDropdown from "../../shared-theme/ColorModeIconDropdown";
+import axios from "axios";
 
 import { useNavigate } from "react-router-dom";
 
@@ -48,8 +49,8 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
+    transition: { staggerChildren: 0.08 },
+  },
 };
 
 const itemVariants = {
@@ -57,112 +58,183 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }
-  }
+    transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] },
+  },
 };
 
-// Stat Card Component
-const StatCard = ({ 
-  title, 
-  value, 
-  subtitle, 
-  icon, 
+// Modify the StatCard component to be more compact on mobile
+const StatCard = ({
+  title,
+  value,
+  subtitle,
+  icon,
   color = "primary",
   progress,
-  max 
-}: { 
-  title: string, 
-  value: number | string, 
-  subtitle?: string, 
-  icon: React.ReactNode, 
-  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error", 
-  progress?: number,
-  max?: number
+  max,
+}: {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error";
+  progress?: number;
+  max?: number;
 }) => {
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
-  
+  const isDarkMode = theme.palette.mode === "dark";
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <Paper
       component={motion.div}
       variants={itemVariants}
       sx={{
-        p: 2.5,
+        p: { xs: 1.5, sm: 2.5 },
         borderRadius: 3,
-        height: '100%',
+        height: "100%",
         border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
-        background: isDarkMode 
-          ? `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.6)})`
-          : `linear-gradient(145deg, ${theme.palette.background.paper}, ${alpha(theme.palette[color].light, 0.07)})`,
-        boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, isDarkMode ? 0.2 : 0.05)}`,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
+        background: isDarkMode
+          ? `linear-gradient(145deg, ${alpha(
+              theme.palette.background.paper,
+              0.9
+            )}, ${alpha(theme.palette.background.paper, 0.6)})`
+          : `linear-gradient(145deg, ${theme.palette.background.paper}, ${alpha(
+              theme.palette[color].light,
+              0.07
+            )})`,
+        boxShadow: `0 4px 20px ${alpha(
+          theme.palette.common.black,
+          isDarkMode ? 0.2 : 0.05
+        )}`,
+        display: "flex",
+        flexDirection: { xs: "row", sm: "column" },
+        alignItems: { xs: "center", sm: "stretch" },
+        justifyContent: { xs: "space-between", sm: "space-between" },
+        transition: "all 0.3s ease",
+        "&:hover": {
+          transform: { xs: "translateY(-2px)", sm: "translateY(-4px)" },
           boxShadow: `0 8px 25px ${alpha(theme.palette[color].main, 0.15)}`,
-          borderColor: alpha(theme.palette[color].main, 0.3)
-        }
+          borderColor: alpha(theme.palette[color].main, 0.3),
+        },
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-        <Avatar
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "row", sm: "column" },
+          alignItems: { xs: "center", sm: "flex-start" },
+          gap: { xs: 2, sm: 0 },
+          mb: { xs: 0, sm: 1.5 },
+        }}
+      >
+        <Box
           sx={{
-            bgcolor: alpha(theme.palette[color].main, isDarkMode ? 0.2 : 0.1),
-            color: theme.palette[color].main,
-            width: 42,
-            height: 42
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 3,
           }}
         >
-          {icon}
-        </Avatar>
-        
-        {subtitle && subtitle.includes('%') && (
-          <Chip
-            size="small"
-            icon={subtitle.includes('-') ? <TrendingDownIcon fontSize="small" /> : <TrendingUpIcon fontSize="small" />}
-            label={subtitle}
-            color={subtitle.includes('-') ? "error" : "success"}
-            variant="outlined"
+          <Avatar
             sx={{
-              borderRadius: 1.5,
-              height: 24,
-              '& .MuiChip-label': { px: 1, fontWeight: 600 },
-              '& .MuiChip-icon': { ml: 0.5 }
+              bgcolor: alpha(theme.palette[color].main, isDarkMode ? 0.2 : 0.1),
+              color: theme.palette[color].main,
+              width: { xs: 32, sm: 42 },
+              height: { xs: 32, sm: 42 },
             }}
-          />
-        )}
+          >
+            {icon}
+          </Avatar>
+
+          {subtitle && subtitle.includes("%") && (
+            <Chip
+              size="small"
+              icon={
+                subtitle.includes("-") ? (
+                  <TrendingDownIcon fontSize="small" />
+                ) : (
+                  <TrendingUpIcon fontSize="small" />
+                )
+              }
+              label={subtitle}
+              color={subtitle.includes("-") ? "error" : "success"}
+              variant="outlined"
+              sx={{
+                borderRadius: 1.5,
+                height: 24,
+                display: { xs: "none", md: "flex" },
+                "& .MuiChip-label": { px: 1, fontWeight: 600 },
+                "& .MuiChip-icon": { ml: 0.5 },
+              }}
+            />
+          )}
+
+          {typeof progress !== "undefined" && typeof max !== "undefined" && (
+            <Box
+              sx={{
+                width: "100%",
+                mt: 1,
+                display: { xs: "none", sm: "block" },
+              }}
+            >
+              <LinearProgress
+                variant="determinate"
+                value={(progress / max) * 100}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: alpha(theme.palette[color].main, 0.08),
+                  "& .MuiLinearProgress-bar": {
+                    bgcolor: theme.palette[color].main,
+                  },
+                }}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 0.5, textAlign: "right" }}
+              >
+                {progress} / {max}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Box sx={{ display: { xs: "block", sm: "none" } }}>
+          <Typography
+            variant={isMobile ? "h6" : "h4"}
+            sx={{ fontWeight: 700, mb: { xs: 0, sm: 0.5 } }}
+          >
+            {value}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontWeight: 500 }}
+          >
+            {title}
+          </Typography>
+        </Box>
       </Box>
-      
-      <Box sx={{ mb: typeof progress !== 'undefined' ? 1 : 0 }}>
+
+      <Box
+        sx={{
+          mb: typeof progress !== "undefined" ? 1 : 0,
+          display: { xs: "none", sm: "block" },
+        }}
+      >
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
           {value}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontWeight: 500 }}
+        >
           {title}
         </Typography>
       </Box>
-      
-      {typeof progress !== 'undefined' && typeof max !== 'undefined' && (
-        <Box sx={{ width: '100%', mt: 1 }}>
-          <LinearProgress
-            variant="determinate"
-            value={(progress / max) * 100}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette[color].main, 0.08),
-              '& .MuiLinearProgress-bar': {
-                bgcolor: theme.palette[color].main
-              }
-            }}
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
-            {progress} / {max}
-          </Typography>
-        </Box>
-      )}
     </Paper>
   );
 };
@@ -179,16 +251,16 @@ export default function MainGrid() {
   const [data, setData] = React.useState<LocalStatCardProps[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [timeRange, setTimeRange] = React.useState<string>('weekly');
+  const [timeRange, setTimeRange] = React.useState<string>("weekly");
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
-  
+
   // Get current date for display
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
+  const formattedDate = today.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
   });
 
   const fetchData = async () => {
@@ -196,16 +268,19 @@ export default function MainGrid() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get<LocalStatCardProps[]>(`${apiBaseUrl}/api/emails/stats?range=${timeRange}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const token = localStorage.getItem("token");
+      const response = await axios.get<LocalStatCardProps[]>(
+        `${apiBaseUrl}/api/emails/stats?range=${timeRange}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setData(response.data);
     } catch (error) {
-      console.error('Error fetching stats data:', error);
-      setError('Error fetching stats data');
+      console.error("Error fetching stats data:", error);
+      setError("Error fetching stats data");
     } finally {
       setLoading(false);
     }
@@ -231,9 +306,9 @@ export default function MainGrid() {
   };
 
   // Get first name from local storage or set a default
-  let fullName = localStorage.getItem('username') || 'User';
+  let fullName = localStorage.getItem("username") || "User";
   if (fullName.length > 20) {
-    fullName = fullName.split(' ')[0];
+    fullName = fullName.split(" ")[0];
   }
 
   return (
@@ -243,8 +318,8 @@ export default function MainGrid() {
       initial="hidden"
       animate="visible"
       sx={{
-        width: '100%',
-        maxWidth: { sm: '100%', md: '1700px' },
+        width: "100%",
+        maxWidth: { sm: "100%", md: "1700px" },
         px: { xs: 2, sm: 3 },
         py: { xs: 2, sm: 3 },
       }}
@@ -255,40 +330,51 @@ export default function MainGrid() {
         variants={itemVariants}
         sx={{
           mb: 4,
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', md: 'center' },
-          gap: 2
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", md: "center" },
+          gap: 2,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', mt: { xs: 7, md: 4 } }}>
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              fontWeight: 700, 
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            mt: { xs: 7, md: 4 },
+          }}
+        >
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
               mb: 0.5,
-              background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${
-                theme.palette.mode === 'dark'
+              background: `linear-gradient(90deg, ${
+                theme.palette.primary.main
+              } 0%, ${
+                theme.palette.mode === "dark"
                   ? alpha(theme.palette.primary.main, 0.7)
                   : alpha(theme.palette.primary.light, 0.7)
               } 100%)`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
             }}
           >
             Welcome back, {fullName}
           </Typography>
-          
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
             {formattedDate} • Here's your dashboard overview
           </Typography>
         </Box>
 
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          spacing={2} 
-          sx={{ alignSelf: { xs: 'stretch', sm: 'auto' }, mt: { xs: 2, md: 0 } }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{
+            alignSelf: { xs: "stretch", sm: "auto" },
+            mt: { xs: 2, md: 0 },
+          }}
         >
           {/* <Button
             variant="outlined"
@@ -315,20 +401,29 @@ export default function MainGrid() {
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={() => handleRangeClose()}
-            sx={{ 
-              '& .MuiPaper-root': { 
-                borderRadius: 2, 
-                mt: 1, 
-                boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.15)}`,
+            sx={{
+              "& .MuiPaper-root": {
+                borderRadius: 2,
+                mt: 1,
+                boxShadow: `0 8px 24px ${alpha(
+                  theme.palette.common.black,
+                  0.15
+                )}`,
                 border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-              } 
+              },
             }}
             elevation={0}
           >
-            <MenuItem onClick={() => handleRangeClose('daily')}>Today</MenuItem>
-            <MenuItem onClick={() => handleRangeClose('weekly')}>This Week</MenuItem>
-            <MenuItem onClick={() => handleRangeClose('monthly')}>This Month</MenuItem>
-            <MenuItem onClick={() => handleRangeClose('yearly')}>This Year</MenuItem>
+            <MenuItem onClick={() => handleRangeClose("daily")}>Today</MenuItem>
+            <MenuItem onClick={() => handleRangeClose("weekly")}>
+              This Week
+            </MenuItem>
+            <MenuItem onClick={() => handleRangeClose("monthly")}>
+              This Month
+            </MenuItem>
+            <MenuItem onClick={() => handleRangeClose("yearly")}>
+              This Year
+            </MenuItem>
           </Menu>
 
           <Tooltip title="Refresh data">
@@ -339,14 +434,20 @@ export default function MainGrid() {
               onClick={handleRefresh}
               sx={{
                 borderRadius: 2,
-                textTransform: 'none',
+                textTransform: "none",
                 px: 2,
                 py: 1,
                 fontWeight: 500,
-                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.25)}`,
+                boxShadow: `0 4px 14px ${alpha(
+                  theme.palette.primary.main,
+                  0.25
+                )}`,
               }}
             >
-              Refresh {loading && <CircularProgress size={16} thickness={5} sx={{ ml: 1 }} />}
+              Refresh{" "}
+              {loading && (
+                <CircularProgress size={16} thickness={5} sx={{ ml: 1 }} />
+              )}
             </Button>
           </Tooltip>
 
@@ -365,10 +466,10 @@ export default function MainGrid() {
               p: 3,
               mb: 4,
               borderRadius: 3,
-              border: '1px solid',
+              border: "1px solid",
               borderColor: alpha(theme.palette.error.main, 0.3),
               bgcolor: alpha(theme.palette.error.main, 0.05),
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             <Typography color="error" sx={{ mb: 2, fontWeight: 500 }}>
@@ -386,41 +487,41 @@ export default function MainGrid() {
           </Paper>
         </motion.div>
       ) : (
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Emails Processed" 
-              value={248} 
-              subtitle="+18% from last month"
-              icon={<MailOutlineIcon />} 
-              color="primary" 
+        <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mb: 4 }}>
+          <Grid xs={6} sm={6} md={4} lg={3} item>
+            <StatCard
+              title="Emails Processed"
+              value={248}
+              subtitle="+18%"
+              icon={<MailOutlineIcon />}
+              color="primary"
             />
           </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Auto-Responses" 
-              value={162} 
-              subtitle="+24% from last month"
-              icon={<AutorenewIcon />} 
-              color="success" 
+          <Grid xs={6} sm={6} md={4} lg={3} item>
+            <StatCard
+              title="Auto-Responses"
+              value={162}
+              subtitle="+24%"
+              icon={<AutorenewIcon />}
+              color="success"
             />
           </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Drafts Saved" 
+          <Grid xs={6} sm={6} md={4} lg={3} item>
+            <StatCard
+              title="Drafts Saved"
               value={32}
-              subtitle="+12% from last month"
+              subtitle="+12%"
               icon={<NotesRoundedIcon />}
               color="warning"
             />
           </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Avg Response Time" 
-              value="3.2m" 
-              subtitle="-45% from last month"
-              icon={<TimerIcon />} 
-              color="info" 
+          <Grid xs={6} sm={6} md={4} lg={3} item>
+            <StatCard
+              title="Avg Response Time"
+              value="1.2m"
+              subtitle="45%"
+              icon={<TimerIcon />}
+              color="info"
             />
           </Grid>
         </Grid>
@@ -432,7 +533,7 @@ export default function MainGrid() {
           <Box
             component={motion.div}
             variants={itemVariants}
-            sx={{ height: '100%'}}
+            sx={{ height: "100%" }}
           >
             <HighlightedCard />
           </Box>
@@ -445,53 +546,66 @@ export default function MainGrid() {
             elevation={0}
             sx={{
               p: 3,
-              height: '100%',
+              height: "100%",
               borderRadius: 3,
               border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(145deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.6)})`
-                : `linear-gradient(145deg, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.light, 0.04)})`,
-              display: 'flex',
-              flexDirection: 'column',
-              mt: { xs: 3, md: 1, lg: 0 }
+              background:
+                theme.palette.mode === "dark"
+                  ? `linear-gradient(145deg, ${alpha(
+                      theme.palette.background.paper,
+                      0.9
+                    )}, ${alpha(theme.palette.background.paper, 0.6)})`
+                  : `linear-gradient(145deg, ${
+                      theme.palette.background.paper
+                    }, ${alpha(theme.palette.primary.light, 0.04)})`,
+              display: "flex",
+              flexDirection: "column",
+              mt: { xs: 3, md: 1, lg: 0 },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
               <Avatar
                 sx={{
-                  bgcolor: alpha(theme.palette.info.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+                  bgcolor: alpha(
+                    theme.palette.info.main,
+                    theme.palette.mode === "dark" ? 0.2 : 0.1
+                  ),
                   color: theme.palette.info.main,
                   width: 42,
                   height: 42,
-                  mr: 2
+                  mr: 2,
                 }}
               >
                 <PeopleAltRoundedIcon />
               </Avatar>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>Quick Setup Guide</Typography>
-                <Typography variant="body2" color="text.secondary">Complete these steps to get started</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Quick Setup Guide
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Complete these steps to get started
+                </Typography>
               </Box>
             </Box>
-            
+
             <Box sx={{ flexGrow: 1 }}>
               {[
                 { title: "Connect your email account", done: false },
                 { title: "Create your first AI assistant", done: false },
                 { title: "Add training data", done: false },
-                { title: "Test your assistant", done: false }
+                { title: "Test your assistant", done: false },
               ].map((step, index) => (
-                <Box 
+                <Box
                   key={index}
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    mb: 2, 
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    mb: 2,
                     p: 1.5,
                     borderRadius: 2,
-                    bgcolor: step.done 
+                    bgcolor: step.done
                       ? alpha(theme.palette.success.main, 0.08)
-                      : 'transparent'
+                      : "transparent",
                   }}
                 >
                   <Avatar
@@ -499,21 +613,21 @@ export default function MainGrid() {
                       width: 28,
                       height: 28,
                       mr: 2,
-                      fontSize: '0.875rem',
-                      bgcolor: step.done 
+                      fontSize: "0.875rem",
+                      bgcolor: step.done
                         ? theme.palette.success.main
                         : alpha(theme.palette.action.selected, 0.8),
                     }}
                   >
                     {index + 1}
                   </Avatar>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
+                  <Typography
+                    variant="body2"
+                    sx={{
                       fontWeight: step.done ? 600 : 400,
-                      color: step.done 
+                      color: step.done
                         ? theme.palette.success.main
-                        : theme.palette.text.primary
+                        : theme.palette.text.primary,
                     }}
                   >
                     {step.title}
@@ -521,7 +635,7 @@ export default function MainGrid() {
                 </Box>
               ))}
             </Box>
-            
+
             <Button
               variant="outlined"
               color="info"
@@ -529,12 +643,12 @@ export default function MainGrid() {
               sx={{
                 mt: 2,
                 borderRadius: 2,
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
-                py: 1
+                py: 1,
               }}
               // onclick navigate to documentation
-              onClick={() => navigate('/docs')}
+              onClick={() => navigate("/docs")}
             >
               View Full Guide
             </Button>
@@ -547,11 +661,11 @@ export default function MainGrid() {
         component={motion.div}
         variants={itemVariants}
         sx={{
-          textAlign: 'center',
+          textAlign: "center",
           mt: 6,
           mb: 2,
           color: theme.palette.text.secondary,
-          fontSize: '0.875rem'
+          fontSize: "0.875rem",
         }}
       >
         {/* <Typography variant="body2">
