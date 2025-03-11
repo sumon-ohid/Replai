@@ -30,6 +30,8 @@ import PriorityHighRoundedIcon from '@mui/icons-material/PriorityHighRounded';
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded';
 import WorkspacePremiumRoundedIcon from '@mui/icons-material/WorkspacePremiumRounded';
 import AttachEmailRoundedIcon from '@mui/icons-material/AttachEmailRounded';
+import TimerIcon from '@mui/icons-material/Timer';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 
 // Components
 import HighlightedCard from './HighlightedCard';
@@ -384,73 +386,41 @@ export default function MainGrid() {
           </Paper>
         </motion.div>
       ) : (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid xs={12} sm={6} md={4} lg={3} item>
             <StatCard 
-              title="Emails Sent" 
-              value={2} 
-              subtitle="0% from last month"
+              title="Emails Processed" 
+              value={248} 
+              subtitle="+18% from last month"
               icon={<MailOutlineIcon />} 
               color="primary" 
             />
           </Grid>
           <Grid xs={12} sm={6} md={4} lg={3} item>
             <StatCard 
-              title="Active Users" 
-              value={1} 
-              icon={<PeopleAltRoundedIcon />} 
+              title="Auto-Responses" 
+              value={162} 
+              subtitle="+24% from last month"
+              icon={<AutorenewIcon />} 
               color="success" 
             />
           </Grid>
           <Grid xs={12} sm={6} md={4} lg={3} item>
             <StatCard 
-              title="Connected Emails" 
-              value={0} 
-              icon={<AttachEmailRoundedIcon />} 
+              title="Drafts Saved" 
+              value={32}
+              subtitle="+12% from last month"
+              icon={<NotesRoundedIcon />}
+              color="warning"
+            />
+          </Grid>
+          <Grid xs={12} sm={6} md={4} lg={3} item>
+            <StatCard 
+              title="Avg Response Time" 
+              value="3.2m" 
+              subtitle="-45% from last month"
+              icon={<TimerIcon />} 
               color="info" 
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Sources" 
-              value={1} 
-              icon={<SourceRoundedIcon />} 
-              color="secondary" 
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Emails Drafted" 
-              value={0} 
-              icon={<NotesRoundedIcon />} 
-              color="info" 
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Escalations" 
-              value={2} 
-              icon={<PriorityHighRoundedIcon />} 
-              color="warning" 
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Usage" 
-              value={0} 
-              icon={<StorageRoundedIcon />} 
-              color="primary" 
-              progress={0}
-              max={10}
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={4} lg={3} item>
-            <StatCard 
-              title="Subscription Plan" 
-              value="Free" 
-              subtitle="No expiration"
-              icon={<WorkspacePremiumRoundedIcon />} 
-              color="success" 
             />
           </Grid>
         </Grid>
