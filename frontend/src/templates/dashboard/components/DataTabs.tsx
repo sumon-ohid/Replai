@@ -744,9 +744,6 @@ export default function DataTabs() {
           </TabPanel>
         </Box>
       </Paper>
-
-      {/* AI Training Card */}
-      <AiTraining />
     </Box>
   );
 }
