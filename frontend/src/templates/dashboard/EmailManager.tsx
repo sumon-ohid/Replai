@@ -215,38 +215,6 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                   Connect and manage your email accounts for automated responses and analytics.
                 </Typography>
               </Box>
-              
-              <Stack direction="row" spacing={2}>
-                <Tooltip title="Refresh email accounts">
-                  <IconButton
-                    onClick={handleRefresh}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: theme.palette.divider,
-                      borderRadius: 2,
-                    }}
-                  >
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-                
-                <Button
-                  variant="contained"
-                  size="medium"
-                  startIcon={<AddIcon />}
-                  onClick={handleCreateBot}
-                  disabled={loading}
-                  sx={{
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1,
-                    fontWeight: 600,
-                    background: 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))',
-                  }}
-                >
-                  {loading ? 'Connecting...' : 'Connect Email Account'}
-                </Button>
-              </Stack>
             </Box>
             
             {/* Info Card */}
