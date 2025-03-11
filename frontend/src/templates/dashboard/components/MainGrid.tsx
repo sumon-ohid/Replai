@@ -41,6 +41,7 @@ import ColorModeIconDropdown from "../../shared-theme/ColorModeIconDropdown";
 import axios from "axios";
 
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -248,19 +249,30 @@ export interface LocalStatCardProps {
 export default function MainGrid() {
   const theme = useTheme();
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  const [data, setData] = React.useState<LocalStatCardProps[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [timeRange, setTimeRange] = React.useState<string>("weekly");
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  interface Stat {
+    id: string;
+    title: string;
+    value: number;
+    change: number;
+    icon: string;
+    color: "primary" | "secondary" | "info" | "success" | "warning" | "error";
+  }
+
+  const [data, setData] = useState<Stat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState('week');
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const navigate = useNavigate();
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
   // Get current date for display
   const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  const formattedDate = today.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   });
 
   const fetchData = async () => {
@@ -268,37 +280,47 @@ export default function MainGrid() {
     setError(null);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get<LocalStatCardProps[]>(
-        `${apiBaseUrl}/api/emails/stats?range=${timeRange}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setData(response.data);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${apiBaseUrl}/api/emails/stats?range=${timeRange}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setData(response.data as any);
     } catch (error) {
-      console.error("Error fetching stats data:", error);
-      setError("Error fetching stats data");
+      console.error('Error fetching stats data:', error);
+      setError('An error occurred. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchData();
+    
+    // Optional: Set up periodic refresh
+    const refreshInterval = setInterval(fetchData, 5 * 60 * 1000); // Refresh every 5 minutes
+    
+    return () => clearInterval(refreshInterval);
   }, [timeRange]);
 
   const handleRefresh = () => {
     fetchData();
   };
 
-  const handleRangeClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  interface RangeClickEvent extends React.MouseEvent<HTMLButtonElement> {}
+
+  const handleRangeClick = (event: RangeClickEvent) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleRangeClose = (range?: string) => {
+  interface RangeClickEvent extends React.MouseEvent<HTMLButtonElement> {}
+
+  interface HandleRangeClose {
+    (range?: string): void;
+  }
+
+  const handleRangeClose: HandleRangeClose = (range) => {
     setAnchorEl(null);
     if (range) {
       setTimeRange(range);
@@ -367,7 +389,7 @@ export default function MainGrid() {
             {formattedDate} • Here's your dashboard overview
           </Typography>
         </Box>
-
+        
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
@@ -376,7 +398,7 @@ export default function MainGrid() {
             mt: { xs: 2, md: 0 },
           }}
         >
-          {/* <Button
+          <Button
             variant="outlined"
             startIcon={<DateRangeIcon />}
             endIcon={<ExpandMoreIcon />}
@@ -393,39 +415,30 @@ export default function MainGrid() {
             }}
           >
             {timeRange === 'daily' && 'Today'}
-            {timeRange === 'weekly' && 'This Week'}
-            {timeRange === 'monthly' && 'This Month'}
-            {timeRange === 'yearly' && 'This Year'}
-          </Button> */}
+            {timeRange === 'week' && 'This Week'}
+            {timeRange === 'month' && 'This Month'}
+            {timeRange === 'year' && 'This Year'}
+          </Button>
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={() => handleRangeClose()}
             sx={{
-              "& .MuiPaper-root": {
+              '& .MuiPaper-root': {
                 borderRadius: 2,
                 mt: 1,
-                boxShadow: `0 8px 24px ${alpha(
-                  theme.palette.common.black,
-                  0.15
-                )}`,
+                boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.15)}`,
                 border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
               },
             }}
             elevation={0}
           >
-            <MenuItem onClick={() => handleRangeClose("daily")}>Today</MenuItem>
-            <MenuItem onClick={() => handleRangeClose("weekly")}>
-              This Week
-            </MenuItem>
-            <MenuItem onClick={() => handleRangeClose("monthly")}>
-              This Month
-            </MenuItem>
-            <MenuItem onClick={() => handleRangeClose("yearly")}>
-              This Year
-            </MenuItem>
+            <MenuItem onClick={() => handleRangeClose('daily')}>Today</MenuItem>
+            <MenuItem onClick={() => handleRangeClose('week')}>This Week</MenuItem>
+            <MenuItem onClick={() => handleRangeClose('month')}>This Month</MenuItem>
+            <MenuItem onClick={() => handleRangeClose('year')}>This Year</MenuItem>
           </Menu>
-
+        
           <Tooltip title="Refresh data">
             <Button
               variant="contained"
@@ -438,22 +451,13 @@ export default function MainGrid() {
                 px: 2,
                 py: 1,
                 fontWeight: 500,
-                boxShadow: `0 4px 14px ${alpha(
-                  theme.palette.primary.main,
-                  0.25
-                )}`,
+                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.25)}`,
               }}
             >
               Refresh{" "}
-              {loading && (
-                <CircularProgress size={16} thickness={5} sx={{ ml: 1 }} />
-              )}
+              {loading && <CircularProgress size={16} thickness={5} sx={{ ml: 1 }} />}
             </Button>
           </Tooltip>
-
-          {/* {!isMobile && (
-            <ColorModeIconDropdown />
-          )} */}
         </Stack>
       </Box>
 
@@ -488,42 +492,79 @@ export default function MainGrid() {
         </motion.div>
       ) : (
         <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mb: 4 }}>
-          <Grid xs={6} sm={6} md={4} lg={3} item>
-            <StatCard
-              title="Emails Processed"
-              value={248}
-              subtitle="+18%"
-              icon={<MailOutlineIcon />}
-              color="primary"
-            />
-          </Grid>
-          <Grid xs={6} sm={6} md={4} lg={3} item>
-            <StatCard
-              title="Auto-Responses"
-              value={162}
-              subtitle="+24%"
-              icon={<AutorenewIcon />}
-              color="success"
-            />
-          </Grid>
-          <Grid xs={6} sm={6} md={4} lg={3} item>
-            <StatCard
-              title="Drafts Saved"
-              value={32}
-              subtitle="+12%"
-              icon={<NotesRoundedIcon />}
-              color="warning"
-            />
-          </Grid>
-          <Grid xs={6} sm={6} md={4} lg={3} item>
-            <StatCard
-              title="Avg Response Time"
-              value="1.2m"
-              subtitle="45%"
-              icon={<TimerIcon />}
-              color="info"
-            />
-          </Grid>
+          {loading ? (
+            // Show skeleton loaders when data is loading
+            Array(4).fill(0).map((_, index) => (
+              <Grid key={`skeleton-${index}`} xs={6} sm={6} md={4} lg={3} item>
+                <Paper
+                  component={motion.div}
+                  variants={itemVariants}
+                  sx={{
+                    p: { xs: 1.5, sm: 2.5 },
+                    borderRadius: 3,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: { xs: 'row', sm: 'column' },
+                    alignItems: { xs: 'center', sm: 'flex-start' },
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ 
+                    width: 42, 
+                    height: 42, 
+                    borderRadius: '50%', 
+                    bgcolor: alpha(theme.palette.action.disabled, 0.2),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }} />
+                  
+                  <Box sx={{ width: '100%' }}>
+                    <Box sx={{ height: 32, width: '60%', mb: 1, bgcolor: alpha(theme.palette.action.disabled, 0.15), borderRadius: 1 }} />
+                    <Box sx={{ height: 16, width: '90%', bgcolor: alpha(theme.palette.action.disabled, 0.1), borderRadius: 0.5 }} />
+                  </Box>
+                </Paper>
+              </Grid>
+            ))
+          ) : (
+            // Map the actual stats data to StatCard components
+            data.map((stat) => {
+              let IconComponent;
+              // Map the icon string to the actual icon component
+              switch (stat.icon) {
+                case 'MailOutlineIcon':
+                  IconComponent = MailOutlineIcon;
+                  break;
+                case 'AutorenewIcon':
+                  IconComponent = AutorenewIcon;
+                  break;
+                case 'NotesRoundedIcon':
+                  IconComponent = NotesRoundedIcon;
+                  break;
+                case 'TimerIcon':
+                  IconComponent = TimerIcon;
+                  break;
+                default:
+                  IconComponent = MailOutlineIcon;
+              }
+              
+              // Format the change for display
+              const changePrefix = stat.change > 0 ? '+' : '';
+              const formattedChange = `${changePrefix}${stat.change}%`;
+              
+              return (
+                <Grid key={stat.id} xs={6} sm={6} md={4} lg={3} item>
+                  <StatCard
+                    title={stat.title}
+                    value={stat.value}
+                    subtitle={formattedChange}
+                    icon={<IconComponent />}
+                    color={stat.color}
+                  />
+                </Grid>
+              );
+            })
+          )}
         </Grid>
       )}
 
