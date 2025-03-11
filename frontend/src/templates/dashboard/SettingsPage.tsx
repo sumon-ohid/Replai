@@ -381,7 +381,8 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
               <Box
                 sx={{
                   minWidth: { xs: '100%', md: 260 },
-                  maxWidth: { md: 260 }
+                  maxWidth: { md: 260 },
+                  mt: { xs: 0, md: 3}
                 }}
               >
                 <Card 
