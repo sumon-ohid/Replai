@@ -1,10 +1,8 @@
 import * as React from "react";
 import { styled } from "@mui/material/styles";
-import { motion, AnimatePresence } from "framer-motion";
 import Avatar from "@mui/material/Avatar";
 import MuiDrawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -12,20 +10,15 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { alpha, useTheme } from "@mui/material/styles";
 import MenuContent from "./MenuContent";
-import CardAlert from "./CardAlert";
-import OptionsMenu from "./OptionsMenu";
 import { useAuth } from "../../../AuthContext";
 import LogoutIcon from "@mui/icons-material/Logout";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import TuneIcon from "@mui/icons-material/Tune";
-import StorageIcon from "@mui/icons-material/Storage";
 import { drawerClasses } from "@mui/material/Drawer";
 import { useNavigate } from "react-router-dom";
 import ReplaiIcon from "../../../assets/logoIcon.png";
 import ReplaiLogo from "../../../../logo/logo_light.png";
-import { Collapse } from "@mui/material";
 
 // Two drawer widths for expanded and collapsed states
 const drawerWidthExpanded = 280;
@@ -110,28 +103,6 @@ export default function SideMenu() {
     return savedState === null ? true : savedState !== "true";
   });
   const navigate = useNavigate();
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
-  };
 
   const handleToggleDrawer = () => {
     setExpanded(!expanded);
@@ -164,12 +135,7 @@ export default function SideMenu() {
     <Box
       sx={{
         position: "relative",
-
-        // Shift the content when expanded
         marginLeft: expanded ? 35 : 10,
-        transition: theme.transitions.create("margin"),
-
-        // Hide the drawer on mobile
         display: { xs: "none", md: "block" },
         backgroundColor: "background.default",
       }}
@@ -196,12 +162,7 @@ export default function SideMenu() {
             pt: 2,
             px: expanded ? 2 : 1,
             height: 64,
-            transition: (theme) => theme.transitions.create("all"),
           }}
-          component={motion.div}
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
         >
           <Stack
             direction="row"
@@ -213,13 +174,8 @@ export default function SideMenu() {
               px: expanded ? 1.5 : 0,
               width: "100%",
             }}
-            component={motion.div}
-            variants={itemVariants}
           >
             <Box
-              component={motion.div}
-              whileHover={{ rotate: 10, scale: 1.05 }}
-              transition={{ duration: 0.2 }}
               sx={{
                 bgcolor: "background.paper",
                 borderRadius: 2,
@@ -232,56 +188,45 @@ export default function SideMenu() {
               }}
             >
               <Box
-                component={motion.img}
+                component="img"
                 src={ReplaiIcon}
                 alt="Replai Logo"
                 sx={{ width: 32, height: 32 }}
               />
             </Box>
 
-            <AnimatePresence>
-              {expanded && (
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.3 }}
+            {expanded && (
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {/* Replai<Box component="span" sx={{ color: theme.palette.text.primary, fontWeight: 300 }}>.tech</Box> */}
-                    <Box
-                      component={motion.img}
-                      src={ReplaiLogo}
-                      alt="Replai Logo"
-                      sx={{ width: 120, height: 50, ml: 2, mt: -1 }}
-                    />
-                  </Typography>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <Box
+                    component="img"
+                    src={ReplaiLogo}
+                    alt="Replai Logo"
+                    sx={{ width: 120, height: 50, ml: 2, mt: -1 }}
+                  />
+                </Typography>
+              </Box>
+            )}
           </Stack>
         </Box>
 
         {/* User Profile Card */}
         <Box sx={{ px: expanded ? 1 : 0.5, py: 1 }}>
           <Box
-            component={motion.div}
-            variants={itemVariants}
             sx={{
               p: expanded ? 1 : 0.5,
               borderRadius: 2,
               position: "relative",
               overflow: "hidden",
-              backdropFilter: "blur(8px)",
               display: "flex",
               flexDirection: "column",
               alignItems: expanded ? "stretch" : "center",
@@ -305,7 +250,6 @@ export default function SideMenu() {
                 theme.palette.mode === "dark"
                   ? `0 4px 20px ${alpha("#000", 0.2)}`
                   : `0 4px 20px ${alpha("#000", 0.06)}`,
-              transition: theme.transitions.create(["padding"]),
             }}
           >
             {/* Decorative background elements */}
@@ -375,21 +319,8 @@ export default function SideMenu() {
                       </Avatar>
                     )}
 
-                    {/* Status indicator */}
+                    {/* Status indicator - static version */}
                     <Box
-                      component={motion.div}
-                      animate={{
-                        boxShadow: [
-                          `0 0 0 0px ${alpha(theme.palette.success.main, 0.4)}`,
-                          `0 0 0 4px ${alpha(theme.palette.success.main, 0)}`,
-                          `0 0 0 0px ${alpha(theme.palette.success.main, 0.4)}`,
-                        ],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "loop",
-                      }}
                       sx={{
                         position: "absolute",
                         bottom: 2,
@@ -406,46 +337,36 @@ export default function SideMenu() {
               </Box>
 
               {/* User info - only shown when expanded */}
-              <AnimatePresence>
-                {expanded && (
-                  <motion.div
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: "auto" }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ flex: 1, overflow: "hidden" }}
+              {expanded && (
+                <Box sx={{ flex: 1, overflow: "hidden" }}>
+                  <Typography
+                    variant="subtitle2"
+                    noWrap
+                    sx={{
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      maxWidth: 140,
+                    }}
                   >
-                    <Box sx={{ flex: 1, overflow: "hidden" }}>
-                      <Typography
-                        variant="subtitle2"
-                        noWrap
-                        sx={{
-                          fontWeight: 600,
-                          lineHeight: 1.3,
-                          textOverflow: "ellipsis",
-                          overflow: "hidden",
-                          maxWidth: 140,
-                        }}
-                      >
-                        {user?.name || "Guest User"}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        noWrap
-                        sx={{
-                          color: alpha(theme.palette.text.secondary, 0.8),
-                          textOverflow: "ellipsis",
-                          overflow: "hidden",
-                          maxWidth: 140,
-                          display: "block",
-                        }}
-                      >
-                        {user?.email || "user@example.com"}
-                      </Typography>
-                    </Box>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {user?.name || "Guest User"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    noWrap
+                    sx={{
+                      color: alpha(theme.palette.text.secondary, 0.8),
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      maxWidth: 140,
+                      display: "block",
+                    }}
+                  >
+                    {user?.email || "user@example.com"}
+                  </Typography>
+                </Box>
+              )}
 
               {/* Action buttons - show both in expanded mode, only logout in collapsed */}
               <Stack
@@ -457,9 +378,6 @@ export default function SideMenu() {
                   <Tooltip title="Settings">
                     <IconButton
                       size="small"
-                      component={motion.button}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
                       sx={{
                         color: alpha(theme.palette.text.primary, 0.6),
                         backgroundColor: alpha(
@@ -484,9 +402,6 @@ export default function SideMenu() {
                   <IconButton
                     size="small"
                     onClick={handleLogout}
-                    component={motion.button}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
                     sx={{
                       color: theme.palette.error.main,
                       backgroundColor: alpha(theme.palette.error.main, 0.1),
@@ -502,60 +417,49 @@ export default function SideMenu() {
             </Stack>
 
             {/* Subscription plan badge - only shown when expanded */}
-            <AnimatePresence>
-              {expanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
+            {expanded && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 2,
+                  pt: 2,
+                  borderTop: "1px solid",
+                  borderColor: alpha(theme.palette.divider, 0.1),
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    background: `linear-gradient(45deg, ${alpha(
+                      planColor,
+                      0.2
+                    )}, ${alpha(planColor, 0.1)})`,
+                    border: "1px solid",
+                    borderColor: alpha(planColor, 0.2),
+                    color: planColor,
+                  }}
                 >
-                  <Box
-                    component={motion.div}
-                    variants={itemVariants}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mt: 2,
-                      pt: 2,
-                      borderTop: "1px solid",
-                      borderColor: alpha(theme.palette.divider, 0.1),
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: 1,
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
-                        background: `linear-gradient(45deg, ${alpha(
-                          planColor,
-                          0.2
-                        )}, ${alpha(planColor, 0.1)})`,
-                        border: "1px solid",
-                        borderColor: alpha(planColor, 0.2),
-                        color: planColor,
-                      }}
-                    >
-                      Pro Plan
-                    </Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: alpha(theme.palette.text.secondary, 0.7),
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      18 days remaining
-                    </Typography>
-                  </Box>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Pro Plan
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: alpha(theme.palette.text.secondary, 0.7),
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  18 days remaining
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
 
@@ -569,8 +473,6 @@ export default function SideMenu() {
             display: "flex",
             flexDirection: "column",
           }}
-          component={motion.div}
-          variants={itemVariants}
         >
           <MenuContent collapsed={!expanded} />
         </Box>
@@ -603,16 +505,13 @@ export default function SideMenu() {
           </Typography>
           <DrawerToggleButton onClick={handleToggleDrawer}>
             <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                {expanded ? (
-                  <ChevronLeftIcon fontSize="small" />
-                ) : (
-                  <ChevronRightIcon fontSize="small" />
-                )}
-              </motion.div>
+              {expanded ? (
+                <ChevronLeftIcon fontSize="small" />
+              ) : (
+                <ChevronRightIcon fontSize="small" />
+              )}
             </Tooltip>
           </DrawerToggleButton>
-          {/* Toggle Button */}
         </Box>
       </Drawer>
     </Box>
