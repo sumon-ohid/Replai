@@ -1,3 +1,4 @@
+import { stat } from 'fs';
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
@@ -11,7 +12,15 @@ const userSchema = new mongoose.Schema({
   connectedEmails: [
     {
       email: { type: String, required: true },
-      provider: { type: String, required: true }
+      provider: { type: String, required: true },
+      autoReplyEnabled: { type: Boolean, default: false },
+      mode: { type: String, default: 'normal' },
+      status: { type: String, default: 'active' },
+      lastSync: { type: Date, default: Date.now },
+      type: { type: String, default: 'personal' },
+      syncEnabled: { type: Boolean, default: true },
+      picture: { type: String },
+      name: { type: String },
     }
   ],
   isVerified: {
