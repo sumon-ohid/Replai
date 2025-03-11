@@ -507,7 +507,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                           disabled={isSaving}
                           sx={{ borderRadius: 2 }}
                         >
-                          {isEditing ? "Save" : "Edit Profile"}
+                          {isEditing ? "Save" : "Edit"}
                         </Button>
                       </Box>
 
