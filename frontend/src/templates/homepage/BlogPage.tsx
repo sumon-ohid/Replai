@@ -48,14 +48,34 @@ const StyledCard = styled(Card)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   borderRadius: 16,
-  transition: "all 0.3s ease-in-out",
   overflow: "hidden",
   boxShadow: "0 8px 20px rgba(0, 0, 0, 0.05)",
+  transition: "transform 0.2s ease-in-out",
   "&:hover": {
     transform: "translateY(-8px)",
     boxShadow: "0 16px 40px rgba(0, 0, 0, 0.12)",
   },
 }));
+
+// Add this new component for the colored header section
+const ColorBlock = styled(Box)<{ color?: string }>`
+  height: 200px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing(3)};
+  background-color: ${({ theme, color }) => color || theme.palette.primary.main};
+  color: ${({ theme }) => theme.palette.common.white};
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+`;
+
+// Array of colors for the blog post backgrounds
+const blockColors = [
+  '#2196F3',   // Bright Blue
+];
 
 const CardOverlay = styled(Box)(({ theme }) => ({
   position: "absolute",
@@ -476,7 +496,7 @@ export default function BlogPage() {
           </motion.div>
         </Box>
 
-        {/* Featured Post */}
+               {/* Featured Post */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -484,54 +504,90 @@ export default function BlogPage() {
           transition={{ duration: 0.7, delay: 0.3 }}
         >
           <Box sx={{ mb: { xs: 6, md: 10 }, position: "relative" }}>
-            <FeaturedPostCard>
-              <CardMedia
-                component="img"
-                image={featuredPost.imageUrl}
-                alt={featuredPost.title}
+            <FeaturedPostCard sx={{ 
+              background: "rgb(0, 128, 255)",
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Pattern overlay */}
+              <Box
                 sx={{
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: 2,
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  opacity: 0.1,
+                  // backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
                 }}
               />
+              
+              {/* Centered title */}
+              <Box 
+                sx={{ 
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  maxWidth: 700,
+                  width: '80%',
+                  zIndex: 2
+                }}
+              >
+                <Typography
+                  variant={isMobile ? "h3" : "h2"}
+                  component="h2"
+                  fontWeight="bold"
+                  sx={{ 
+                    mb: 2,
+                    color: 'white',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {featuredPost.title}
+                </Typography>
+                
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 3, 
+                    color: 'white', 
+                    opacity: 0.9,
+                    textShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  {featuredPost.excerpt}
+                </Typography>
+                
+                <Button 
+                  variant="contained" 
+                  color="secondary" 
+                  size="large"
+                  sx={{ 
+                    borderRadius: 2,
+                    px: 4,
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  Read Article
+                </Button>
+              </Box>
+              
+              {/* Bottom info bar */}
               <CardOverlay>
-                <Box sx={{ maxWidth: 600, color: "white" }}>
-                  <CategoryChip
-                    label={featuredPost.category}
-                    size="small"
-                    variant="filled"
-                    sx={{
-                      mb: 2,
-                      backgroundColor: "rgba(255,255,255,0.15)",
-                      color: "white",
-                      "&:hover": {
-                        backgroundColor: "rgba(255,255,255,0.25)",
-                      },
-                    }}
-                  />
-                  <Typography
-                    variant={isMobile ? "h4" : "h3"}
-                    component="h2"
-                    fontWeight="bold"
-                    sx={{ mb: 2 }}
-                  >
-                    {featuredPost.title}
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
-                    {featuredPost.excerpt}
-                  </Typography>
+                <Stack direction={isMobile ? "column" : "row"} alignItems={isMobile ? "flex-start" : "center"} spacing={2} justifyContent="space-between">
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Avatar
                       src={featuredPost.author.avatar}
                       alt={featuredPost.author.name}
                     />
                     <Box>
-                      <Typography variant="subtitle2" fontWeight="bold">
+                      <Typography variant="subtitle2" fontWeight="bold" color="white">
                         {featuredPost.author.name}
                       </Typography>
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        <Typography variant="caption" sx={{ color: 'white', opacity: 0.8 }}>
                           {featuredPost.date}
                         </Typography>
                         <Box
@@ -543,19 +599,30 @@ export default function BlogPage() {
                             opacity: 0.8,
                           }}
                         />
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={0.5}
-                        >
-                          <AccessTimeIcon sx={{ fontSize: 14, opacity: 0.8 }} />
-                          <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <AccessTimeIcon sx={{ fontSize: 14, color: 'white', opacity: 0.8 }} />
+                          <Typography variant="caption" sx={{ color: 'white', opacity: 0.8 }}>
                             {featuredPost.readTime}
                           </Typography>
                         </Stack>
                       </Stack>
                     </Box>
-                    <Box sx={{ flexGrow: 1 }} />
+                  </Stack>
+                  
+                  <Stack direction="row" spacing={1}>
+                    <CategoryChip
+                      label={featuredPost.category}
+                      size="small"
+                      variant="filled"
+                      sx={{
+                        backgroundColor: "rgba(255,255,255,0.15)",
+                        color: "white",
+                        "&:hover": {
+                          backgroundColor: "rgba(255,255,255,0.25)",
+                        },
+                      }}
+                    />
+                    
                     <IconButton
                       size="small"
                       sx={{
@@ -582,14 +649,14 @@ export default function BlogPage() {
                       <ShareIcon />
                     </IconButton>
                   </Stack>
-                </Box>
+                </Stack>
               </CardOverlay>
             </FeaturedPostCard>
           </Box>
         </motion.div>
 
         {/* Category Tabs */}
-        <Box sx={{ mb: 6 }}>
+        <Box sx={{ mb: 6, mt: 2 }}>
           <Tabs
             value={activeCategory}
             onChange={handleCategoryChange}
@@ -604,7 +671,6 @@ export default function BlogPage() {
                 border: 1,
                 borderColor: "divider",
                 backgroundColor: theme.palette.primary.main,
-
               },
             }}
           >
@@ -619,142 +685,177 @@ export default function BlogPage() {
         </Box>
 
         {/* Blog Posts Grid */}
+        {/* Blog Posts Grid */}
         <AnimatePresence mode="wait">
           <Grid container spacing={4}>
             {filteredPosts.length > 0 ? (
-              filteredPosts.map((post, index) => (
-                <Grid item xs={12} sm={6} md={4} key={post.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <StyledCard>
-                      <CardActionArea
-                        sx={{
-                          flexGrow: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "stretch",
-                          height: "100%",
-                        }}
-                      >
-                        <CardMedia
-                          component="img"
-                          height="200"
-                          image={post.imageUrl}
-                          alt={post.title}
-                          sx={{ objectFit: "cover", borderRadius: 1, mb: 1, height: 200, width: "100%" }}
-                        />
-                        <CardContent
+              filteredPosts.map((post, index) => {
+                // Get a color from the array based on the post ID
+                const bgColor = blockColors[post.id % blockColors.length];
+                
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={post.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                    >
+                      <StyledCard>
+                        <CardActionArea
                           sx={{
                             flexGrow: 1,
                             display: "flex",
                             flexDirection: "column",
+                            alignItems: "stretch",
+                            height: "100%",
                           }}
                         >
-                          <Box
+                          {/* Colored block with centered headline */}
+                          <ColorBlock color={bgColor}>
+                            {/* Pattern overlay for visual interest */}
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                opacity: 0.1,
+                                // backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                              }}
+                            />
+                            <Box sx={{ zIndex: 1, textAlign: 'center' }}>
+                              <Typography
+                                variant="h6"
+                                component="h3"
+                                fontWeight="bold"
+                                sx={{
+                                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                  wordBreak: 'break-word'
+                                }}
+                              >
+                                {post.title}
+                              </Typography>
+                            </Box>
+                            
+                            {/* Icon in corner */}
+                            <Box 
+                              sx={{ 
+                                position: 'absolute', 
+                                top: 12, 
+                                right: 12,
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                borderRadius: '50%',
+                                p: 1,
+                                display: 'flex'
+                              }}
+                            >
+                              {post.icon}
+                            </Box>
+                          </ColorBlock>
+                          
+                          <CardContent
                             sx={{
-                              mb: 1.5,
+                              flexGrow: 1,
                               display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
+                              flexDirection: "column",
                             }}
                           >
-                            <CategoryChip
-                              label={post.category}
-                              size="small"
-                              icon={post.icon}
-                            />
+                            <Box
+                              sx={{
+                                mb: 1.5,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <CategoryChip
+                                label={post.category}
+                                size="small"
+                                icon={post.icon}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 0.5,
+                                }}
+                              >
+                                <AccessTimeIcon fontSize="inherit" />
+                                {post.readTime}
+                              </Typography>
+                            </Box>
                             <Typography
-                              variant="caption"
+                              variant="body2"
                               color="text.secondary"
+                              sx={{ mb: 2, flexGrow: 1 }}
+                            >
+                              {post.excerpt}
+                            </Typography>
+                            <Divider sx={{ my: 2 }} />
+                            <Box
                               sx={{
                                 display: "flex",
+                                justifyContent: "space-between",
                                 alignItems: "center",
-                                gap: 0.5,
                               }}
                             >
-                              <AccessTimeIcon fontSize="inherit" />
-                              {post.readTime}
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="h6"
-                            component="h3"
-                            fontWeight="bold"
-                            gutterBottom
-                          >
-                            {post.title}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mb: 2, flexGrow: 1 }}
-                          >
-                            {post.excerpt}
-                          </Typography>
-                          <Divider sx={{ my: 2 }} />
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Avatar
-                                src={post.author.avatar}
-                                alt={post.author.name}
-                                sx={{ width: 32, height: 32 }}
-                              />
-                              <Box>
-                                <Typography
-                                  variant="caption"
-                                  fontWeight="medium"
-                                >
-                                  {post.author.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  display="block"
-                                >
-                                  {post.date}
-                                </Typography>
-                              </Box>
-                            </Stack>
-                            <IconButton
-                              size="small"
-                              color={
-                                bookmarkedPosts.includes(post.id)
-                                  ? "primary"
-                                  : "default"
-                              }
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleBookmark(post.id);
-                              }}
-                            >
-                              {bookmarkedPosts.includes(post.id) ? (
-                                <BookmarkIcon />
-                              ) : (
-                                <BookmarkBorderIcon />
-                              )}
-                            </IconButton>
-                          </Box>
-                        </CardContent>
-                      </CardActionArea>
-                    </StyledCard>
-                  </motion.div>
-                </Grid>
-              ))
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
+                                <Avatar
+                                  src={post.author.avatar}
+                                  alt={post.author.name}
+                                  sx={{ width: 32, height: 32 }}
+                                />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    fontWeight="medium"
+                                  >
+                                    {post.author.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                  >
+                                    {post.date}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              <IconButton
+                                size="small"
+                                color={
+                                  bookmarkedPosts.includes(post.id)
+                                    ? "primary"
+                                    : "default"
+                                }
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleBookmark(post.id);
+                                }}
+                              >
+                                {bookmarkedPosts.includes(post.id) ? (
+                                  <BookmarkIcon />
+                                ) : (
+                                  <BookmarkBorderIcon />
+                                )}
+                              </IconButton>
+                            </Box>
+                          </CardContent>
+                        </CardActionArea>
+                      </StyledCard>
+                    </motion.div>
+                  </Grid>
+                );
+              })
             ) : (
               <Grid item xs={12}>
                 <Box
@@ -776,7 +877,7 @@ export default function BlogPage() {
             )}
           </Grid>
         </AnimatePresence>
-
+            
         {/* Pagination */}
         {filteredPosts.length > 0 && (
           <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
