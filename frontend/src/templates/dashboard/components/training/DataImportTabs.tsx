@@ -523,7 +523,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                   disabled={!textData.trim()}
                   sx={{ borderRadius: "8px" }}
                 >
-                  Save Text Data
+                  Save Data
                 </Button>
               </Box>
             </CardContent>
@@ -774,7 +774,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
             }}
           >
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ position: "relative", p: 2 }}>
+              <Box sx={{ position: "relative", py: 2 }}>
                 <TextField
                   fullWidth
                   placeholder="Enter website URL (e.g., https://example.com)"
@@ -815,9 +815,9 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                   endIcon={isAnalyzing ? <CircularProgress size={16} color="inherit" /> : <KeyboardArrowRightIcon />}
                   onClick={handleAnalyzeUrl}
                   disabled={!url || isAnalyzing}
-                  sx={{ borderRadius: "8px" }}
+                  sx={{ borderRadius: "8px", px: 4 }}
                 >
-                  {isAnalyzing ? "Analyzing..." : "Analyze Website"}
+                  {isAnalyzing ? "Analyzing..." : "Analyze"}
                 </Button>
               </Box>
             </CardContent>
