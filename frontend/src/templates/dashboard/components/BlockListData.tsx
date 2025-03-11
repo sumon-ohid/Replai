@@ -101,7 +101,7 @@ export default function BlockListData() {
         position: 'relative',
         overflowX: 'hidden',
         bgcolor: isDarkMode ? alpha(theme.palette.background.paper, 0.6) : theme.palette.background.paper,
-        p: { xs: 2, sm: 3 },
+        p: { xs: 2, sm: 1 },
         borderRadius: 3,
       }}
     >

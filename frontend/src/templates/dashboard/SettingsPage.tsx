@@ -337,7 +337,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
             initial="hidden"
             animate="visible"
             sx={{ 
-              maxWidth: 1200, 
+              // maxWidth: 1200, 
               mx: 'auto', 
               px: { xs: 2, sm: 3, md: 4 }, 
               pb: 5 

@@ -19,18 +19,18 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from "./theme/customizations";
-import { 
-  Typography, 
-  Paper, 
-  Chip, 
-  Grid, 
-  Card, 
+import {
+  Typography,
+  Paper,
+  Chip,
+  Grid,
+  Card,
   CardContent,
   Avatar,
   Link,
   IconButton,
   Tooltip,
-  useMediaQuery
+  useMediaQuery,
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import DataTabs from "./components/DataTabs";
@@ -40,12 +40,12 @@ import { motion } from "framer-motion";
 import AddIcon from "@mui/icons-material/Add";
 import DataUsageIcon from "@mui/icons-material/DataUsage";
 import StorageIcon from "@mui/icons-material/Storage";
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
-import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
-import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
-import Footer from './components/Footer';
-import AiTraining from './components/AiTraining';
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import TipsAndUpdatesOutlinedIcon from "@mui/icons-material/TipsAndUpdatesOutlined";
+import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
+import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
+import Footer from "./components/Footer";
+import AiTraining from "./components/AiTraining";
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -61,9 +61,9 @@ const containerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.1
-    }
-  }
+      delayChildren: 0.1,
+    },
+  },
 };
 
 const itemVariants = {
@@ -74,37 +74,41 @@ const itemVariants = {
     transition: {
       type: "spring",
       stiffness: 260,
-      damping: 20
-    }
-  }
+      damping: 20,
+    },
+  },
 };
 
 const DataManager = (props: { disableCustomTheme?: boolean }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  const isDarkMode = theme.palette.mode === 'dark';
-  
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+  const isDarkMode = theme.palette.mode === "dark";
+
   const primaryColor = theme.palette.primary.main;
   const secondaryColor = theme.palette.secondary.main;
-  const headerGradient = 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))';
+  const headerGradient =
+    "linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))";
 
   const benefitItems = [
     {
       icon: <StorageIcon />,
       title: "Unified Data",
-      description: "Centralize all your data sources into one consistent training platform"
+      description:
+        "Centralize all your data sources into one consistent training platform",
     },
     {
       icon: <AnalyticsOutlinedIcon />,
       title: "Enhanced Learning",
-      description: "Higher quality data leads to more accurate AI responses to emails"
+      description:
+        "Higher quality data leads to more accurate AI responses to emails",
     },
     {
       icon: <RocketLaunchOutlinedIcon />,
       title: "Custom Automation",
-      description: "Train models to understand your specific communication style and needs"
-    }
+      description:
+        "Train models to understand your specific communication style and needs",
+    },
   ];
 
   return (
@@ -133,8 +137,8 @@ const DataManager = (props: { disableCustomTheme?: boolean }) => {
           >
             <Header />
           </Stack>
-          
-            <AiTraining />
+
+          <AiTraining />
           <Footer />
         </Box>
       </Box>

@@ -453,7 +453,7 @@ export default function AITraining() {
         >
           <CardContent
             sx={{
-              p: { xs: 2, sm: 3, md: 4 },
+              p: { xs: 0, sm: 3, md: 4 },
             }}
           >
             {/* Stepper */}

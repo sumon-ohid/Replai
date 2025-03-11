@@ -124,10 +124,10 @@ export default function BlockList(props: { disableCustomTheme?: boolean }) {
               initial="hidden"
               animate="visible"
               sx={{ 
-                px: { xs: 1, sm: 2, md: 3 }, 
+                px: { xs: 1, sm: 0, md: 0 }, 
                 py: 3,
-                maxWidth: 1200,
-                mx: 'auto',
+                // maxWidth: 1200,
+                // mx: 'auto',
               }}
             >
               {/* Page Header */}
