@@ -910,8 +910,8 @@ export default function GetConnectedEmails() {
                           color="primary"
                           label={
                             email.autoReplyEnabled
-                              ? " Auto reply mode enabled"
-                              : " Draft mode enabled"
+                              ? " Draft mode enabled"
+                              : " Auto reply mode enabled"
                           }
                           icon={
                             email.autoReplyEnabled ? (
