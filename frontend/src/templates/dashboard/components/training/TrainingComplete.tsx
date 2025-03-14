@@ -133,7 +133,7 @@ export function TrainingComplete({
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, sm: 4 },
+          p: { xs: 2, sm: 4 },
           borderRadius: 4,
           background: isDark 
             ? `linear-gradient(145deg, ${alpha(theme.palette.success.dark, 0.2)}, ${alpha(theme.palette.primary.dark, 0.1)})`
@@ -166,8 +166,6 @@ export function TrainingComplete({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 80,
-              height: 80,
               borderRadius: '50%',
               backgroundColor: alpha(theme.palette.success.main, 0.15),
               border: `2px solid ${alpha(theme.palette.success.main, 0.5)}`,

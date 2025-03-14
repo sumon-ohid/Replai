@@ -105,7 +105,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
     totalSources: selectedSources.length,
     totalDocuments: previewData.textData.count + previewData.pdfData.count + previewData.websiteData.count,
     estimatedTokens: 45000,
-    estimatedTrainingTime: "3-5 minutes"
+    estimatedTrainingTime: "3-5 mins"
   };
 
   const handleConfigChange = (key: string, value: number) => {
@@ -226,7 +226,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
       animate="visible"
     >
       <Box component={motion.div} variants={itemVariants}>
-        <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={700} sx={{ mb: 3, fontSize: isMobile ? '1.25rem' : '1.5rem' }}>
           Data Preview & Training Configuration
         </Typography>
       </Box>
@@ -243,10 +243,10 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
           background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.background.paper, 0.5)})`,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <SummarizeIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: isMobile ? '.8rem' : '1.25rem' }}>
               Training Data Summary
             </Typography>
           </Box>
@@ -257,7 +257,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
                 <Typography variant="h5" fontWeight={700} color="primary.main">
                   {dataStats.totalSources}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
                   Data Sources
                 </Typography>
               </Box>
@@ -268,7 +268,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
                 <Typography variant="h5" fontWeight={700} color="primary.main">
                   {dataStats.totalDocuments}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
                   Documents
                 </Typography>
               </Box>
@@ -279,7 +279,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
                 <Typography variant="h5" fontWeight={700} color="primary.main">
                   {dataStats.estimatedTokens.toLocaleString()}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
                   Tokens
                 </Typography>
               </Box>
@@ -287,11 +287,11 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
             
             <Grid item xs={6} sm={3}>
               <Box sx={{ textAlign: 'center', p: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
+                <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ whiteSpace: 'nowrap' }}>
                   {dataStats.estimatedTrainingTime}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Est. Training Time
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
+                  Est. Time
                 </Typography>
               </Box>
             </Grid>
@@ -305,13 +305,15 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          flexDirection: isMobile ? 'column' : 'row',
           mb: 2
         }}>
           <Typography variant="h6" fontWeight={600}>
             Data Source Preview
           </Typography>
           
-          <Box>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
             <Button 
               variant={previewType === "summary" ? "contained" : "outlined"} 
               size="small"
@@ -360,10 +362,10 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
           }}
         >
           <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TuneIcon color="secondary" />
-                <span>Training Configuration</span>
+                <span>Configuration</span>
               </Typography>
               
               <Button

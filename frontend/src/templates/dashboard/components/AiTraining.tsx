@@ -99,9 +99,7 @@ const StyledStepLabel = styled(StepLabel)(({ theme }) => ({
 
 // Step content wrapper component
 const StepContentWrapper = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(4),
   borderRadius: theme.shape.borderRadius * 2,
-  border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
   backgroundColor: alpha(
     theme.palette.background.paper,
     theme.palette.mode === "dark" ? 0.4 : 0.7
@@ -483,10 +481,11 @@ export default function AITraining() {
             <Box
               sx={{
                 display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
+                flexDirection: { xs: "row", sm: "row" },
                 justifyContent: "space-between",
                 alignItems: { xs: "stretch", sm: "center" },
                 gap: 2,
+                flexWrap: { xs: "wrap", sm: "nowrap" },
               }}
             >
               <Box sx={{ order: { xs: 2, sm: 1 } }}>
@@ -527,6 +526,9 @@ export default function AITraining() {
                   display: "flex",
                   gap: 2,
                   order: { xs: 1, sm: 2 },
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  flexDirection: { xs: "column", sm: "row" },
                 }}
               >
                 {activeStep === steps.length - 1 ? (
