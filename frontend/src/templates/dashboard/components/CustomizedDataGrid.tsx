@@ -36,6 +36,7 @@ import {
   ListItemButton,
   CircularProgress
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Icons
@@ -69,6 +70,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FolderIcon from '@mui/icons-material/Folder';
 import LabelIcon from '@mui/icons-material/Label';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CreateIcon from '@mui/icons-material/Create';
 
 import EmailDetailsModal from './EmailDetails';
 
@@ -484,9 +486,11 @@ export default function CustomizedDataGrid() {
     }
   ];
 
+  const navigate = useNavigate();
+
   // Sidebar content with folders and labels
   const sidebarContent = (
-    <Stack spacing={1} sx={{ height: '100%', p: 2 }}>
+    <Stack spacing={1} sx={{height: {xs: "100%", sm: "auto"},  p: 2, backgroundColor: 'background.default' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Typography 
           variant="h6" 
@@ -501,14 +505,14 @@ export default function CustomizedDataGrid() {
         
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<CreateIcon />}
           disableElevation
           sx={{
             borderRadius: 6,
             px: 2,
-            py: 0.75,
+            size: 'small',
             textTransform: 'none',
-            fontWeight: 600,
+            fontWeight: 400,
             boxShadow: theme.palette.mode === 'dark'
               ? `0 4px 12px ${alpha(theme.palette.common.black, 0.3)}`
               : `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
@@ -549,14 +553,14 @@ export default function CustomizedDataGrid() {
           <KeyboardArrowRightIcon fontSize="small" sx={{ ml: 'auto', color: theme.palette.action.active }} />
         }
       >
-        <Box sx={{ textAlign: 'left', flexGrow: 1, overflow: 'hidden' }}>
+        <Box sx={{ textAlign: 'left', flexGrow: 1, overflow: 'hidden'}}>
           <Typography 
             noWrap 
             variant="body2" 
             fontWeight={600}
             color={theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.common.black}
           >
-            {selectedAccountData?.name}
+            {/* {selectedAccountData?.name} */}
           </Typography>
           <Typography 
             noWrap 
@@ -568,7 +572,7 @@ export default function CustomizedDataGrid() {
         </Box>
       </Button>
       
-      <List disablePadding sx={{ flexGrow: 1 }}>
+      <List disablePadding sx={{ flexGrow: 1, overflowY: 'auto', scrollbarWidth: 'thin'}}>
         <SidebarItem 
           icon={<InboxIcon fontSize="small" />} 
           label="Inbox" 
@@ -634,7 +638,7 @@ export default function CustomizedDataGrid() {
       </List>
       
       <Button
-        variant="text"
+        variant="outlined"
         startIcon={<SettingsIcon />}
         sx={{
           justifyContent: 'flex-start',
@@ -645,8 +649,9 @@ export default function CustomizedDataGrid() {
             backgroundColor: alpha(theme.palette.action.hover, 0.8)
           }
         }}
+        onClick={() => navigate('/email-manager')}
       >
-        Settings
+        Email settings
       </Button>
     </Stack>
   );

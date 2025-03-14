@@ -143,7 +143,7 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
               sx={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
+                justifyContent: "center",
                 mb: 2,
               }}
             > 
