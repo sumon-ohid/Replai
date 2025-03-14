@@ -139,7 +139,16 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
                 your accounts to get started.
               </Typography>
             </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 2,
+              }}
+            > 
             <CustomizedDataGrid />
+            </Box>
           </Box>
           <Footer />
         </Box>
