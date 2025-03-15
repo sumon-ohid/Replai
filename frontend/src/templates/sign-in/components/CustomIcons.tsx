@@ -1,4 +1,3 @@
-import * as React from 'react';
 import SvgIcon from '@mui/material/SvgIcon';
 import Box from '@mui/material/Box';
 import logo from '../../../../logo/logo_light.png';
