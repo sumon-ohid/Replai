@@ -7,18 +7,14 @@ import {
   Card,
   CardContent,
   Grid,
-  Paper,
   Stepper,
   Step,
   StepLabel,
   Button,
-  Divider,
   useMediaQuery,
   Chip,
   IconButton,
   Tooltip,
-  LinearProgress,
-  Alert,
   Avatar,
 } from "@mui/material";
 import { motion } from "framer-motion";

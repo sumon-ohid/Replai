@@ -20,18 +20,12 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { alpha, styled, useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
 
 // Icons
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
-import CloseRounded from '@mui/icons-material/CloseRounded';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
@@ -45,10 +39,6 @@ import CustomDatePicker from './CustomDatePicker';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
 import { useAuth } from "../../../AuthContext";
 import { useNavigate } from 'react-router-dom';
-
-// Logo
-import logo from '../../../../logo/logo_light.png';
-import { CreditCard } from '@mui/icons-material';
 
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({

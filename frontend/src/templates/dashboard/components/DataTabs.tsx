@@ -9,15 +9,12 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
 import LanguageIcon from "@mui/icons-material/Language";
 import EmailIcon from "@mui/icons-material/Email";
-import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArticleIcon from "@mui/icons-material/Article";
 import { motion } from "framer-motion";
 import axios from "axios";
-import AiTraining from "./AiTraining";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 

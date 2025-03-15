@@ -1,53 +1,34 @@
 import * as React from 'react';
-import { DataGrid, GridColDef, GridRowsProp, gridClasses } from '@mui/x-data-grid';
-import axios from 'axios';
-import { columns } from '../internals/data/gridData';
 import { 
   Dialog, 
-  DialogTitle, 
   DialogContent, 
   DialogActions, 
   Button, 
   Typography, 
   useTheme, 
-  TextField, 
   Box,
   Chip,
   Avatar,
-  InputAdornment,
   IconButton,
   Paper,
   Stack, 
   Tooltip,
   Tab,
   Tabs,
-  Badge,
-  Divider,
-  Fade,
-  Skeleton,
   alpha
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // Icons
-import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import ForwardToInboxIcon from '@mui/icons-material/ForwardToInbox';
 import ReplyIcon from '@mui/icons-material/Reply';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 import AttachmentIcon from '@mui/icons-material/AttachmentOutlined';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import RefreshIcon from '@mui/icons-material/RefreshOutlined';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;

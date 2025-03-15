@@ -11,7 +11,6 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
-import Badge from "@mui/material/Badge";
 import LinearProgress from "@mui/material/LinearProgress";
 import { motion } from "framer-motion";
 import { alpha, useTheme } from "@mui/material/styles";

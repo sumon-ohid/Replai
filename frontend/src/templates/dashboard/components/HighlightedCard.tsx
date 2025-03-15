@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { 
   Card, CardContent, Button, Typography, Box, 
-  CircularProgress, useMediaQuery, alpha,
-  Stack, Divider, Tab, Tabs
+  CircularProgress, useMediaQuery, alpha, Divider, Tab, Tabs
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';

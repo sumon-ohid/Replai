@@ -16,9 +16,6 @@ import {
   InputAdornment,
   useTheme,
   useMediaQuery,
-  Alert,
-  Tooltip,
-  Divider,
   MenuItem,
   Switch
 } from '@mui/material';

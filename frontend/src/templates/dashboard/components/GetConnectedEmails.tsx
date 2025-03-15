@@ -29,8 +29,6 @@ import SearchIcon from "@mui/icons-material/SearchRounded";
 import MoreVertIcon from "@mui/icons-material/MoreVertRounded";
 import RefreshIcon from "@mui/icons-material/RefreshRounded";
 import SyncIcon from "@mui/icons-material/SyncRounded";
-import SettingsIcon from "@mui/icons-material/SettingsOutlined";
-import EditIcon from "@mui/icons-material/EditOutlined";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOffOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 import ErrorIcon from "@mui/icons-material/ErrorOutlined";
@@ -42,7 +40,6 @@ import DraftsIcon from "@mui/icons-material/Drafts";
 
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
-import Switch from "@mui/material/Switch";
 
 import axios from "axios";
 import { useAuth } from "../../../AuthContext";
