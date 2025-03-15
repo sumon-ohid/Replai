@@ -23,7 +23,7 @@ import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import Lottie from "react-lottie-player";
+import { Player } from "@lottiefiles/react-lottie-player";
 import SecurityAnimation from '../../assets/animations/data-privacy.json';
 
 export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }) {
@@ -353,10 +353,10 @@ export default function PrivacyTermsPage(props: { disableCustomTheme?: boolean }
                   }}
                 />
                 
-                <Lottie
+                <Player
                   loop
-                  animationData={SecurityAnimation}
-                  play
+                  src={SecurityAnimation}
+                  autoplay
                   style={{ width: '100%', height: '100%' }}
                 />
                 

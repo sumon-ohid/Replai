@@ -12,3 +12,6 @@ db.users.deleteOne({ email: "user@example.com" })
 
 // To remove section
 db.collectionName.drop()
+
+// website performance test
+npx lighthouse https://replai.tech --view

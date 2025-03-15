@@ -27,12 +27,6 @@ import { motion, AnimatePresence, useAnimation, useScroll, useTransform } from "
 import Link from "@mui/material/Link";
 import { useInView } from "react-intersection-observer";
 import useMediaQuery from '@mui/material/useMediaQuery';
-import Lottie from "react-lottie-player";
-
-// Import lottie animations
-import emailAnimationData from "../../assets/animations/email-recieved.json";
-import aiProcessingData from "../../assets/animations/ai-proccess.json";
-import successAnimationData from "../../assets/animations/email-sent.json";
 
 // Custom cursor effect component
 const CustomCursor = () => {
