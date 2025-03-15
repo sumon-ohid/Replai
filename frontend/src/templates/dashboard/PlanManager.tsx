@@ -22,9 +22,6 @@ import {
 } from '@mui/material';
 import Footer from './components/Footer';
 
-// Placeholder components – replace with your actual components
-import PlanDetailsWithCustomer from './components/PlanDetails';
-import Pricing from './components/Pricing';
 import UnderConstruction from './components/ComingSoon';
 
 const xThemeComponents = {

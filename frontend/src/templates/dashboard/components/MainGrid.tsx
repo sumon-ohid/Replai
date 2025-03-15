@@ -25,19 +25,12 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUpRounded";
 import TrendingDownIcon from "@mui/icons-material/TrendingDownRounded";
 import MailOutlineIcon from "@mui/icons-material/MailOutlineRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
-import SourceRoundedIcon from "@mui/icons-material/SourceRounded";
 import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
-import PriorityHighRoundedIcon from "@mui/icons-material/PriorityHighRounded";
-import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
-import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
-import AttachEmailRoundedIcon from "@mui/icons-material/AttachEmailRounded";
 import TimerIcon from "@mui/icons-material/Timer";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 
 // Components
 import HighlightedCard from "./HighlightedCard";
-import CustomizedDataGrid from "./CustomizedDataGrid";
-import ColorModeIconDropdown from "../../shared-theme/ColorModeIconDropdown";
 import axios from "axios";
 
 import { useNavigate } from "react-router-dom";

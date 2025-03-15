@@ -17,7 +17,6 @@ const EmailManager = React.lazy(() => import('./templates/dashboard/EmailManager
 const InboxEmail = React.lazy(() => import('./templates/dashboard/InboxEmail'));
 const DataManager = React.lazy(() => import('./templates/dashboard/DataManager'));
 const BlockList = React.lazy(() => import('./templates/dashboard/BlockList'));
-const Analytics = React.lazy(() => import('./templates/dashboard/Analytics'));
 const PlanBillingManagement = React.lazy(() => import('./templates/dashboard/PlanManager'));
 const SettingsPage = React.lazy(() => import('./templates/dashboard/SettingsPage'));
 const AboutPage = React.lazy(() => import('./templates/dashboard/AboutPage'));

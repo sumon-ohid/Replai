@@ -10,14 +10,9 @@ import IconButton from "@mui/material/IconButton";
 import Box from "@mui/material/Box";
 import { alpha, useTheme } from "@mui/material/styles";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
-import MenuButton from "./MenuButton";
 import MenuContent from "./MenuContent";
-import CardAlert from "./CardAlert";
 import { useAuth } from "../../../AuthContext";
-import axios from "axios";
 import logo from "../../../../logo/logo_light.png";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
