@@ -9,15 +9,12 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Chip from '@mui/material/Chip';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Icons
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/RefreshRounded';
 import EmailIcon from '@mui/icons-material/EmailRounded';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';

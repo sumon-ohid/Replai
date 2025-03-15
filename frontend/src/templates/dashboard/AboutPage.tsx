@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { alpha, useTheme, darken, lighten } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
@@ -76,9 +75,8 @@ const teamMembers = [
     website: "https://msumon.vercel.app/",
     skills: ['Full-Stack Development'],
     socialLinks: {
-      linkedin: 'https://linkedin.com/',
-      github: 'https://github.com/',
-      twitter: 'https://twitter.com/'
+      linkedin: 'https://www.linkedin.com/in/sumon-md-ohiduzzaman/',
+      github: 'https://github.com/sumon-ohid',
     }
   },
   // You can uncomment and add more team members when needed
@@ -824,23 +822,6 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                                           }}
                                         >
                                           <GitHubIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                    {member.socialLinks.twitter && (
-                                      <Tooltip title="Twitter">
-                                        <IconButton 
-                                          size="small" 
-                                          component={Link} 
-                                          href={member.socialLinks.twitter}
-                                          target="_blank"
-                                          rel="noopener"
-                                          sx={{ 
-                                            color: 'primary.main',
-                                            '&:hover': { color: '#1DA1F2' }
-                                          }}
-                                        >
-                                          <TwitterIcon fontSize="small" />
                                         </IconButton>
                                       </Tooltip>
                                     )}

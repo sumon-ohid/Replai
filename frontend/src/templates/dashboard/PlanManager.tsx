@@ -19,12 +19,6 @@ import {
 } from './theme/customizations';
 import {
   Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Paper,
-  Button,
 } from '@mui/material';
 import Footer from './components/Footer';
 
@@ -80,26 +74,6 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
               Manage your subscription and billing details
             </Typography>
             <UnderConstruction />
-            {/* <PlanDetailsWithCustomer />
-            <Pricing />
-            <Box sx={{ mt: 3 }}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Payment Method
-                  </Typography>
-                  <Typography variant="body1">
-                    Comming Soon..
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Exp: never
-                  </Typography>
-                  <Button variant="contained" sx={{ mt: 2 }}>
-                    Update Payment Method
-                  </Button>
-                </CardContent>
-              </Card>
-            </Box> */}
           </Box>
         <Footer />
         </Box>

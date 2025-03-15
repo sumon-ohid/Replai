@@ -1,5 +1,3 @@
-import * as React from 'react';
-import { useState } from 'react';
 import type {} from '@mui/x-date-pickers/themeAugmentation';
 import type {} from '@mui/x-charts/themeAugmentation';
 import type {} from '@mui/x-data-grid-pro/themeAugmentation';
@@ -22,10 +20,7 @@ import BlockListData from './components/BlockListData';
 import { 
   Typography, 
   Container, 
-  Breadcrumbs,
-  Link,
   Paper,
-  Divider,
   Chip,
   useMediaQuery,
   Card,
@@ -36,9 +31,6 @@ import { motion } from 'framer-motion';
 
 // Icons
 import BlockIcon from '@mui/icons-material/Block';
-import SecurityIcon from '@mui/icons-material/Security';
-import HomeIcon from '@mui/icons-material/Home';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ShieldIcon from '@mui/icons-material/Shield';
 import Footer from './components/Footer';
 

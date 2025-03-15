@@ -26,14 +26,10 @@ import {
   Chip,
   useMediaQuery,
   Tooltip,
-  Zoom,
-  Badge,
-  Fade,
   InputAdornment,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from './components/Footer';
-import FeedbackIcon from "@mui/icons-material/Feedback";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
 import CommentIcon from "@mui/icons-material/Comment";
@@ -44,7 +40,6 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import StarIcon from "@mui/icons-material/Star";
 import ForumIcon from "@mui/icons-material/Forum";
 import axios from "axios";
-import { FormControl } from "@mui/material";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
