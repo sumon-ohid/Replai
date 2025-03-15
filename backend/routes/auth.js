@@ -1,40 +1,50 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js"; // Adjust the import path as needed
-import Token from "../models/Token.js"; // Import the Token model
+import User from "../models/User.js";
+import Token from "../models/Token.js";
 import dotenv from "dotenv";
 import auth from "../middleware/auth.js";
 import nodemailer from "nodemailer";
-import e from "express";
+import util from "util";
 
 dotenv.config();
 
 const router = express.Router();
 
-const transporter = nodemailer.createTransport({
-  host: "mail.replai.tech",
-  port: 587, // Common ports: 465 (SSL), 587 (TLS), 25 (unsecured)
-  secure: false, // Set to true if using port 465
+// Define explicit SMTP configuration with fallbacks
+const smtpConfig = {
+  host: process.env.EMAIL_HOST || "mail.replai.tech",
+  port: parseInt(process.env.EMAIL_PORT || "587"),
+  secure: process.env.EMAIL_SECURE === "true",
   auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
+    user: process.env.EMAIL || "hello@replai.tech",
+    pass: process.env.EMAIL_PASSWORD
   },
   tls: {
-    rejectUnauthorized: false, // Needed if the provider has self-signed certs
+    rejectUnauthorized: false
   },
-});
+  debug: true,
+  // logger: true // Enable built-in logger
+};
 
-// Test sending an email
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log("SMTP connection error:", error);
-  } else {
-    console.log("SMTP Server is ready to send emails");
-  }
-});
+// Create transporter with better error handling
+const transporter = nodemailer.createTransport(smtpConfig);
 
-// Register
+// Promisify the sendMail method for easier async/await usage
+const sendMailAsync = util.promisify(transporter.sendMail.bind(transporter));
+
+// Test SMTP connection on startup
+transporter.verify()
+  .then(success => {
+    console.log("✅ SMTP Server is ready to send emails");
+  })
+  .catch(error => {
+    console.error("❌ SMTP connection error:", error);
+    console.error("Please check your email credentials and server settings");
+  });
+
+// Enhanced register route with better email sending
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -43,70 +53,90 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Check if user with the same email already exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "User with this email already exists" });
+      return res.status(400).json({ error: "User with this email already exists" });
     }
 
+    // Create new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
-    // res.status(201).json({ message: 'User registered successfully' });
-
-    // This is for email verification
+    
+    // Generate verification token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    const verificationLink = `${process.env.VITE_API_BASE_URL}/api/auth/verify-email?token=${token}`;
+    // Build verification URL
+    const frontendUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const verificationLink = `${frontendUrl}/api/auth/verify-email?token=${token}`;
+    
+    console.log("Verification link:", verificationLink);
 
+    // Email template
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
         <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">  
-        <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
+        <h2 style="color: #333;">Welcome to Replai, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
         <p style="color: #777; margin-top: 20px;">If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
         <p style="background-color: #f4f4f4; padding: 10px; word-break: break-all; border-radius: 5px;">${verificationLink}</p>
         <p style="color: #999; font-size: 14px;">This link will expire in 1 hour.</p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
-        <p style="color: #777;">Please do not reply this email.</p>
+        <p style="color: #777;">Please do not reply to this email.</p>
         <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
-        <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
-        support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
+        <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
         <p style="color: #777;">You're receiving this email because you signed up for an account on Replai.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
       </div>
     `;
 
+    // Prepare email
     const mailOptions = {
-      from: `"Replai Tech" <${process.env.EMAIL}>`,
+      from: `"Replai Tech" <${process.env.EMAIL || 'hello@replai.tech'}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
+      headers: {
+        'X-Priority': '1', // High priority
+        'Importance': 'high'
+      }
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-        return res
-          .status(500)
-          .json({ message: "Error sending verification email." });
-      }
-      res.status(200).json({
-        message:
-          "Registered successfully! Please check your inbox or spam to verify your account.",
+    try {
+      console.log("🔄 Sending verification email to:", email);
+      
+      // Replace the callback version with the Promise-based version
+      // This eliminates the race condition with the response
+      const info = await sendMailAsync(mailOptions);
+      console.log("📧 Email sent successfully:", info.messageId);
+      
+      return res.status(201).json({
+        message: "Registration successful! Please check your email to verify your account.",
+        emailSent: true,
+        userId: user._id
       });
-    });
+    } catch (emailError) {
+      console.error("📧 Email sending failed:", emailError);
+      
+      // Still return success since user was created
+      return res.status(201).json({
+        message: "Account created but verification email couldn't be sent. Please request a new verification email.",
+        emailSent: false,
+        userId: user._id,
+        error: emailError.message
+      });
+    }
   } catch (error) {
-    console.error("Error registering user:", error);
+    console.error("❌ Error registering user:", error);
     res.status(500).json({ error: "Error registering user" });
   }
 });
+
 
 // Send verification email
 router.get("/verify-email", async (req, res) => {
@@ -241,22 +271,22 @@ router.post("/resend-verification", async (req, res) => {
 
     const verificationLink = `${process.env.VITE_API_BASE_URL}/api/auth/verify-email?token=${token}`;
 
-    const { name } = user.name;
+    // Fix the name extraction - this was causing undefined in templates
+    const name = user.name || "User"; // Use 'User' as fallback if name is undefined
 
     const emailHTML = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 20px; border-radius: 10px; text-align: center;">
         <img src="https://replai.tech/assets/logo_light-CNUfdC-4.png" alt="Replai" style="width: 180px; height: 60px; margin-bottom: 20px;">  
-        <h2 style="color: #333;">Welcome to Our Platform, ${name}!</h2>
+        <h2 style="color: #333;">Welcome to Replai, ${name}!</h2>
         <p style="color: #555;">Click the button below to verify your email and activate your account.</p>
         <a href="${verificationLink}" style="display: inline-block; background-color:rgb(12, 88, 195); color: white; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; margin-top: 20px;">Verify Email</a>
         <p style="color: #777; margin-top: 20px;">If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
         <p style="background-color: #f4f4f4; padding: 10px; word-break: break-all; border-radius: 5px;">${verificationLink}</p>
         <p style="color: #999; font-size: 14px;">This link will expire in 1 hour.</p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
-        <p style="color: #777;">Please do not reply this email.</p>
+        <p style="color: #777;">Please do not reply to this email.</p>
         <h2 style="color: #333; margin-top: 20px;">Need Help?</h2>
-        <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:
-        support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
+        <p style="color: #555;">If you have any questions or need help, please contact our support team at <a href="mailto:support@replai.tech" style="color: #007bff; text-decoration: none;">support@replai.tech</a></p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;">
         <p style="color: #777;">You're receiving this email because you signed up for an account on Replai.</p>
         <p style="color: #999; font-size: 14px;">If you did not request this, please ignore this email.</p>
@@ -264,26 +294,42 @@ router.post("/resend-verification", async (req, res) => {
     `;
 
     const mailOptions = {
-      from: `"Replai Tech" <${process.env.EMAIL}>`,
+      from: `"Replai Tech" <${process.env.EMAIL || 'hello@replai.tech'}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
+      headers: {
+        'X-Priority': '1', // High priority
+        'Importance': 'high'
+      }
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-        return res
-          .status(500)
-          .json({ message: "Error sending verification email." });
-      }
-      res
-        .status(200)
-        .json({ message: "Verification email resent successfully!" });
-    });
+    try {
+      console.log("🔄 Sending verification email to:", email);
+      
+      // Use the Promise-based approach instead of callbacks
+      const info = await sendMailAsync(mailOptions);
+      console.log("📧 Verification email resent successfully:", info.messageId);
+      
+      return res.status(200).json({ 
+        message: "Verification email resent successfully!",
+        emailSent: true
+      });
+    } catch (emailError) {
+      console.error("📧 Error sending verification email:", emailError);
+      
+      return res.status(500).json({ 
+        message: "Error sending verification email. Please try again later.",
+        emailSent: false,
+        error: emailError.message
+      });
+    }
   } catch (error) {
     console.error("Error resending verification email:", error);
-    res.status(500).json({ message: "Error resending verification email." });
+    res.status(500).json({ 
+      message: "Error resending verification email.",
+      error: error.message 
+    });
   }
 });
 
