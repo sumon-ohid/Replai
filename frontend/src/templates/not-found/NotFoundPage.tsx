@@ -13,8 +13,6 @@ import { styled, keyframes } from "@mui/system";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { motion } from "framer-motion";
 import AppTheme from "../../templates/shared-theme/AppTheme";
 import { ThemeToggleContext } from "../../templates/shared-theme/ThemeToggleContext";

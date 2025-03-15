@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRef } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -8,7 +7,6 @@ import AppAppBar from './components/AppAppBar';
 import Footer from './components/Footer';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Hero from './components/Hero';
 import FAQ from './components/FAQ';
 import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';

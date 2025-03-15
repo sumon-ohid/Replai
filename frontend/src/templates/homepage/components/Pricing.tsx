@@ -1,34 +1,30 @@
-import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import Switch from '@mui/material/Switch';
-import Link from '@mui/material/Link';
-import IconButton from '@mui/material/IconButton';
+import * as React from "react";
+import { useState, useRef, useEffect } from "react";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardActions from "@mui/material/CardActions";
+import CardContent from "@mui/material/CardContent";
+import Container from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { alpha, useTheme } from "@mui/material/styles";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import Switch from "@mui/material/Switch";
+import Link from "@mui/material/Link";
+import IconButton from "@mui/material/IconButton";
 
 // Icons
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import BusinessCenterOutlinedIcon from '@mui/icons-material/BusinessCenterOutlined';
-import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
-import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
-import DiamondOutlinedIcon from '@mui/icons-material/DiamondOutlined';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import CircleIcon from '@mui/icons-material/Circle';
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import BusinessCenterOutlinedIcon from "@mui/icons-material/BusinessCenterOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 const tiers = [
   {
@@ -155,12 +151,18 @@ export default function Pricing() {
     },
   };
 
-  function handleNext(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+  function handleNext(
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ): void {
     setActiveIndex((prevIndex) => (prevIndex + 1) % tiers.length);
   }
 
-  function handlePrev(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
-    setActiveIndex((prevIndex) => (prevIndex - 1 + tiers.length) % tiers.length);
+  function handlePrev(
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ): void {
+    setActiveIndex(
+      (prevIndex) => (prevIndex - 1 + tiers.length) % tiers.length
+    );
   }
   return (
     <Box
@@ -494,57 +496,57 @@ export default function Pricing() {
                   }}
                 >
                   <Card
-                elevation={tier.highlighted ? 6 : 0}
-                sx={[
-                  {
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    position: "relative",
-                    overflow: "visible",
-                    p: { xs: 3, md: 4 },
-                    borderRadius: 4,
-                    transition: "all 0.3s ease-in-out",
-                    border: "1px solid",
-                    borderColor: "divider",
-                    ...(tier.highlighted
-                      ? {
-                          transform: "scale(1.05)",
-                          zIndex: 1,
-                          mt: { xs: -1, md: -2 },
-                          mb: { xs: 4, md: 2 },
-                        }
-                      : {}),
-                  },
-                  tier.highlighted && {
-                    background:
-                      theme.palette.mode === "dark"
-                        ? `linear-gradient(145deg, ${alpha(
-                            theme.palette.background.paper,
-                            0.9
-                          )}, ${alpha(theme.palette.primary.dark, 0.2)})`
-                        : `linear-gradient(145deg, ${alpha(
-                            theme.palette.background.paper,
-                            0.9
-                          )}, ${alpha(theme.palette.primary.light, 0.1)})`,
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid",
-                    borderColor:
-                      theme.palette.mode === "dark"
-                        ? alpha(theme.palette.primary.main, 0.3)
-                        : alpha(theme.palette.primary.main, 0.2),
-                    boxShadow:
-                      theme.palette.mode === "dark"
-                        ? `0 12px 30px ${alpha(
-                            theme.palette.common.black,
-                            0.5
-                          )}`
-                        : `0 12px 24px ${alpha(
-                            theme.palette.primary.main,
-                            0.15
-                          )}`,
-                  },
-                ]}
+                    elevation={tier.highlighted ? 6 : 0}
+                    sx={[
+                      {
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        position: "relative",
+                        overflow: "visible",
+                        p: { xs: 3, md: 4 },
+                        borderRadius: 4,
+                        transition: "all 0.3s ease-in-out",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        ...(tier.highlighted
+                          ? {
+                              transform: "scale(1.05)",
+                              zIndex: 1,
+                              mt: { xs: -1, md: -2 },
+                              mb: { xs: 4, md: 2 },
+                            }
+                          : {}),
+                      },
+                      tier.highlighted && {
+                        background:
+                          theme.palette.mode === "dark"
+                            ? `linear-gradient(145deg, ${alpha(
+                                theme.palette.background.paper,
+                                0.9
+                              )}, ${alpha(theme.palette.primary.dark, 0.2)})`
+                            : `linear-gradient(145deg, ${alpha(
+                                theme.palette.background.paper,
+                                0.9
+                              )}, ${alpha(theme.palette.primary.light, 0.1)})`,
+                        backdropFilter: "blur(10px)",
+                        border: "1px solid",
+                        borderColor:
+                          theme.palette.mode === "dark"
+                            ? alpha(theme.palette.primary.main, 0.3)
+                            : alpha(theme.palette.primary.main, 0.2),
+                        boxShadow:
+                          theme.palette.mode === "dark"
+                            ? `0 12px 30px ${alpha(
+                                theme.palette.common.black,
+                                0.5
+                              )}`
+                            : `0 12px 24px ${alpha(
+                                theme.palette.primary.main,
+                                0.15
+                              )}`,
+                      },
+                    ]}
                   >
                     {/* Ribbon for highlighted plan */}
                     {index === 1 && (
@@ -862,334 +864,334 @@ export default function Pricing() {
 
         {/* Pricing Cards */}
         {!isMobile && (
-        <Grid
-          container
-          component={motion.div}
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          spacing={3}
-          sx={{
-            alignItems: "stretch",
-            justifyContent: "center",
-            px: { xs: 0, md: 4 },
-          }}
-        >
-          {tiers.map((tier, index) => (
-            <Grid
-              item
-              xs={12}
-              sm={12}
-              md={4}
-              key={tier.title}
-              component={motion.div}
-              variants={cardVariants}
-              custom={index}
-              whileHover={tier.highlighted ? {} : "hover"}
-            >
-              <Card
-                elevation={tier.highlighted ? 6 : 0}
-                sx={[
-                  {
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    position: "relative",
-                    overflow: "visible",
-                    p: { xs: 3, md: 4 },
-                    borderRadius: 4,
-                    transition: "all 0.3s ease-in-out",
-                    border: "1px solid",
-                    borderColor: "divider",
-                    ...(tier.highlighted
-                      ? {
-                          transform: "scale(1.05)",
-                          zIndex: 1,
-                          mt: { xs: -1, md: -2 },
-                          mb: { xs: 4, md: 2 },
-                        }
-                      : {}),
-                  },
-                  tier.highlighted && {
-                    background:
-                      theme.palette.mode === "dark"
-                        ? `linear-gradient(145deg, ${alpha(
-                            theme.palette.background.paper,
-                            0.9
-                          )}, ${alpha(theme.palette.primary.dark, 0.2)})`
-                        : `linear-gradient(145deg, ${alpha(
-                            theme.palette.background.paper,
-                            0.9
-                          )}, ${alpha(theme.palette.primary.light, 0.1)})`,
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid",
-                    borderColor:
-                      theme.palette.mode === "dark"
-                        ? alpha(theme.palette.primary.main, 0.3)
-                        : alpha(theme.palette.primary.main, 0.2),
-                    boxShadow:
-                      theme.palette.mode === "dark"
-                        ? `0 12px 30px ${alpha(
-                            theme.palette.common.black,
-                            0.5
-                          )}`
-                        : `0 12px 24px ${alpha(
-                            theme.palette.primary.main,
-                            0.15
-                          )}`,
-                  },
-                ]}
+          <Grid
+            container
+            component={motion.div}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            spacing={3}
+            sx={{
+              alignItems: "stretch",
+              justifyContent: "center",
+              px: { xs: 0, md: 4 },
+            }}
+          >
+            {tiers.map((tier, index) => (
+              <Grid
+                item
+                xs={12}
+                sm={12}
+                md={4}
+                key={tier.title}
+                component={motion.div}
+                variants={cardVariants}
+                custom={index}
+                whileHover={tier.highlighted ? {} : "hover"}
               >
-                {/* Ribbon for highlighted plan */}
-                {tier.highlighted && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: -12,
-                      right: 24,
-                      backgroundColor: "primary.main",
-                      color: "common.white",
-                      py: 0.5,
-                      px: 2,
-                      borderRadius: 1,
-                      boxShadow: `0 2px 12px ${alpha(
-                        theme.palette.primary.main,
-                        0.4
-                      )}`,
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight="bold">
-                      {tier.subheader}
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Card Content */}
-                <CardContent sx={{ p: 0, flexGrow: 1 }}>
-                  {/* Header */}
-                  <Box
-                    sx={{
+                <Card
+                  elevation={tier.highlighted ? 6 : 0}
+                  sx={[
+                    {
+                      height: "100%",
                       display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 3,
-                    }}
-                  >
+                      flexDirection: "column",
+                      position: "relative",
+                      overflow: "visible",
+                      p: { xs: 3, md: 4 },
+                      borderRadius: 4,
+                      transition: "all 0.3s ease-in-out",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      ...(tier.highlighted
+                        ? {
+                            transform: "scale(1.05)",
+                            zIndex: 1,
+                            mt: { xs: -1, md: -2 },
+                            mb: { xs: 4, md: 2 },
+                          }
+                        : {}),
+                    },
+                    tier.highlighted && {
+                      background:
+                        theme.palette.mode === "dark"
+                          ? `linear-gradient(145deg, ${alpha(
+                              theme.palette.background.paper,
+                              0.9
+                            )}, ${alpha(theme.palette.primary.dark, 0.2)})`
+                          : `linear-gradient(145deg, ${alpha(
+                              theme.palette.background.paper,
+                              0.9
+                            )}, ${alpha(theme.palette.primary.light, 0.1)})`,
+                      backdropFilter: "blur(10px)",
+                      border: "1px solid",
+                      borderColor:
+                        theme.palette.mode === "dark"
+                          ? alpha(theme.palette.primary.main, 0.3)
+                          : alpha(theme.palette.primary.main, 0.2),
+                      boxShadow:
+                        theme.palette.mode === "dark"
+                          ? `0 12px 30px ${alpha(
+                              theme.palette.common.black,
+                              0.5
+                            )}`
+                          : `0 12px 24px ${alpha(
+                              theme.palette.primary.main,
+                              0.15
+                            )}`,
+                    },
+                  ]}
+                >
+                  {/* Ribbon for highlighted plan */}
+                  {tier.highlighted && (
                     <Box
                       sx={{
-                        width: 50,
-                        height: 50,
+                        position: "absolute",
+                        top: -12,
+                        right: 24,
+                        backgroundColor: "primary.main",
+                        color: "common.white",
+                        py: 0.5,
+                        px: 2,
+                        borderRadius: 1,
+                        boxShadow: `0 2px 12px ${alpha(
+                          theme.palette.primary.main,
+                          0.4
+                        )}`,
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight="bold">
+                        {tier.subheader}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Card Content */}
+                  <CardContent sx={{ p: 0, flexGrow: 1 }}>
+                    {/* Header */}
+                    <Box
+                      sx={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: 2,
-                        backgroundColor: tier.highlighted
-                          ? alpha(
-                              theme.palette.primary.main,
-                              theme.palette.mode === "dark" ? 0.3 : 0.15
-                            )
-                          : alpha(theme.palette.action.hover, 0.12),
-                        color: tier.highlighted
-                          ? "primary.main"
-                          : "text.secondary",
+                        gap: 2,
+                        mb: 3,
                       }}
                     >
-                      {tier.icon}
-                    </Box>
-
-                    <Typography
-                      variant="h5"
-                      component="h3"
-                      sx={{
-                        fontWeight: 700,
-                        color: tier.highlighted
-                          ? "primary.main"
-                          : "text.primary",
-                      }}
-                    >
-                      {tier.title}
-                    </Typography>
-                  </Box>
-
-                  {/* Price */}
-                  <Box sx={{ mb: 3 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "baseline",
-                      }}
-                    >
-                      {/* Show different styles based on whether it's a fixed or custom price */}
-                      {tier.price === "Custom" ? (
-                        <Typography
-                          component="h3"
-                          variant="h3"
-                          sx={{
-                            fontWeight: 700,
-                            color: tier.highlighted
-                              ? "primary.main"
-                              : "text.primary",
-                          }}
-                        >
-                          {tier.price}
-                        </Typography>
-                      ) : (
-                        <>
-                          <Typography
-                            component="span"
-                            variant="h6"
-                            sx={{ fontWeight: 600, mr: 0.5 }}
-                          >
-                            €
-                          </Typography>
-                          <AnimatePresence mode="wait">
-                            <motion.div
-                              key={billingCycle}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Typography
-                                component="h3"
-                                variant="h3"
-                                sx={{
-                                  fontWeight: 700,
-                                  color: tier.highlighted
-                                    ? "primary.main"
-                                    : "text.primary",
-                                }}
-                              >
-                                {billingCycle === "monthly"
-                                  ? tier.priceDetails.monthly
-                                  : tier.priceDetails.yearly
-                                      .toString()
-                                      .split(".")[0]}
-                              </Typography>
-                            </motion.div>
-                          </AnimatePresence>
-                        </>
-                      )}
-
-                      {tier.price !== "Custom" && (
-                        <Typography
-                          component="span"
-                          variant="subtitle1"
-                          sx={{ ml: 1 }}
-                        >
-                          {/* per month or per year */}
-                          {billingCycle === "monthly"
-                            ? "per month"
-                            : "per year"}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    {/* Billing details */}
-                    {tier.price !== "Custom" &&
-                      billingCycle === "yearly" &&
-                      tier.savings && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "success.main",
-                            fontWeight: 500,
-                            mt: 0.5,
-                            display: "block",
-                          }}
-                        >
-                          Save {tier.savings} a year
-                        </Typography>
-                      )}
-
-                    {/* Description text */}
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 1, minHeight: 40 }}
-                    >
-                      {tier.title === "Free" &&
-                        "Get started with the basics for personal use"}
-                      {tier.title === "Pro" &&
-                        "Everything you need for professional email automation"}
-                      {tier.title === "Business" &&
-                        "Enterprise-grade features with dedicated support"}
-                    </Typography>
-                  </Box>
-
-                  {/* Feature list */}
-                  <Divider sx={{ my: 3, opacity: 0.6 }} />
-                  <Stack spacing={2}>
-                    {tier.features.map((feature) => (
                       <Box
-                        key={feature.title}
                         sx={{
+                          width: 50,
+                          height: 50,
                           display: "flex",
                           alignItems: "center",
-                          gap: 1.5,
+                          justifyContent: "center",
+                          borderRadius: 2,
+                          backgroundColor: tier.highlighted
+                            ? alpha(
+                                theme.palette.primary.main,
+                                theme.palette.mode === "dark" ? 0.3 : 0.15
+                              )
+                            : alpha(theme.palette.action.hover, 0.12),
+                          color: tier.highlighted
+                            ? "primary.main"
+                            : "text.secondary",
                         }}
                       >
-                        {feature.included ? (
-                          <CheckCircleRoundedIcon
+                        {tier.icon}
+                      </Box>
+
+                      <Typography
+                        variant="h5"
+                        component="h3"
+                        sx={{
+                          fontWeight: 700,
+                          color: tier.highlighted
+                            ? "primary.main"
+                            : "text.primary",
+                        }}
+                      >
+                        {tier.title}
+                      </Typography>
+                    </Box>
+
+                    {/* Price */}
+                    <Box sx={{ mb: 3 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "baseline",
+                        }}
+                      >
+                        {/* Show different styles based on whether it's a fixed or custom price */}
+                        {tier.price === "Custom" ? (
+                          <Typography
+                            component="h3"
+                            variant="h3"
                             sx={{
-                              width: 20,
-                              height: 20,
+                              fontWeight: 700,
                               color: tier.highlighted
                                 ? "primary.main"
-                                : "success.main",
+                                : "text.primary",
                             }}
-                          />
+                          >
+                            {tier.price}
+                          </Typography>
                         ) : (
-                          <RemoveCircleOutlineIcon
-                            sx={{
-                              width: 20,
-                              height: 20,
-                              color: "text.disabled",
-                            }}
-                          />
+                          <>
+                            <Typography
+                              component="span"
+                              variant="h6"
+                              sx={{ fontWeight: 600, mr: 0.5 }}
+                            >
+                              €
+                            </Typography>
+                            <AnimatePresence mode="wait">
+                              <motion.div
+                                key={billingCycle}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <Typography
+                                  component="h3"
+                                  variant="h3"
+                                  sx={{
+                                    fontWeight: 700,
+                                    color: tier.highlighted
+                                      ? "primary.main"
+                                      : "text.primary",
+                                  }}
+                                >
+                                  {billingCycle === "monthly"
+                                    ? tier.priceDetails.monthly
+                                    : tier.priceDetails.yearly
+                                        .toString()
+                                        .split(".")[0]}
+                                </Typography>
+                              </motion.div>
+                            </AnimatePresence>
+                          </>
                         )}
-                        <Typography
-                          variant="body2"
+
+                        {tier.price !== "Custom" && (
+                          <Typography
+                            component="span"
+                            variant="subtitle1"
+                            sx={{ ml: 1 }}
+                          >
+                            {/* per month or per year */}
+                            {billingCycle === "monthly"
+                              ? "per month"
+                              : "per year"}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {/* Billing details */}
+                      {tier.price !== "Custom" &&
+                        billingCycle === "yearly" &&
+                        tier.savings && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "success.main",
+                              fontWeight: 500,
+                              mt: 0.5,
+                              display: "block",
+                            }}
+                          >
+                            Save {tier.savings} a year
+                          </Typography>
+                        )}
+
+                      {/* Description text */}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1, minHeight: 40 }}
+                      >
+                        {tier.title === "Free" &&
+                          "Get started with the basics for personal use"}
+                        {tier.title === "Pro" &&
+                          "Everything you need for professional email automation"}
+                        {tier.title === "Business" &&
+                          "Enterprise-grade features with dedicated support"}
+                      </Typography>
+                    </Box>
+
+                    {/* Feature list */}
+                    <Divider sx={{ my: 3, opacity: 0.6 }} />
+                    <Stack spacing={2}>
+                      {tier.features.map((feature) => (
+                        <Box
+                          key={feature.title}
                           sx={{
-                            color: feature.included
-                              ? "text.primary"
-                              : "text.disabled",
-                            fontWeight: feature.included ? 500 : 400,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
                           }}
                         >
-                          {feature.title}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                </CardContent>
+                          {feature.included ? (
+                            <CheckCircleRoundedIcon
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                color: tier.highlighted
+                                  ? "primary.main"
+                                  : "success.main",
+                              }}
+                            />
+                          ) : (
+                            <RemoveCircleOutlineIcon
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                color: "text.disabled",
+                              }}
+                            />
+                          )}
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: feature.included
+                                ? "text.primary"
+                                : "text.disabled",
+                              fontWeight: feature.included ? 500 : 400,
+                            }}
+                          >
+                            {feature.title}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </CardContent>
 
-                {/* Button */}
-                <CardActions sx={{ p: 0, mt: 4 }}>
-                  <Button
-                    fullWidth
-                    size="large"
-                    variant={tier.buttonVariant as "outlined" | "contained"}
-                    color={tier.buttonColor as "primary" | "secondary"}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontWeight: 600,
-                      textTransform: "none",
-                      fontSize: "1rem",
-                      boxShadow: tier.highlighted ? 4 : 0,
-                      "&:hover": {
-                        boxShadow: tier.highlighted ? 8 : 1,
-                      },
-                    }}
-                  >
-                    {tier.buttonText}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                  {/* Button */}
+                  <CardActions sx={{ p: 0, mt: 4 }}>
+                    <Button
+                      fullWidth
+                      size="large"
+                      variant={tier.buttonVariant as "outlined" | "contained"}
+                      color={tier.buttonColor as "primary" | "secondary"}
+                      sx={{
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        textTransform: "none",
+                        fontSize: "1rem",
+                        boxShadow: tier.highlighted ? 4 : 0,
+                        "&:hover": {
+                          boxShadow: tier.highlighted ? 8 : 1,
+                        },
+                      }}
+                    >
+                      {tier.buttonText}
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         )}
 
         {/* Additional information */}
@@ -1225,3 +1227,4 @@ export default function Pricing() {
     </Box>
   );
 }
+
