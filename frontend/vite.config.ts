@@ -5,6 +5,8 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   build: {
+    minify: 'esbuild', // 'esbuild' is faster, 'terser' is more thorough
+    cssMinify: true,
     chunkSizeWarningLimit: 800, // Increase the warning limit if needed
     rollupOptions: {
       output: {
@@ -19,9 +21,21 @@ export default defineConfig({
           'animations': ['framer-motion'],
           // add lottiejs
           'lottie': ['lottie-web'],
+          'mui': [
+            '@mui/x-charts',
+            '@mui/x-data-grid-pro',
+            '@mui/x-date-pickers',
+            '@mui/x-tree-view',
+          ],
         },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
+    reportCompressedSize: false,
+    // Target modern browsers for smaller bundle
+    target: 'es2020'
   },
   resolve: {
     alias: {
@@ -31,4 +45,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["lottie-web"],
   },
+  server: {}
 });

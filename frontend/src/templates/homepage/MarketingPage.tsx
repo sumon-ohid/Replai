@@ -5,7 +5,6 @@ import AppAppBar from "./components/AppAppBar";
 import Hero from "./components/Hero";
 import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
-import "./style.css";
 import { Box } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
