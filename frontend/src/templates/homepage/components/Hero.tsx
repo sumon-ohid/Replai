@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, lazy, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -11,16 +11,15 @@ import { motion, useAnimation, useScroll, useTransform } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-// Import icons
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import EmailIcon from "@mui/icons-material/Email";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import WavingHandIcon from "@mui/icons-material/WavingHand";
-import Badge from "@mui/material/Badge";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import GoogleIcon from '@mui/icons-material/Google';
+// Lazily load non-critical icons
+const AutoAwesomeIcon = lazy(() => import("@mui/icons-material/AutoAwesome"));
+const CheckCircleIcon = lazy(() => import("@mui/icons-material/CheckCircle"));
+const CalendarMonthIcon = lazy(() => import("@mui/icons-material/CalendarMonth"));
+const GoogleIcon = lazy(() => import('@mui/icons-material/Google'));
+const EmailIcon = lazy(() => import('@mui/icons-material/Email'));
+const ArrowForwardIcon = lazy(() => import('@mui/icons-material/ArrowForward'));
+const WavingHandIcon = lazy(() => import('@mui/icons-material/WavingHand'));
+const Badge = lazy(() => import('@mui/material/Badge'));
 
 // Import assets
 import heroBackground from "../../../assets/animations/hero-grid.svg"; // Create or download this asset
@@ -395,9 +394,6 @@ export default function Hero() {
         overflow: "hidden",
         pt: { xs: 10, sm: 12, md: 16 },
         pb: { xs: 8, sm: 10, md: 12 },
-        // backgroundColor: theme.palette.mode === 'dark'
-        //   ? 'transparent'
-        //   : alpha(theme.palette.primary.light, 0.02),
         backgroundImage:
           theme.palette.mode === "dark"
             ? "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.28) 0%, rgba(0, 0, 0, 0) 45%)"
@@ -492,10 +488,8 @@ export default function Hero() {
 
             {/* Main headline */}
             <Typography
-              variant="h1"
+              variant="h2"
               component={motion.div}
-              initial={false}
-              animate={isRendered ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.3}}
               sx={{
                 fontSize: { xs: "2.5rem", sm: "3rem", md: "3.5rem" },
@@ -539,7 +533,7 @@ export default function Hero() {
               delay={0.3}
               text={
                 <Typography
-                  variant="h5"
+                  variant="body1"
                   color="text.secondary"
                   sx={{
                     fontWeight: 400,
@@ -637,19 +631,6 @@ export default function Hero() {
                     : alpha(theme.palette.common.black, 0.1),
               }}
             >
-              {/* Mock UI image */}
-              {/* <Box
-                component="img"
-                src="https://cdn.dribbble.com/userupload/10552986/file/original-c945550d20d9d0cd08540828b80006dc.jpg?resize=2400x1800&vertical=center"
-                alt="Replai Email Interface"
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: 'top center',
-                }}
-              /> */}
-
               {/* Overlay gradient */}
               <Box
                 sx={{
