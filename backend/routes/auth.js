@@ -16,7 +16,7 @@ const router = express.Router();
 const smtpConfig = {
   host: process.env.EMAIL_HOST || "mail.replai.tech",
   port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: process.env.EMAIL_SECURE === "true",
+  secure: process.env.EMAIL_SECURE === "false" ? false : true,
   auth: {
     user: process.env.EMAIL || "hello@replai.tech",
     pass: process.env.EMAIL_PASSWORD
