@@ -351,6 +351,11 @@ export default function Hero() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const [isRendered, setIsRendered] = React.useState(false);
+
+  useEffect(() => {
+    setIsRendered(true);
+  }, []);
 
   // Parallax effect on scroll
   const { scrollYProgress } = useScroll();
@@ -489,9 +494,9 @@ export default function Hero() {
             <Typography
               variant="h1"
               component={motion.div}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              initial={false}
+              animate={isRendered ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.3}}
               sx={{
                 fontSize: { xs: "2.5rem", sm: "3rem", md: "3.5rem" },
                 fontWeight: 800,
