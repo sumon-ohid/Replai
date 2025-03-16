@@ -251,8 +251,6 @@ export const useEmailClient = () => {
       setState(prev => ({ ...prev, filteredEmails: prev.emails }));
       return;
     }
-
-    console.log('Filtering emails...', state.searchTerm);
     
     const term = state.searchTerm.toLowerCase();
     const filtered = state.emails.filter(email => 

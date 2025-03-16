@@ -126,11 +126,13 @@ export default function EmailSidebar({
         flexDirection: 'column',
         height: '100%',
         overflowY: 'auto',
-        borderRight: '1px solid',
+        border: '1px solid',
         borderColor: 'divider',
+        borderRadius: 2,
         pt: 1,
         pb: 2,
-        px: 2
+        px: 2,
+        mr: isMobile ? 0 : 1,
       }}
     >
       {/* Mobile close button */}
@@ -151,7 +153,7 @@ export default function EmailSidebar({
             fontSize: '1.1rem'
           }}
         >
-          Mail
+          Mailbox
         </Typography>
         
         <Button
@@ -212,7 +214,7 @@ export default function EmailSidebar({
               noWrap
               sx={{ fontWeight: 500, color: 'text.primary' }}
             >
-              {selectedAccountData?.name}
+              {/* {selectedAccountData?.name} */}
             </Typography>
             <Typography
               variant="caption"
