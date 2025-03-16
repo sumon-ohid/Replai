@@ -7,41 +7,8 @@ import { alpha, useTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import Chip from "@mui/material/Chip";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import InputBase from "@mui/material/InputBase";
-import Avatar from "@mui/material/Avatar";
-import Badge from "@mui/material/Badge";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid";
 import { motion } from "framer-motion";
-
-// Icons
-import RefreshIcon from "@mui/icons-material/RefreshRounded";
-import SearchIcon from "@mui/icons-material/SearchRounded";
-import FilterListIcon from "@mui/icons-material/FilterListRounded";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMoreRounded";
-import GoogleIcon from "@mui/icons-material/Google";
-import MicrosoftIcon from "@mui/icons-material/Microsoft";
-import AlternateEmailIcon from "@mui/icons-material/AlternateEmail";
-import InboxIcon from "@mui/icons-material/InboxRounded";
-import StarIcon from "@mui/icons-material/StarRounded";
-import SendIcon from "@mui/icons-material/SendRounded";
-import AttachmentIcon from "@mui/icons-material/AttachFileRounded";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineRounded";
-import ArchiveIcon from "@mui/icons-material/ArchiveRounded";
-import LabelImportantIcon from "@mui/icons-material/LabelImportantRounded";
-import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnreadRounded";
-import SortIcon from "@mui/icons-material/SortRounded";
-import AddIcon from "@mui/icons-material/AddRounded";
 
 // Components
 import AppNavbar from "./components/AppNavbar";
@@ -56,6 +23,7 @@ import {
 } from "./theme/customizations";
 import Footer from "./components/Footer";
 import CustomizedDataGrid from "./components/CustomizedDataGrid";
+import EmailClient from "./components/mailbox/EmailClient";
 
 // Main component
 export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
@@ -147,7 +115,8 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
                 mb: 2,
               }}
             > 
-            <CustomizedDataGrid />
+            {/* <CustomizedDataGrid /> */}
+            <EmailClient />
             </Box>
           </Box>
           <Footer />
