@@ -42,7 +42,6 @@ interface EmailSidebarProps {
   onFolderChange: (folder: string) => void;
   onCompose: () => void;
   onCloseMobileSidebar: () => void;
-  onComposeClick: () => void;
   isMobile: boolean;
 }
 

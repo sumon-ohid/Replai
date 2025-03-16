@@ -1,23 +1,19 @@
-import * as React from 'react';
-import { Box, useTheme, useMediaQuery, Drawer } from '@mui/material';
-import { motion } from 'framer-motion';
-import EmailSidebar from './EmailSidebar';
-import EmailHeader from './EmailHeader';
-import EmailList from './EmailList';
-import EmailDetailView from './EmailDetailView';
-import EmailMobileNav from './EmailMobileNav';
-import { useEmailClient } from './useEmailClient';
-import ComposeEmail from './ComposeEmail';
+import * as React from "react";
+import { Box, useTheme, useMediaQuery, Drawer } from "@mui/material";
+import { motion } from "framer-motion";
+import EmailSidebar from "./EmailSidebar";
+import EmailHeader from "./EmailHeader";
+import EmailList from "./EmailList";
+import EmailDetailView from "./EmailDetailView";
+import EmailMobileNav from "./EmailMobileNav";
+import { useEmailClient } from "./useEmailClient";
+import ComposeEmail from "./ComposeEmail";
 
 export default function EmailClient() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
-  const { 
-    state, 
-    handlers,
-    selectedEmail,
-  } = useEmailClient();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
+  const { state, handlers, selectedEmail } = useEmailClient();
 
   return (
     <Box
@@ -27,36 +23,40 @@ export default function EmailClient() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        maxHeight: '100vh',
-        width: '100%',
-        overflow: 'hidden',
-        bgcolor: 'background.default',
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        maxHeight: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        bgcolor: "background.default",
       }}
     >
       {/* Mobile navigation - only visible on mobile */}
-      {isMobile && <EmailMobileNav 
-        currentFolder={state.currentFolder} 
-        onOpenSidebar={handlers.toggleMobileSidebar}
-        unreadCount={state.unreadCount}
-      />}
+      {isMobile && (
+        <EmailMobileNav
+          currentFolder={state.currentFolder}
+          onOpenSidebar={handlers.toggleMobileSidebar}
+          unreadCount={state.unreadCount}
+        />
+      )}
 
-      <Box sx={{ 
-        display: 'flex', 
-        flexGrow: 1,
-        overflow: 'hidden'
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexGrow: 1,
+          overflow: "hidden",
+        }}
+      >
         {/* Sidebar - hidden on mobile, shown in drawer instead */}
         {!isMobile ? (
-          <Box 
-            sx={{ 
-              width: 280, 
+          <Box
+            sx={{
+              width: 280,
               flexShrink: 0,
               // border: '1px solid',
-              borderColor: 'divider',
-              display: { xs: 'none', md: 'block' }
+              borderColor: "divider",
+              display: { xs: "none", md: "block" },
             }}
           >
             <EmailSidebar
@@ -66,7 +66,6 @@ export default function EmailClient() {
               unreadCounts={state.unreadCounts}
               onAccountChange={handlers.handleAccountChange}
               onFolderChange={handlers.handleFolderChange}
-              onComposeClick={handlers.handleCompose}
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
               isMobile={isMobile}
@@ -78,9 +77,9 @@ export default function EmailClient() {
             open={state.mobileSidebarOpen}
             onClose={handlers.toggleMobileSidebar}
             sx={{
-              '& .MuiDrawer-paper': { 
+              "& .MuiDrawer-paper": {
                 width: 280,
-                boxSizing: 'border-box',
+                boxSizing: "border-box",
               },
             }}
           >
@@ -91,7 +90,6 @@ export default function EmailClient() {
               unreadCounts={state.unreadCounts}
               onAccountChange={handlers.handleAccountChange}
               onFolderChange={handlers.handleFolderChange}
-              onComposeClick={handlers.handleCompose}
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
               isMobile={isMobile}
@@ -100,19 +98,26 @@ export default function EmailClient() {
         )}
 
         {/* Main content area */}
-        <Box sx={{ 
-          flexGrow: 1, 
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          width: { xs: '100%', md: 'calc(100% - 280px)' }, 
-          ...(isMobile ? { width: '100%' } : {}),
-          backgroundColor: 'background.default',
-          borderRadius: { xs: 2, md: 2 },
-          border: 1,
-          borderColor: 'divider',
-          mt: { xs: 1, md: 0 },
-        }}>
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            width: {
+              xs: "100%",
+              md: isMobile ? "100%" : "calc(100% - 280px)",
+            },
+            backgroundColor: "background.default",
+            borderRadius: { xs: 1, md: 2 },
+            border: 1,
+            borderColor: "divider",
+            mt: { xs: 1, md: 0 },
+          }}
+        >
           {/* Header with search and actions */}
           <EmailHeader
             searchTerm={state.searchTerm}
@@ -125,19 +130,21 @@ export default function EmailClient() {
           />
 
           {/* Content: Either email list or email detail */}
-          <Box sx={{ 
-            flexGrow: 1, 
-            overflow: 'hidden',
-            position: 'relative',
-            display: 'flex'
-          }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflow: "hidden",
+              position: "relative",
+              display: "flex",
+            }}
+          >
             {/* Email List - hidden when viewing email on mobile */}
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 flexGrow: 1,
-                overflow: 'auto',
-                display: (isMobile && state.detailViewOpen) ? 'none' : 'block',
-                width: (isTablet && state.detailViewOpen) ? '40%' : '100%',
+                overflow: "auto",
+                display: isMobile && state.detailViewOpen ? "none" : "block",
+                width: isTablet && state.detailViewOpen ? "40%" : "100%",
               }}
             >
               <EmailList
@@ -156,20 +163,20 @@ export default function EmailClient() {
 
             {/* Email Detail View - shown when email selected */}
             {state.detailViewOpen && selectedEmail && (
-              <Box 
-                sx={{ 
+              <Box
+                sx={{
                   flexGrow: 1,
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: { xs: 'absolute', md: 'relative' },
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: { xs: "absolute", md: "relative" },
                   top: 0,
                   left: 0,
-                  width: '100%',
-                  height: '100%',
-                  bgcolor: 'background.paper',
+                  width: "100%",
+                  height: "100%",
+                  bgcolor: "background.paper",
                   zIndex: 1,
-                  ...(isTablet && !isMobile ? { width: '90%' } : {})
+                  ...(isTablet && !isMobile ? { width: "90%" } : {}),
                 }}
               >
                 <EmailDetailView
@@ -198,7 +205,9 @@ export default function EmailClient() {
         replyTo={state.replyTo}
         forwardEmail={state.forwardEmail}
         onSend={handlers.handleSendEmail as any}
-        selectedAccount={state.accounts.find(acc => acc.id === state.selectedAccount)}
+        selectedAccount={state.accounts.find(
+          (acc) => acc.id === state.selectedAccount
+        )}
       />
     </Box>
   );
