@@ -48,7 +48,7 @@ mongoose
 app.set('trust proxy', true);
 
 const allowedOrigins = [
-  "http://localhost:5173", // For local development
+  "http://localhost:3001", // For local development
   "http://localhost:3000", // For test
   `${process.env.FRONTEND_URL}`,
   `${process.env.VITE_API_BASE_URL}`,
@@ -187,7 +187,7 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, 'localhost', () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 

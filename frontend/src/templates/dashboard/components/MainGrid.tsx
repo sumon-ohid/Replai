@@ -562,7 +562,7 @@ export default function MainGrid() {
 
       {/* Setup Card */}
       <Grid container spacing={1} sx={{ mb: 4 }}>
-        <Grid xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={6} lg={4}>
           <Box
             component={motion.div}
             variants={itemVariants}
@@ -572,7 +572,7 @@ export default function MainGrid() {
           </Box>
         </Grid>
 
-        <Grid xs={12} md={6} lg={8}>
+        <Grid item xs={12} md={6} lg={8}>
           <Paper
             component={motion.div}
             variants={itemVariants}

@@ -51,8 +51,10 @@ export default defineConfig({
     exclude: ["lottie-web"],
   },
   server: {
-    headers: {
-      'Cache-Control': 'public, max-age=31536000', // For production build
-    },
-  }
+    port: 3001,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost'
+    }
+  }  
 });
