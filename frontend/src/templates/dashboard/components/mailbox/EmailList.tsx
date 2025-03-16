@@ -19,6 +19,8 @@ import {
   useTheme,
   alpha,
   CircularProgress,
+  TablePagination,
+  Paper,
 } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
@@ -44,6 +46,12 @@ interface EmailListProps {
   currentFolder: string;
   onEmailClick: (emailId: string) => void;
   selectedEmailId: string | null;
+  // New pagination props
+  totalCount?: number;
+  page?: number;
+  rowsPerPage?: number;
+  onPageChange?: (event: unknown, newPage: number) => void;
+  onRowsPerPageChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function EmailList({
@@ -55,13 +63,28 @@ export default function EmailList({
   onDelete,
   searchTerm,
   currentFolder,
+  onEmailClick,
+  selectedEmailId,
+  // Default values for pagination props
+  totalCount = 0,
+  page = 0,
+  rowsPerPage = 20,
+  onPageChange,
+  onRowsPerPageChange,
 }: EmailListProps) {
   const theme = useTheme();
   const [selectedEmails, setSelectedEmails] = React.useState<string[]>([]);
-  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(
-    null
-  );
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
   const [activeEmailId, setActiveEmailId] = React.useState<string | null>(null);
+  
+  // Use onEmailClick as a fallback for onEmailSelect if it exists
+  const handleEmailSelect = React.useCallback((emailId: string) => {
+    if (onEmailSelect) {
+      onEmailSelect(emailId);
+    } else if (onEmailClick) {
+      onEmailClick(emailId);
+    }
+  }, [onEmailSelect, onEmailClick]);
 
   // Handle context menu opening
   const handleMenuOpen = (
@@ -175,244 +198,264 @@ export default function EmailList({
   }
 
   return (
-    <Box>
-      <List disablePadding>
-        {loading
-          ? // Loading skeletons
-            Array.from(new Array(10)).map((_, index) => (
-              <ListItem key={index} disablePadding divider>
-                <Box sx={{ width: "100%", display: "flex", py: 1, px: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      mr: 2,
-                      width: 24,
-                    }}
-                  >
-                    <Skeleton variant="circular" width={20} height={20} />
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      mr: 2,
-                      width: 40,
-                    }}
-                  >
-                    <Skeleton variant="circular" width={40} height={40} />
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Skeleton variant="text" width="60%" height={24} />
-                    <Skeleton variant="text" width="90%" height={20} />
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 100,
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <Skeleton variant="text" width={60} height={20} />
-                  </Box>
-                </Box>
-              </ListItem>
-            ))
-          : // Actual email list
-            emails.map((email) => (
-              <ListItem
-                key={email.id}
-                disablePadding
-                divider
-                component={motion.li}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                sx={{
-                  bgcolor: !email.isRead
-                    ? alpha(theme.palette.primary.light, 0.08)
-                    : "inherit",
-                }}
-              >
-                <ListItemButton
-                  onClick={() => onEmailSelect(email.id)}
-                  sx={{
-                    py: 1.5,
-                    px: 2,
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.light, 0.05),
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: { xs: "none", sm: "flex" },
-                      alignItems: "center",
-                      mr: 2,
-                    }}
-                  >
-                    <Checkbox
-                      checked={selectedEmails.includes(email.id)}
-                      onChange={(e) => handleSelectEmail(e, email.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      size="small"
-                      sx={{ p: 0.5 }}
-                    />
-                  </Box>
-
-                  <ListItemAvatar>
-                    <Avatar
-                      alt={email.from.name}
-                      src={email.from.avatar}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <List disablePadding>
+          {loading
+            ? // Loading skeletons
+              Array.from(new Array(10)).map((_, index) => (
+                <ListItem key={index} disablePadding divider>
+                  <Box sx={{ width: "100%", display: "flex", py: 1, px: 2 }}>
+                    <Box
                       sx={{
-                        bgcolor: !email.isRead
-                          ? theme.palette.primary.main
-                          : theme.palette.mode === "dark"
-                          ? theme.palette.grey[700]
-                          : theme.palette.grey[400],
+                        display: "flex",
+                        alignItems: "center",
+                        mr: 2,
+                        width: 24,
+                      }}
+                    >
+                      <Skeleton variant="circular" width={20} height={20} />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mr: 2,
                         width: 40,
-                        height: 40,
                       }}
                     >
-                      {email.from.name[0].toUpperCase()}
-                    </Avatar>
-                  </ListItemAvatar>
-
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Typography
-                          variant="body1"
-                          component="span"
-                          sx={{
-                            fontWeight: !email.isRead ? 600 : 400,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            color: !email.isRead
-                              ? theme.palette.text.primary
-                              : theme.palette.text.secondary,
-                          }}
-                        >
-                          {currentFolder === "sent"
-                            ? email.to[0].name || email.to[0].email
-                            : email.from.name || email.from.email}
-                        </Typography>
-
-                        {email.hasAttachments && (
-                          <AttachmentIcon
-                            fontSize="small"
-                            sx={{
-                              ml: 1,
-                              color: theme.palette.text.secondary,
-                              fontSize: 16,
-                            }}
-                          />
-                        )}
-                      </Box>
-                    }
-                    secondary={
-                      <React.Fragment>
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{
-                            fontWeight: !email.isRead ? 600 : 400,
-                            color: !email.isRead
-                              ? theme.palette.text.primary
-                              : theme.palette.text.secondary,
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {email.subject}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{
-                            display: "block",
-                            color: theme.palette.text.secondary,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {email.preview}
-                        </Typography>
-                      </React.Fragment>
-                    }
-                  />
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      minWidth: "90px",
-                      ml: 1,
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
+                      <Skeleton variant="circular" width={40} height={40} />
+                    </Box>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Skeleton variant="text" width="60%" height={24} />
+                      <Skeleton variant="text" width="90%" height={20} />
+                    </Box>
+                    <Box
                       sx={{
-                        color: theme.palette.text.secondary,
-                        whiteSpace: "nowrap",
-                        mb: 0.5,
+                        width: 100,
+                        display: "flex",
+                        justifyContent: "flex-end",
                       }}
                     >
-                      {getRelativeTime(email.timestamp)}
-                    </Typography>
-
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {/* {email.labels && email.labels.length > 0 && (
-                      <Chip
-                        label={email.labels[0]}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          mr: 0.5,
-                        }}
-                        color="primary"
-                      />
-                    )} */}
-
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleStar(email.id, !email.isStarred);
-                        }}
-                        sx={{
-                          p: 0.5,
-                          color: email.isStarred ? "warning.main" : "inherit",
-                        }}
-                      >
-                        {email.isStarred ? (
-                          <StarIcon fontSize="small" />
-                        ) : (
-                          <StarBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, email.id)}
-                        sx={{ p: 0.5 }}
-                      >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
+                      <Skeleton variant="text" width={60} height={20} />
                     </Box>
                   </Box>
-                </ListItemButton>
-              </ListItem>
-            ))}
-      </List>
+                </ListItem>
+              ))
+            : // Actual email list
+              emails.map((email) => (
+                <ListItem
+                  key={email.id}
+                  disablePadding
+                  divider
+                  component={motion.li}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  sx={{
+                    bgcolor: !email.isRead
+                      ? alpha(theme.palette.primary.light, 0.08)
+                      : "inherit",
+                  }}
+                >
+                  <ListItemButton
+                    onClick={() => handleEmailSelect(email.id)}
+                    sx={{
+                      py: 1.5,
+                      px: 2,
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.light, 0.05),
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: { xs: "none", sm: "flex" },
+                        alignItems: "center",
+                        mr: 2,
+                      }}
+                    >
+                      <Checkbox
+                        checked={selectedEmails.includes(email.id)}
+                        onChange={(e) => handleSelectEmail(e, email.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        size="small"
+                        sx={{ p: 0.5 }}
+                      />
+                    </Box>
+
+                    <ListItemAvatar>
+                      <Avatar
+                        alt={email.from.name}
+                        src={email.from.avatar}
+                        sx={{
+                          bgcolor: !email.isRead
+                            ? theme.palette.primary.main
+                            : theme.palette.mode === "dark"
+                            ? theme.palette.grey[700]
+                            : theme.palette.grey[400],
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        {email.from.name[0].toUpperCase()}
+                      </Avatar>
+                    </ListItemAvatar>
+
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Typography
+                            variant="body1"
+                            component="span"
+                            sx={{
+                              fontWeight: !email.isRead ? 600 : 400,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              color: !email.isRead
+                                ? theme.palette.text.primary
+                                : theme.palette.text.secondary,
+                            }}
+                          >
+                            {currentFolder === "sent"
+                              ? email.to[0].name || email.to[0].email
+                              : email.from.name || email.from.email}
+                          </Typography>
+
+                          {email.hasAttachments && (
+                            <AttachmentIcon
+                              fontSize="small"
+                              sx={{
+                                ml: 1,
+                                color: theme.palette.text.secondary,
+                                fontSize: 16,
+                              }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <React.Fragment>
+                          <Typography
+                            variant="body2"
+                            component="span"
+                            sx={{
+                              fontWeight: !email.isRead ? 600 : 400,
+                              color: !email.isRead
+                                ? theme.palette.text.primary
+                                : theme.palette.text.secondary,
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {email.subject}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            component="span"
+                            sx={{
+                              display: "block",
+                              color: theme.palette.text.secondary,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {email.preview}
+                          </Typography>
+                        </React.Fragment>
+                      }
+                    />
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        minWidth: "90px",
+                        ml: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: theme.palette.text.secondary,
+                          whiteSpace: "nowrap",
+                          mb: 0.5,
+                        }}
+                      >
+                        {getRelativeTime(email.timestamp)}
+                      </Typography>
+
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleStar(email.id, !email.isStarred);
+                          }}
+                          sx={{
+                            p: 0.5,
+                            color: email.isStarred ? "warning.main" : "inherit",
+                          }}
+                        >
+                          {email.isStarred ? (
+                            <StarIcon fontSize="small" />
+                          ) : (
+                            <StarBorderIcon fontSize="small" />
+                          )}
+                        </IconButton>
+
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, email.id)}
+                          sx={{ p: 0.5 }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </ListItemButton>
+                </ListItem>
+              ))}
+        </List>
+      </Box>
+
+      {/* Pagination */}
+      {!loading && totalCount > 0 && onPageChange && onRowsPerPageChange && (
+        <Paper 
+          elevation={0}
+          sx={{ 
+            borderTop: 1, 
+            borderColor: 'divider', 
+            borderRadius: 0,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={onPageChange}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={onRowsPerPageChange}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+            sx={{
+              '.MuiTablePagination-toolbar': {
+                minHeight: 52,
+              },
+              '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                fontSize: '0.775rem',
+              }
+            }}
+          />
+        </Paper>
+      )}
 
       {/* Context menu */}
       <Menu
@@ -453,33 +496,8 @@ export default function EmailList({
           </ListItemText>
         </MenuItem>
 
-        <MenuItem
-          onClick={() => {
-            if (activeEmailId) {
-              const email = emails.find((e) => e.id === activeEmailId);
-              if (email) {
-                onToggleStar(activeEmailId, !email.isStarred);
-              }
-            }
-            handleMenuClose();
-          }}
-        >
-          <ListItemIcon>
-            {emails.find((e) => e.id === activeEmailId)?.isStarred ? (
-              <StarIcon fontSize="small" color="warning" />
-            ) : (
-              <StarBorderIcon fontSize="small" />
-            )}
-          </ListItemIcon>
-          <ListItemText>
-            {emails.find((e) => e.id === activeEmailId)?.isStarred
-              ? "Remove star"
-              : "Star"}
-          </ListItemText>
-        </MenuItem>
-
         <Divider />
-
+        
         <MenuItem
           onClick={() => {
             if (activeEmailId) {
@@ -491,9 +509,7 @@ export default function EmailList({
           <ListItemIcon>
             <DeleteOutlineIcon fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText>
-            <Typography color="error">Delete</Typography>
-          </ListItemText>
+          <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

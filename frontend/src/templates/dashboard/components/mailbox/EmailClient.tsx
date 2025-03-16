@@ -15,6 +15,31 @@ export default function EmailClient() {
   const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
   const { state, handlers, selectedEmail } = useEmailClient();
 
+  // Add pagination state
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(20);
+
+  // Reset pagination when folder or search term changes
+  React.useEffect(() => {
+    setPage(0);
+  }, [state.currentFolder, state.searchTerm]);
+
+  // Calculate paginated emails
+  const paginatedEmails = React.useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return state.filteredEmails.slice(startIndex, startIndex + rowsPerPage);
+  }, [state.filteredEmails, page, rowsPerPage]);
+
+  // Handle pagination changes
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Box
       component={motion.div}
@@ -54,7 +79,6 @@ export default function EmailClient() {
             sx={{
               width: 280,
               flexShrink: 0,
-              // border: '1px solid',
               borderColor: "divider",
               display: { xs: "none", md: "block" },
             }}
@@ -76,11 +100,16 @@ export default function EmailClient() {
             anchor="left"
             open={state.mobileSidebarOpen}
             onClose={handlers.toggleMobileSidebar}
+            ModalProps={{
+              keepMounted: true, // Better performance on mobile
+            }}
             sx={{
               "& .MuiDrawer-paper": {
                 width: 280,
                 boxSizing: "border-box",
+                bgcolor: "background.paper",
               },
+              display: { xs: "block", md: "none" }
             }}
           >
             <EmailSidebar
@@ -89,10 +118,13 @@ export default function EmailClient() {
               currentFolder={state.currentFolder}
               unreadCounts={state.unreadCounts}
               onAccountChange={handlers.handleAccountChange}
-              onFolderChange={handlers.handleFolderChange}
+              onFolderChange={(folder) => {
+                handlers.handleFolderChange(folder);
+                handlers.toggleMobileSidebar(); // Close sidebar after selection on mobile
+              }}
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
-              isMobile={isMobile}
+              isMobile={true}
             />
           </Drawer>
         )}
@@ -145,10 +177,11 @@ export default function EmailClient() {
                 overflow: "auto",
                 display: isMobile && state.detailViewOpen ? "none" : "block",
                 width: isTablet && state.detailViewOpen ? "40%" : "100%",
+                zIndex: 0,
               }}
             >
               <EmailList
-                emails={state.filteredEmails}
+                emails={paginatedEmails}
                 loading={state.loading}
                 onEmailClick={handlers.handleEmailSelect}
                 onToggleStar={handlers.handleToggleStarEmail}
@@ -158,6 +191,11 @@ export default function EmailClient() {
                 onEmailSelect={handlers.handleEmailSelect}
                 searchTerm={state.searchTerm}
                 currentFolder={state.currentFolder}
+                totalCount={state.filteredEmails.length}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
               />
             </Box>
 
