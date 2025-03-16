@@ -94,6 +94,7 @@ export default function EmailHeader({
                 onClick={onClearSearch}
                 edge="end"
                 aria-label="clear search"
+                sx={{ height: '80%', p: 0 }}
               >
                 <CloseIcon fontSize="small" />
               </IconButton>

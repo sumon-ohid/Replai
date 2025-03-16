@@ -141,13 +141,13 @@ export default function EmailList({
         >
           {searchTerm ? '🔍' : currentFolder === 'inbox' ? '📭' : '📪'}
         </Box>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word', textAlign: 'center' }}>
           {searchTerm 
             ? 'No emails found matching your search' 
             : `No emails in ${currentFolder}`
           }
         </Typography>
-        <Typography variant="body2">
+        <Typography variant="body2" sx={{ wordBreak: 'break-word', textAlign: 'center' }}>
           {searchTerm 
             ? 'Try using different keywords' 
             : currentFolder === 'inbox' 
@@ -209,7 +209,7 @@ export default function EmailList({
                   },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                <Box sx={{ display: {xs: "none", sm: "flex"}, alignItems: 'center', mr: 2 }}>
                   <Checkbox
                     checked={selectedEmails.includes(email.id)}
                     onChange={(e) => handleSelectEmail(e, email.id)}
@@ -321,8 +321,8 @@ export default function EmailList({
                     {getRelativeTime(email.timestamp)}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    {email.labels && email.labels.length > 0 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* {email.labels && email.labels.length > 0 && (
                       <Chip
                         label={email.labels[0]}
                         size="small"
@@ -334,7 +334,7 @@ export default function EmailList({
                         }}
                         color="primary"
                       />
-                    )}
+                    )} */}
                     
                     <IconButton
                       size="small"
@@ -344,7 +344,7 @@ export default function EmailList({
                       }}
                       sx={{ 
                         p: 0.5,
-                        color: email.isStarred ? theme.palette.warning.main : theme.palette.text.disabled
+                        color: email.isStarred ? 'warning.main' : 'inherit',
                       }}
                     >
                       {email.isStarred ? (
