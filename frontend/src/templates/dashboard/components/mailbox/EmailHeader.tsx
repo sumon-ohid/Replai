@@ -47,14 +47,15 @@ export default function EmailHeader({
     <Box
       sx={{
         display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
+        flexDirection: { xs: 'row', sm: 'row' },
         alignItems: { xs: 'stretch', sm: 'center' },
         justifyContent: 'space-between',
         gap: 2,
         p: 2,
         borderBottom: '1px solid',
         borderColor: 'divider',
-        bgcolor: alpha(theme.palette.background.paper, 0.8),
+        bgcolor: "background.default",
+        borderRadius: 2,
       }}
     >
       {/* Folder title - only shown on desktop */}
@@ -65,6 +66,7 @@ export default function EmailHeader({
             fontWeight: 600,
             color: theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.grey[900],
             flexShrink: 0,
+            display: { xs: 'none', sm: 'none', md: 'block'}
           }}
         >
           {formattedFolderName}

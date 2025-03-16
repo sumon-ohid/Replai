@@ -53,7 +53,7 @@ export default function EmailClient() {
             sx={{ 
               width: 280, 
               flexShrink: 0,
-              borderRight: '1px solid',
+              // border: '1px solid',
               borderColor: 'divider',
               display: { xs: 'none', md: 'block' }
             }}
@@ -77,7 +77,7 @@ export default function EmailClient() {
             open={state.mobileSidebarOpen}
             onClose={handlers.toggleMobileSidebar}
             sx={{
-              '& .MuiDrawer-root': { 
+              '& .MuiDrawer-paper': { 
                 width: 280,
                 boxSizing: 'border-box',
               },
@@ -104,7 +104,13 @@ export default function EmailClient() {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          width: { xs: '100%', md: 'calc(100% - 280px)' } 
+          width: { xs: '100%', md: 'calc(100% - 280px)' }, 
+          ...(isMobile ? { width: '100%' } : {}),
+          backgroundColor: 'background.default',
+          borderRadius: { xs: 2, md: 2 },
+          border: 1,
+          borderColor: 'divider',
+          mt: { xs: 1, md: 0 },
         }}>
           {/* Header with search and actions */}
           <EmailHeader
