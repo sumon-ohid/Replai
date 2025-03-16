@@ -77,7 +77,7 @@ export default function EmailClient() {
             open={state.mobileSidebarOpen}
             onClose={handlers.toggleMobileSidebar}
             sx={{
-              '& .MuiDrawer-paper': { 
+              '& .MuiDrawer-root': { 
                 width: 280,
                 boxSizing: 'border-box',
               },

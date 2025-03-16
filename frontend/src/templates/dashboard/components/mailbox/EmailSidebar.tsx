@@ -128,6 +128,7 @@ export default function EmailSidebar({
         overflowY: 'auto',
         border: '1px solid',
         borderColor: 'divider',
+        borderRadius: isMobile ? 0 : 2,
         pt: 1,
         pb: 2,
         px: 2,
