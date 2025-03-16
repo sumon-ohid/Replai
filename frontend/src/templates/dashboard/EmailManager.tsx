@@ -12,12 +12,27 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import Grid from '@mui/material/Grid';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSnackbar } from 'notistack';
 
 // Icons
 import EmailIcon from '@mui/icons-material/EmailRounded';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import RefreshIcon from '@mui/icons-material/RefreshRounded';
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import SecurityIcon from '@mui/icons-material/Security';
+
+// Lazy loaded components
+const EmailProviderCard = React.lazy(() => import('./components/EmailProviderCard'));
+const ConnectEmailDialog = React.lazy(() => import('./components/ConnectEmailDialog'));
+const EmailAnalytics = React.lazy(() => import('./components/EmailAnalytics'));
+const EmailConnectionStatus = React.lazy(() => import('./components/EmailConnectionStatus'));
 
 // Components
 import AppNavbar from './components/AppNavbar';
@@ -33,6 +48,8 @@ import {
 } from './theme/customizations';
 import axios from 'axios';
 import Footer from './components/Footer';
+import LoadingButton from '@mui/lab/LoadingButton';
+import Skeleton from '@mui/material/Skeleton';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -68,22 +85,68 @@ const itemVariants = {
   }
 };
 
+const cardHoverAnimation = {
+  rest: { scale: 1, boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)' },
+  hover: { 
+    scale: 1.02,
+    boxShadow: '0px 10px 25px rgba(0, 0, 0, 0.1)',
+    transition: { duration: 0.3, ease: 'easeOut' }
+  }
+};
+
 export default function EmailManager(props: { disableCustomTheme?: boolean }) {
   const theme = useTheme();
-  const [loading, setLoading] = React.useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = React.useState<{[key: string]: boolean}>({
+    google: false,
+    microsoft: false,
+    custom: false
+  });
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+  const [openDialog, setOpenDialog] = React.useState(false);
+  const [emailProvider, setEmailProvider] = React.useState<'google' | 'microsoft' | 'custom' | null>(null);
+  const [stats, setStats] = React.useState({
+    totalEmails: 0,
+    processedEmails: 0,
+    automatedResponses: 0
+  });
 
-  const handleCreateBot = async () => {
-    setLoading(true);
+  // Fetch email stats
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      try {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setStats(response.data as any);
+      } catch (error) {
+        console.error('Error fetching email stats:', error);
+      }
+    };
+    
+    fetchStats();
+  }, [refreshTrigger]);
+
+  const handleConnectEmail = (provider: 'google' | 'microsoft' | 'custom') => {
+    setEmailProvider(provider);
+    setOpenDialog(true);
+  };
+
+  const handleAuthProvider = async (provider: 'google' | 'microsoft') => {
+    setLoading({...loading, [provider]: true});
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error('No token found');
-      setLoading(false);
+      enqueueSnackbar('Authentication required', { variant: 'error' });
+      setLoading({...loading, [provider]: false});
       return;
     }
 
     try {
-      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/google`, {
+      const endpoint = provider === 'google' ? 'google' : 'microsoft';
+      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/${endpoint}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -91,13 +154,20 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
       const authUrl = (response.data as { authUrl: string }).authUrl;
       window.location.href = authUrl;
     } catch (error) {
-      console.error('Error creating bot:', error);
-      setLoading(false);
+      console.error(`Error connecting to ${provider}:`, error);
+      enqueueSnackbar(`Failed to connect to ${provider}`, { variant: 'error' });
+      setLoading({...loading, [provider]: false});
     }
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEmailProvider(null);
   };
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
+    enqueueSnackbar('Refreshing connected accounts', { variant: 'info' });
   };
 
   return (
@@ -165,7 +235,6 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                       justifyContent: 'center',
                       p: 1,
                       borderRadius: '50%',
-                      // white fade background
                       background: 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))',
                     }}
                   >
@@ -212,6 +281,32 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                   Connect and manage your email accounts for automated responses and analytics.
                 </Typography>
               </Box>
+              
+              <Button
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+                variant="outlined"
+                color="primary"
+                size="small"
+                sx={{ 
+                  borderRadius: 2,
+                  px: 2,
+                  height: 36
+                }}
+              >
+                Refresh Status
+              </Button>
+            </Box>
+
+            {/* Analytics Cards */}
+            <Box
+              component={motion.div}
+              variants={itemVariants}
+              sx={{ mb: 4 }}
+            >
+              <React.Suspense fallback={<Skeleton variant="rectangular" height={120} />}>
+                <EmailAnalytics stats={stats} refreshTrigger={refreshTrigger} />
+              </React.Suspense>
             </Box>
             
             {/* Info Card */}
@@ -246,16 +341,16 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                     backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.info.main, 0.2) : alpha(theme.palette.info.main, 0.1),
                   }}
                 >
-                  <InfoOutlinedIcon sx={{ color: theme.palette.info.main }} />
+                  <SecurityIcon sx={{ color: theme.palette.info.main }} />
                 </Box>
                 
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="subtitle1" sx={{ color: theme.palette.info.main, fontWeight: 600, mb: 0.5 }}>
-                    Why connect your email?
+                    Your data is secure with us
                   </Typography>
                   <Typography variant="body2">
-                    Connected email accounts enable automatic responses, email analysis, and help you save time managing your inbox.
-                    We only use read-only access and never store your passwords.
+                    Connected email accounts enable automatic responses and email analysis. We use OAuth2 for secure access 
+                    and never store your passwords. You can revoke access at any time.
                   </Typography>
                 </Box>
                 
@@ -271,8 +366,70 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                 />
               </Paper>
             </Box>
+
+            {/* Email Provider Options */}
+            <Box 
+              component={motion.div}
+              variants={itemVariants}
+              sx={{ mb: 4 }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 2.5,
+                  ml: 2,
+                  fontWeight: 600
+                }}
+              >
+                Connect Email Provider
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
+                    <EmailProviderCard
+                      title="Gmail"
+                      description="Connect your Google account to automate Gmail responses"
+                      icon={<GoogleIcon sx={{ fontSize: 40 }} />}
+                      color="#DB4437"
+                      onClick={() => handleAuthProvider('google')}
+                      loading={loading.google}
+                      animation={cardHoverAnimation}
+                    />
+                  </React.Suspense>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={4}>
+                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
+                    <EmailProviderCard
+                      title="Microsoft Outlook"
+                      description="Connect your Microsoft account for Outlook automation"
+                      icon={<MicrosoftIcon sx={{ fontSize: 40 }} />}
+                      color="#0078D4"
+                      onClick={() => handleAuthProvider('microsoft')}
+                      loading={loading.microsoft}
+                      animation={cardHoverAnimation}
+                    />
+                  </React.Suspense>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={4}>
+                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
+                    <EmailProviderCard
+                      title="Custom Email"
+                      description="Connect other email providers via IMAP/SMTP"
+                      icon={<AlternateEmailIcon sx={{ fontSize: 40 }} />}
+                      color="#673AB7"
+                      onClick={() => handleConnectEmail('custom')}
+                      loading={loading.custom}
+                      animation={cardHoverAnimation}
+                    />
+                  </React.Suspense>
+                </Grid>
+              </Grid>
+            </Box>
             
-            {/* Connected Emails */}
+            {/* Connected Emails Status */}
             <Box component={motion.div} variants={itemVariants}>
               <Typography
                 variant="h6"
@@ -309,7 +466,9 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <GetConnectedEmails key={refreshTrigger} />
+                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
+                    <EmailConnectionStatus refreshTrigger={refreshTrigger} />
+                  </React.Suspense>
                 </motion.div>
               </AnimatePresence>
             </Box>
@@ -317,6 +476,15 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
           <Footer />
         </Box>
       </Box>
+      
+      {/* Custom Email Connection Dialog */}
+      <React.Suspense fallback={null}>
+        <ConnectEmailDialog
+          open={openDialog}
+          onClose={handleCloseDialog}
+          provider={emailProvider}
+        />
+      </React.Suspense>
     </AppTheme>
   );
 }

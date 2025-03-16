@@ -1,0 +1,1 @@
+import{b0 as a,j as e,$ as n,D as s}from"./mui-core-C3ffLUwq.js";function c(l){const{mode:t,setMode:r}=a();return t?e.jsxs(n,{value:t,onChange:o=>r(o.target.value),SelectDisplayProps:{"data-screenshot":"toggle-mode"},...l,children:[e.jsx(s,{value:"system",children:"System"}),e.jsx(s,{value:"light",children:"Light"}),e.jsx(s,{value:"dark",children:"Dark"})]}):null}export{c as C};
