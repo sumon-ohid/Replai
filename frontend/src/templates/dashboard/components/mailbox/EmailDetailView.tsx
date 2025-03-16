@@ -195,6 +195,9 @@ export default function EmailDetailView({
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
+        borderLeft: "1px solid",
+        borderColor: "divider",
+        bgcolor: theme.palette.background.default,
       }}
     >
       {/* Header with controls */}
@@ -211,30 +214,45 @@ export default function EmailDetailView({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton onClick={onClose} edge="start" sx={{ ml: 1 }}>
+          <IconButton
+            onClick={onClose}
+            edge="start"
+            sx={{ ml: 1, height: 32, width: 32 }}
+          >
             <ArrowBackIcon />
           </IconButton>
-          {/* <Typography variant="h6" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
+          {/* <Typography variant="h6" sx={{ml: 1, fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
             {email.subject}
           </Typography> */}
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Tooltip title={email.isRead ? "Mark as unread" : "Mark as read"}>
-            <IconButton onClick={() => onToggleRead(email.id, !email.isRead)}>
+            <IconButton
+              onClick={() => onToggleRead(email.id, !email.isRead)}
+              sx={{ height: 32, width: 32 }}
+            >
               {email.isRead ? <MarkEmailUnreadIcon /> : <MarkEmailReadIcon />}
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Delete">
-            <IconButton onClick={() => onDelete(email.id)} color="error">
+            <IconButton
+              onClick={() => onDelete(email.id)}
+              color="error"
+              sx={{ height: 32, width: 32 }}
+            >
               <DeleteOutlineIcon />
             </IconButton>
           </Tooltip>
 
           <Tooltip title={hasPrevious ? "Previous email" : "No more emails"}>
             <span>
-              <IconButton onClick={onPrevious} disabled={!hasPrevious}>
+              <IconButton
+                onClick={onPrevious}
+                disabled={!hasPrevious}
+                sx={{ height: 32, width: 32 }}
+              >
                 <KeyboardArrowLeftIcon />
               </IconButton>
             </span>
@@ -242,7 +260,11 @@ export default function EmailDetailView({
 
           <Tooltip title={hasNext ? "Next email" : "No more emails"}>
             <span>
-              <IconButton onClick={onNext} disabled={!hasNext}>
+              <IconButton
+                onClick={onNext}
+                disabled={!hasNext}
+                sx={{ height: 32, width: 32 }}
+              >
                 <KeyboardArrowRightIcon />
               </IconButton>
             </span>
@@ -262,7 +284,7 @@ export default function EmailDetailView({
         {/* Subject and actions */}
         <Box sx={{ mb: 3 }}>
           <Typography
-            variant="h5"
+            variant="h6"
             gutterBottom
             sx={{
               fontWeight: 600,
@@ -272,7 +294,7 @@ export default function EmailDetailView({
                   : theme.palette.grey[900],
             }}
           >
-            {email.subject}
+            Subject: {email.subject}
           </Typography>
 
           <Box
@@ -486,26 +508,35 @@ export default function EmailDetailView({
           )}
 
         {/* Quick reply buttons at bottom */}
-        <Box
-          sx={{ mt: 4, display: "flex", justifyContent: "flex-end", gap: 1 }}
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          py: 0.12,
+          px: 3,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          bgcolor: theme.palette.background.paper,
+          gap: 3,
+        }}
+      >
+        <Button
+          variant="text"
+          startIcon={<ReplyIcon />}
+          onClick={() => onReply(email)}
+          sx={{ borderRadius: 1 }}
         >
-          <Button
-            variant="contained"
-            startIcon={<ReplyIcon />}
-            onClick={() => onReply(email)}
-            sx={{ borderRadius: 8 }}
-          >
-            Reply
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ForwardIcon />}
-            onClick={() => onForward(email)}
-            sx={{ borderRadius: 8 }}
-          >
-            Forward
-          </Button>
-        </Box>
+          Reply
+        </Button>
+        <Button
+          variant="text"
+          startIcon={<ForwardIcon />}
+          onClick={() => onForward(email)}
+          sx={{ borderRadius: 1 }}
+        >
+          Forward
+        </Button>
       </Box>
     </Box>
   );

@@ -61,7 +61,6 @@ export default function EmailHeader({
         borderBottom: "1px solid",
         borderColor: "divider",
         bgcolor: "background.default",
-        borderRadius: 2,
       }}
     >
       {onToggleSidebar && (
