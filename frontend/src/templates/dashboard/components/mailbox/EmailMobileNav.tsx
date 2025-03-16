@@ -47,7 +47,7 @@ export default function EmailMobileNav({
       sx={{ 
         borderBottom: '1px solid', 
         borderColor: 'divider',
-        bgcolor: alpha(theme.palette.background.paper, 0.8),
+        bgcolor: "background.default",
         backdropFilter: 'blur(8px)'
       }}
     >
@@ -61,7 +61,7 @@ export default function EmailMobileNav({
           <MenuIcon />
         </IconButton>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 1}}>
           <FolderIcon sx={{ mr: 1, color: currentFolder === 'starred' ? theme.palette.warning.main : 'inherit' }} />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             {currentFolderData.name}

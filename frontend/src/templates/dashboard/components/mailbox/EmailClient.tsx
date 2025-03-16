@@ -32,7 +32,7 @@ export default function EmailClient() {
         height: '100vh',
         maxHeight: '100vh',
         overflow: 'hidden',
-        bgcolor: theme.palette.background.default,
+        bgcolor: 'background.default',
       }}
     >
       {/* Mobile navigation - only visible on mobile */}

@@ -128,11 +128,11 @@ export default function EmailSidebar({
         overflowY: 'auto',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 2,
         pt: 1,
         pb: 2,
         px: 2,
         mr: isMobile ? 0 : 1,
+        backgroundColor: 'background.default'
       }}
     >
       {/* Mobile close button */}
@@ -144,7 +144,7 @@ export default function EmailSidebar({
         </Box>
       )}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, backgroundColor: 'background.default', borderRadius: 2, px: 2, py: 1 }}>
         <Typography 
           variant="h6" 
           sx={{ 
