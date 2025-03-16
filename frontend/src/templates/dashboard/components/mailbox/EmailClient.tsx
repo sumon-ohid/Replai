@@ -1,6 +1,8 @@
 import * as React from "react";
-import { Box, useTheme, useMediaQuery, Drawer } from "@mui/material";
+import { Box, useTheme, useMediaQuery, Drawer, IconButton } from "@mui/material";
 import { motion } from "framer-motion";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import EmailSidebar from "./EmailSidebar";
 import EmailHeader from "./EmailHeader";
 import EmailList from "./EmailList";
@@ -14,10 +16,27 @@ export default function EmailClient() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
   const { state, handlers, selectedEmail } = useEmailClient();
-
+  
+  // Add state for collapsible sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  
   // Add pagination state
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(20);
+
+  // Auto-collapse sidebar on smaller screens
+  React.useEffect(() => {
+    if (isTablet && !isMobile) {
+      setSidebarCollapsed(true);
+    } else if (!isTablet) {
+      setSidebarCollapsed(false);
+    }
+  }, [isTablet, isMobile]);
+
+  // Toggle sidebar collapse
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
 
   // Reset pagination when folder or search term changes
   React.useEffect(() => {
@@ -39,6 +58,9 @@ export default function EmailClient() {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+  // Calculate sidebar width based on collapsed state
+  const sidebarWidth = sidebarCollapsed ? 72 : 280;
 
   return (
     <Box
@@ -77,12 +99,40 @@ export default function EmailClient() {
         {!isMobile ? (
           <Box
             sx={{
-              width: 280,
+              width: sidebarWidth,
               flexShrink: 0,
               borderColor: "divider",
               display: { xs: "none", md: "block" },
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              position: 'relative',
             }}
           >
+            {/* Toggle collapse button */}
+            {/* <IconButton 
+              onClick={handleToggleSidebar}
+              sx={{
+                position: 'absolute',
+                right: -12,
+                top: 20,
+                zIndex: 10,
+                bgcolor: 'background.default',
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 1,
+                width: 32,
+                height: 32,
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+              size="small"
+            >
+              {sidebarCollapsed ? <MenuIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+            </IconButton> */}
+            
             <EmailSidebar
               accounts={state.accounts}
               selectedAccount={state.selectedAccount}
@@ -93,6 +143,7 @@ export default function EmailClient() {
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
               isMobile={isMobile}
+              collapsed={sidebarCollapsed}
             />
           </Box>
         ) : (
@@ -125,6 +176,7 @@ export default function EmailClient() {
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
               isMobile={true}
+              collapsed={false}
             />
           </Drawer>
         )}
@@ -141,13 +193,17 @@ export default function EmailClient() {
             overflow: "hidden",
             width: {
               xs: "100%",
-              md: isMobile ? "100%" : "calc(100% - 280px)",
+              md: isMobile ? "100%" : `calc(100% - ${sidebarWidth}px)`,
             },
             backgroundColor: "background.default",
             borderRadius: { xs: 1, md: 2 },
             border: 1,
             borderColor: "divider",
             mt: { xs: 1, md: 0 },
+            transition: theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
           }}
         >
           {/* Header with search and actions */}
@@ -159,6 +215,8 @@ export default function EmailClient() {
             isLoading={state.loading}
             currentFolder={state.currentFolder}
             onMarkAllRead={() => handlers.handleMarkAllRead()}
+            onToggleSidebar={!isMobile ? handleToggleSidebar : undefined}
+            isSidebarCollapsed={!isMobile ? sidebarCollapsed : false}
           />
 
           {/* Content: Either email list or email detail */}

@@ -16,7 +16,8 @@ import {
   Stack,
   Menu,
   MenuItem,
-  ListItemAvatar
+  ListItemAvatar,
+  Tooltip
 } from '@mui/material';
 import { motion } from 'framer-motion';
 
@@ -43,6 +44,7 @@ interface EmailSidebarProps {
   onCompose: () => void;
   onCloseMobileSidebar: () => void;
   isMobile: boolean;
+  collapsed?: boolean;
 }
 
 export default function EmailSidebar({
@@ -54,7 +56,8 @@ export default function EmailSidebar({
   onFolderChange,
   onCompose,
   onCloseMobileSidebar,
-  isMobile
+  isMobile,
+  collapsed = false
 }: EmailSidebarProps) {
   const theme = useTheme();
   const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<HTMLElement | null>(null);
@@ -125,14 +128,20 @@ export default function EmailSidebar({
         flexDirection: 'column',
         height: '100%',
         overflowY: 'auto',
+        overflowX: 'hidden',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: isMobile ? 0 : 2,
         pt: 1,
         pb: 2,
-        px: 2,
+        px: collapsed ? 1 : 2,
         mr: isMobile ? 0 : 1,
-        backgroundColor: 'background.default'
+        backgroundColor: 'background.default',
+        width: collapsed ? '100%' : 'auto',
+        transition: theme.transitions.create('padding', {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.standard,
+        }),
       }}
     >
       {/* Mobile close button */}
@@ -144,179 +153,283 @@ export default function EmailSidebar({
         </Box>
       )}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, backgroundColor: 'background.default', borderRadius: 2, px: 2, py: 1 }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            flexGrow: 1,
-            fontWeight: 600,
-            fontSize: '1.1rem'
-          }}
-        >
-          Mailbox
-        </Typography>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: 2, 
+          backgroundColor: 'background.default', 
+          borderRadius: 2, 
+          px: collapsed ? 0.5 : 2, 
+          py: 1 
+        }}
+      >
+        {!collapsed && (
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              flexGrow: 1,
+              fontWeight: 600,
+              fontSize: '1.1rem'
+            }}
+          >
+            Mailbox
+          </Typography>
+        )}
         
-        <Button
-          variant="contained"
-          disableElevation
-          startIcon={<CreateIcon />}
-          onClick={onCompose}
-          sx={{
-            borderRadius: 8,
-            px: 2,
-            py: 1,
-            textTransform: 'none',
-            boxShadow: theme.shadows[2],
-            '&:hover': {
-              boxShadow: theme.shadows[4],
-            }
-          }}
-        >
-          Compose
-        </Button>
+        <Tooltip title="Compose new email">
+          <Button
+            variant="contained"
+            disableElevation
+            startIcon={!collapsed && <CreateIcon />}
+            onClick={onCompose}
+            sx={{
+              borderRadius: 8,
+              px: collapsed ? 1 : 2,
+              py: 1,
+              minWidth: collapsed ? 'unset' : undefined,
+              textTransform: 'none',
+              boxShadow: theme.shadows[2],
+              '&:hover': {
+                boxShadow: theme.shadows[4],
+              },
+              width: collapsed ? 40 : 'auto',
+            }}
+          >
+            {collapsed ? <CreateIcon fontSize="small" /> : 'Compose'}
+          </Button>
+        </Tooltip>
       </Box>
 
       {/* Account selector */}
-      <Button
-        fullWidth
-        onClick={handleAccountMenuOpen}
-        sx={{
-          justifyContent: 'flex-start',
-          borderRadius: 2,
-          py: 1,
-          px: 1.5,
-          mb: 2,
-          border: '1px solid',
-          borderColor: theme.palette.divider,
-          backgroundColor: theme.palette.background.paper,
-          '&:hover': {
-            backgroundColor: alpha(theme.palette.primary.main, 0.04),
-          },
-          textTransform: 'none'
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-          <Avatar
+      {!collapsed ? (
+        <Button
+          fullWidth
+          onClick={handleAccountMenuOpen}
+          sx={{
+            justifyContent: 'flex-start',
+            borderRadius: 2,
+            py: 1,
+            px: 1.5,
+            mb: 2,
+            border: '1px solid',
+            borderColor: theme.palette.divider,
+            backgroundColor: theme.palette.background.paper,
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.primary.main, 0.04),
+            },
+            textTransform: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: theme.palette.primary.main,
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                mr: 1.5
+              }}
+            >
+              {selectedAccountData?.avatar || selectedAccountData?.name.charAt(0)}
+            </Avatar>
+            <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{ fontWeight: 500, color: 'text.primary' }}
+              >
+                {selectedAccountData?.email}
+              </Typography>
+            </Box>
+            <KeyboardArrowRightIcon fontSize="small" sx={{ color: 'text.secondary', ml: 0.5 }} />
+          </Box>
+        </Button>
+      ) : (
+        <Tooltip title={`${selectedAccountData?.name} (${selectedAccountData?.email})`} placement="right">
+          <IconButton 
+            onClick={handleAccountMenuOpen}
             sx={{
-              width: 28,
-              height: 28,
-              bgcolor: theme.palette.primary.main,
-              fontSize: '0.9rem',
-              fontWeight: 'bold',
-              mr: 1.5
+              p: 1,
+              mb: 2,
+              width: 40,
+              height: 40,
+              alignSelf: 'center'
             }}
           >
-            {selectedAccountData?.avatar || selectedAccountData?.name.charAt(0)}
-          </Avatar>
-          <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
-            <Typography
-              variant="body2"
-              noWrap
-              sx={{ fontWeight: 500, color: 'text.primary' }}
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: theme.palette.primary.main,
+                fontSize: '0.9rem',
+                fontWeight: 'bold'
+              }}
             >
-              {/* {selectedAccountData?.name} */}
-            </Typography>
-            <Typography
-              variant="caption"
-              noWrap
-              sx={{ display: 'block', color: 'text.secondary' }}
-            >
-              {selectedAccountData?.email}
-            </Typography>
-          </Box>
-          <KeyboardArrowRightIcon fontSize="small" sx={{ color: 'text.secondary', ml: 0.5 }} />
-        </Box>
-      </Button>
+              {selectedAccountData?.avatar || selectedAccountData?.name.charAt(0)}
+            </Avatar>
+          </IconButton>
+        </Tooltip>
+      )}
 
       {/* Folders list */}
-      <List disablePadding sx={{ mb: 2 }}>
+      <List disablePadding sx={{ mb: 2, width: '100%' }}>
         {folderItems.map((folder) => (
-          <ListItemButton
+          <Tooltip
             key={folder.id}
-            selected={currentFolder === folder.id}
-            onClick={() => {
-              onFolderChange(folder.id);
-              if (isMobile) onCloseMobileSidebar();
-            }}
-            sx={{
-              borderRadius: 2,
-              mb: 0.5,
-              py: 1,
-              px: 1.5,
-              '&.Mui-selected': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
+            title={collapsed ? folder.label : ""}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
+            <ListItemButton
+              selected={currentFolder === folder.id}
+              onClick={() => {
+                onFolderChange(folder.id);
+                if (isMobile) onCloseMobileSidebar();
+              }}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                py: 1,
+                px: collapsed ? 1 : 1.5,
+                '&.Mui-selected': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.15),
+                  },
                 },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 36, color: currentFolder === folder.id ? theme.palette.primary.main : 'inherit' }}>
-              {folder.icon}
-            </ListItemIcon>
-            <ListItemText 
-              primary={folder.label}
-              primaryTypographyProps={{
-                fontWeight: currentFolder === folder.id ? 600 : 400,
-                color: currentFolder === folder.id ? theme.palette.primary.main : 'text.primary'
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                minWidth: collapsed ? 40 : 'auto',
               }}
-            />
-            {typeof folder.count === 'number' && folder.count > 0 && (
-              <Chip
-                label={folder.count}
-                size="small"
-                color={currentFolder === folder.id ? "primary" : "default"}
-                sx={{
-                  height: 22,
-                  fontSize: '0.75rem',
-                  fontWeight: 600
-                }}
-              />
-            )}
-          </ListItemButton>
+            >
+              <ListItemIcon sx={{ 
+                minWidth: collapsed ? 0 : 36, 
+                color: currentFolder === folder.id ? theme.palette.primary.main : 'inherit',
+                mr: collapsed ? 0 : undefined,
+              }}>
+                {folder.icon}
+              </ListItemIcon>
+              
+              {!collapsed && (
+                <ListItemText 
+                  primary={folder.label}
+                  primaryTypographyProps={{
+                    fontWeight: currentFolder === folder.id ? 600 : 400,
+                    color: currentFolder === folder.id ? theme.palette.primary.main : 'text.primary'
+                  }}
+                />
+              )}
+              
+              {!collapsed && typeof folder.count === 'number' && folder.count > 0 && (
+                <Chip
+                  label={folder.count}
+                  size="small"
+                  color={currentFolder === folder.id ? "primary" : "default"}
+                  sx={{
+                    height: 22,
+                    fontSize: '0.75rem',
+                    fontWeight: 600
+                  }}
+                />
+              )}
+              
+              {/* Show badge for collapsed mode */}
+              {collapsed && typeof folder.count === 'number' && folder.count > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    bgcolor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    fontSize: '0.65rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {folder.count > 9 ? '9+' : folder.count}
+                </Box>
+              )}
+            </ListItemButton>
+          </Tooltip>
         ))}
       </List>
 
-      <Divider sx={{ my: 2 }} />
+      {!collapsed && <Divider sx={{ my: 2 }} />}
 
-      {/* Labels section */}
-      <Typography
-        variant="caption"
-        sx={{
-          px: 2,
-          py: 0.5,
-          fontWeight: 600,
-          color: 'text.secondary',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5
-        }}
-      >
-        Labels
-      </Typography>
-
-      <List disablePadding>
-        {labels.map((label) => (
-          <ListItemButton
-            key={label.id}
+      {/* Labels section - only show in expanded mode */}
+      {!collapsed && (
+        <>
+          <Typography
+            variant="caption"
             sx={{
-              borderRadius: 2,
-              mb: 0.5,
-              py: 0.75,
-              px: 1.5,
+              px: 2,
+              py: 0.5,
+              fontWeight: 600,
+              color: 'text.secondary',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5
             }}
           >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <LabelIcon sx={{ color: label.color }} />
-            </ListItemIcon>
-            <ListItemText 
-              primary={label.name}
-              primaryTypographyProps={{
-                fontSize: '0.875rem'
-              }}
-            />
-          </ListItemButton>
-        ))}
-      </List>
+            Labels
+          </Typography>
+
+          <List disablePadding>
+            {labels.map((label) => (
+              <ListItemButton
+                key={label.id}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  py: 0.75,
+                  px: 1.5,
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <LabelIcon sx={{ color: label.color }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={label.name}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </>
+      )}
+
+      {/* Labels section - collapsed mode */}
+      {collapsed && (
+        <List disablePadding sx={{ mt: 1 }}>
+          {labels.map((label) => (
+            <Tooltip
+              key={label.id}
+              title={label.name}
+              placement="right"
+            >
+              <ListItemButton
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  p: 1,
+                  justifyContent: 'center',
+                  minWidth: 40,
+                }}
+              >
+                <LabelIcon sx={{ color: label.color }} />
+              </ListItemButton>
+            </Tooltip>
+          ))}
+        </List>
+      )}
 
       {/* Account switcher menu */}
       <Menu

@@ -269,7 +269,8 @@ export default function EmailList({
                       },
                     }}
                   >
-                    <Box
+                    {/* checkbox for email selection */}
+                    {/* <Box
                       sx={{
                         display: { xs: "none", sm: "flex" },
                         alignItems: "center",
@@ -283,7 +284,7 @@ export default function EmailList({
                         size="small"
                         sx={{ p: 0.5 }}
                       />
-                    </Box>
+                    </Box> */}
 
                     <ListItemAvatar>
                       <Avatar
@@ -447,11 +448,11 @@ export default function EmailList({
             rowsPerPageOptions={[10, 20, 50, 100]}
             sx={{
               '.MuiTablePagination-toolbar': {
-                minHeight: 52,
+                minHeight: 42,
               },
               '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
                 fontSize: '0.775rem',
-              }
+              },
             }}
           />
         </Paper>
