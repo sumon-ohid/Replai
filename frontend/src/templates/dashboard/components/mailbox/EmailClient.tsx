@@ -31,6 +31,7 @@ export default function EmailClient() {
         flexDirection: 'column',
         height: '100vh',
         maxHeight: '100vh',
+        width: '100%',
         overflow: 'hidden',
         bgcolor: 'background.default',
       }}
@@ -168,7 +169,7 @@ export default function EmailClient() {
                   height: '100%',
                   bgcolor: 'background.paper',
                   zIndex: 1,
-                  ...(isTablet && !isMobile ? { width: '60%' } : {})
+                  ...(isTablet && !isMobile ? { width: '90%' } : {})
                 }}
               >
                 <EmailDetailView

@@ -98,19 +98,20 @@ export default function EmailDetailView({
           p: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
-          bgcolor: alpha(theme.palette.background.paper, 0.8),
+          bgcolor: theme.palette.background.default,
+          gap: 2,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={onClose} edge="start">
+          <IconButton onClick={onClose} edge="start" sx={{ ml: 1 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
+          {/* <Typography variant="h6" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
             {email.subject}
-          </Typography>
+          </Typography> */}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tooltip title={email.isRead ? 'Mark as unread' : 'Mark as read'}>
             <IconButton onClick={() => onToggleRead(email.id, !email.isRead)}>
               {email.isRead ? <MarkEmailUnreadIcon /> : <MarkEmailReadIcon />}
@@ -147,7 +148,7 @@ export default function EmailDetailView({
           flexGrow: 1,
           overflow: 'auto',
           p: { xs: 2, sm: 3 },
-          bgcolor: theme.palette.background.paper,
+          bgcolor: theme.palette.background.default,
         }}
       >
         {/* Subject and actions */}
@@ -230,27 +231,6 @@ export default function EmailDetailView({
                 {email.from.email}
               </Typography>
             </Box>
-            
-            <Box>
-              <Button
-                variant="contained"
-                startIcon={<ReplyIcon />}
-                onClick={() => onReply(email)}
-                sx={{ mr: 1, borderRadius: 8 }}
-                size="small"
-              >
-                Reply
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<ForwardIcon />}
-                onClick={() => onForward(email)}
-                sx={{ borderRadius: 8 }}
-                size="small"
-              >
-                Forward
-              </Button>
-            </Box>
           </Box>
           
           <Box sx={{ mt: 2 }}>
@@ -266,7 +246,7 @@ export default function EmailDetailView({
         </Paper>
         
         {/* Email content */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: 'background.paper', p: 2, borderRadius: 2 }}>
           <Typography 
             variant="body1"
             sx={{ 
@@ -299,7 +279,7 @@ export default function EmailDetailView({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
-                    width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33% - 10px)' },
+                    width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(50% - 10px)' },
                   }}
                 >
                   <AttachmentIcon fontSize="small" />
