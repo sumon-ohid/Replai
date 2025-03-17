@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   Dialog,
   DialogTitle,
@@ -21,19 +21,19 @@ import {
   Avatar,
   CircularProgress,
   Divider,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import MinimizeIcon from '@mui/icons-material/Minimize';
-import MaximizeIcon from '@mui/icons-material/Maximize';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import SendIcon from '@mui/icons-material/Send';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatItalicIcon from '@mui/icons-material/FormatItalic';
-import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import { EmailData, EmailAccount } from './useEmailClient';
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import MinimizeIcon from "@mui/icons-material/Minimize";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import SendIcon from "@mui/icons-material/Send";
+import DeleteIcon from "@mui/icons-material/Delete";
+import FormatBoldIcon from "@mui/icons-material/FormatBold";
+import FormatItalicIcon from "@mui/icons-material/FormatItalic";
+import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
+import { EmailData, EmailAccount } from "./useEmailClient";
 
 interface ComposeEmailProps {
   open: boolean;
@@ -67,11 +67,11 @@ export default function ComposeEmail({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Form state
-  const [to, setTo] = React.useState<string>('');
-  const [cc, setCc] = React.useState<string>('');
-  const [bcc, setBcc] = React.useState<string>('');
-  const [subject, setSubject] = React.useState<string>('');
-  const [content, setContent] = React.useState<string>('');
+  const [to, setTo] = React.useState<string>("");
+  const [cc, setCc] = React.useState<string>("");
+  const [bcc, setBcc] = React.useState<string>("");
+  const [subject, setSubject] = React.useState<string>("");
+  const [content, setContent] = React.useState<string>("");
   const [showCc, setShowCc] = React.useState(false);
   const [showBcc, setShowBcc] = React.useState(false);
 
@@ -80,14 +80,30 @@ export default function ComposeEmail({
     if (replyTo) {
       setTo(replyTo.from.email);
       setSubject(`Re: ${replyTo.subject}`);
-      setContent(`\n\n-------- Original Message --------\nFrom: ${replyTo.from.name} <${replyTo.from.email}>\nDate: ${new Date(replyTo.timestamp).toLocaleString()}\nSubject: ${replyTo.subject}\n\n${replyTo.content}`);
+      setContent(
+        `\n\n-------- Original Message --------\nFrom: ${replyTo.from.name} <${
+          replyTo.from.email
+        }>\nDate: ${new Date(replyTo.timestamp).toLocaleString()}\nSubject: ${
+          replyTo.subject
+        }\n\n${replyTo.content}`
+      );
       setShowCc(!!replyTo.cc?.length);
       if (replyTo.cc?.length) {
-        setCc(replyTo.cc.map(c => c.email).join(', '));
+        setCc(replyTo.cc.map((c) => c.email).join(", "));
       }
     } else if (forwardEmail) {
       setSubject(`Fwd: ${forwardEmail.subject}`);
-      setContent(`\n\n-------- Forwarded Message --------\nFrom: ${forwardEmail.from.name} <${forwardEmail.from.email}>\nDate: ${new Date(forwardEmail.timestamp).toLocaleString()}\nSubject: ${forwardEmail.subject}\nTo: ${forwardEmail.to.map(t => t.email).join(', ')}\n\n${forwardEmail.content}`);
+      setContent(
+        `\n\n-------- Forwarded Message --------\nFrom: ${
+          forwardEmail.from.name
+        } <${forwardEmail.from.email}>\nDate: ${new Date(
+          forwardEmail.timestamp
+        ).toLocaleString()}\nSubject: ${
+          forwardEmail.subject
+        }\nTo: ${forwardEmail.to.map((t) => t.email).join(", ")}\n\n${
+          forwardEmail.content
+        }`
+      );
       if (forwardEmail.attachments?.length) {
         // In a real app, you'd handle transferring the attachments
       }
@@ -99,20 +115,20 @@ export default function ComposeEmail({
       // Show validation error
       return;
     }
-    
+
     setSending(true);
     try {
       await onSend({
-        to: to.split(',').map(email => email.trim()),
-        cc: cc ? cc.split(',').map(email => email.trim()) : [],
-        bcc: bcc ? bcc.split(',').map(email => email.trim()) : [],
+        to: to.split(",").map((email) => email.trim()),
+        cc: cc ? cc.split(",").map((email) => email.trim()) : [],
+        bcc: bcc ? bcc.split(",").map((email) => email.trim()) : [],
         subject,
         content,
         attachments,
       });
       handleClose();
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error("Failed to send email:", error);
       // Show error message
     } finally {
       setSending(false);
@@ -121,11 +137,11 @@ export default function ComposeEmail({
 
   const handleClose = () => {
     // Reset form
-    setTo('');
-    setCc('');
-    setBcc('');
-    setSubject('');
-    setContent('');
+    setTo("");
+    setCc("");
+    setBcc("");
+    setSubject("");
+    setContent("");
     setAttachments([]);
     setShowCc(false);
     setShowBcc(false);
@@ -140,12 +156,12 @@ export default function ComposeEmail({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setAttachments(prev => [...prev, ...Array.from(event.target.files!)]);
+      setAttachments((prev) => [...prev, ...Array.from(event.target.files!)]);
     }
   };
 
   const handleRemoveAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -159,62 +175,75 @@ export default function ComposeEmail({
         PaperProps={{
           sx: {
             borderRadius: maximized ? 0 : 2,
-            overflow: 'hidden',
-            maxHeight: maximized ? '100%' : '80vh',
-            minHeight: '60vh',
+            overflow: "hidden",
+            maxHeight: maximized ? "100%" : "80vh",
+            minHeight: "60vh",
             m: maximized ? 0 : 2,
-            display: 'flex',
-            flexDirection: 'column',
+            display: "flex",
+            flexDirection: "column",
+            backgroundColor: "background.default",
+            backdropFilter: "blur(100px)",
           },
         }}
       >
         {/* Header */}
-        <DialogTitle
+        <Box
           sx={{
-            bgcolor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
+            bgcolor: theme.palette.background.default,
+            color: theme.palette.text.primary,
             p: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "1px solid",
+            borderColor: "divider",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1rem' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1rem", color: "text.primary" }}>
             {replyTo ? "Reply" : forwardEmail ? "Forward" : "New Message"}
             {selectedAccount && ` (${selectedAccount.email})`}
           </Typography>
-          <Box>
-            <IconButton
-              size="small"
-              onClick={() => setMinimized(true)}
-              sx={{ color: 'inherit', opacity: 0.8 }}
-            >
-              <MinimizeIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => setMaximized(!maximized)}
-              sx={{ color: 'inherit', opacity: 0.8 }}
-            >
-              <MaximizeIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={handleClose}
-              sx={{ color: 'inherit', opacity: 0.8 }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Tooltip title="Minimize">
+              <IconButton
+                size="small"
+                onClick={() => setMinimized(true)}
+                sx={{ color: "text.primary", opacity: 0.8 }}
+              >
+                <MinimizeIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={maximized ? "Small screen" : "Full screen"}>
+              <IconButton
+                size="small"
+                onClick={() => setMaximized(!maximized)}
+                sx={{ color: "text.primary", opacity: 0.8 }}
+              >
+                <OpenInFullIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Close">
+              <IconButton
+                size="small"
+                onClick={handleClose}
+                sx={{ color: "text.primary", opacity: 0.8 }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
-        </DialogTitle>
+        </Box>
 
-        <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+        <DialogContent
+          dividers
+          sx={{ p: 0, display: "flex", flexDirection: "column", flexGrow: 1 }}
+        >
           {/* Recipients and subject */}
-          <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.default" }}>
             <TextField
               autoFocus
               margin="dense"
-              label="To"
+              placeholder="To"
               fullWidth
               variant="outlined"
               size="small"
@@ -224,17 +253,19 @@ export default function ComposeEmail({
               InputProps={{
                 endAdornment: !showCc && (
                   <InputAdornment position="end">
-                    <Button 
-                      size="small" 
+                    <Button
+                      variant="text"
+                      size="small"
                       onClick={() => setShowCc(true)}
-                      sx={{ textTransform: 'none', ml: 1 }}
+                      sx={{ textTransform: "none", ml: 1, height: "30px", width: "auto" }}
                     >
                       Cc
                     </Button>
-                    <Button 
-                      size="small" 
+                    <Button
+                      variant="text"
+                      size="small"
                       onClick={() => setShowBcc(true)}
-                      sx={{ textTransform: 'none' }}
+                      sx={{ textTransform: "none", ml: 1, height: "30px", width: "auto" }}
                     >
                       Bcc
                     </Button>
@@ -246,7 +277,7 @@ export default function ComposeEmail({
             {showCc && (
               <TextField
                 margin="dense"
-                label="Cc"
+                placeholder="Cc"
                 fullWidth
                 variant="outlined"
                 size="small"
@@ -259,7 +290,7 @@ export default function ComposeEmail({
             {showBcc && (
               <TextField
                 margin="dense"
-                label="Bcc"
+                placeholder="Bcc"
                 fullWidth
                 variant="outlined"
                 size="small"
@@ -271,7 +302,7 @@ export default function ComposeEmail({
 
             <TextField
               margin="dense"
-              label="Subject"
+              placeholder="Subject"
               fullWidth
               variant="outlined"
               size="small"
@@ -281,46 +312,46 @@ export default function ComposeEmail({
           </Box>
 
           {/* Formatting toolbar */}
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              display: 'flex',
+          <Box
+            sx={{
+              display: "flex",
               gap: 0.5,
-              p: 0.5,
+              p: 0.7,
               pl: 2,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: alpha(theme.palette.background.default, 0.6),
-              flexWrap: 'wrap'
+              alignContent: "center",
+              borderColor: "divider",
+              bgcolor: theme.palette.background.default,
+              flexWrap: "wrap",
+              justifyContent: "flex-start",
             }}
           >
             <Tooltip title="Bold">
-              <IconButton size="small">
+              <IconButton size="small" sx={{height: "30px", width: "30px"}}>
                 <FormatBoldIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Italic">
-              <IconButton size="small">
+              <IconButton size="small" sx={{height: "30px", width: "30px"}}>
                 <FormatItalicIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Underline">
-              <IconButton size="small">
+              <IconButton size="small" sx={{height: "30px", width: "30px"}}>
                 <FormatUnderlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Tooltip title="Bullet list">
-              <IconButton size="small">
+              <IconButton size="small" sx={{height: "30px", width: "30px"}}>
                 <FormatListBulletedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Numbered list">
-              <IconButton size="small">
+              <IconButton size="small" sx={{height: "30px", width: "30px"}}>
                 <FormatListNumberedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Paper>
+          </Box>
 
           {/* Message content */}
           <TextField
@@ -332,12 +363,13 @@ export default function ComposeEmail({
             placeholder="Write your message here..."
             sx={{
               flexGrow: 1,
-              '& .MuiOutlinedInput-root': {
-                height: '100%',
-                alignItems: 'flex-start',
+              "& .MuiOutlinedInput-root": {
+                height: "100%",
+                minHeight: "200px",
+                alignItems: "flex-start",
                 p: 2,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  border: 'none',
+                "& .MuiOutlinedInput-notchedOutline": {
+                  border: "none",
                 },
               },
             }}
@@ -345,11 +377,11 @@ export default function ComposeEmail({
 
           {/* Attachments */}
           {attachments.length > 0 && (
-            <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
               <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
                 Attachments ({attachments.length})
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                 {attachments.map((file, index) => (
                   <Chip
                     key={index}
@@ -368,12 +400,12 @@ export default function ComposeEmail({
             type="file"
             ref={fileInputRef}
             multiple
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             onChange={handleFileChange}
           />
         </DialogContent>
 
-        <DialogActions sx={{ p: 1.5, justifyContent: 'space-between' }}>
+        <DialogActions sx={{ p: 1.5, justifyContent: "space-between", bgcolor: "background.default" }}>
           <Button
             startIcon={<AttachFileIcon />}
             variant="outlined"
@@ -390,7 +422,9 @@ export default function ComposeEmail({
               variant="contained"
               onClick={handleSend}
               disabled={!to.trim() || sending}
-              startIcon={sending ? <CircularProgress size={16} /> : <SendIcon />}
+              startIcon={
+                sending ? <CircularProgress size={16} /> : <SendIcon />
+              }
             >
               Send
             </Button>
@@ -403,28 +437,28 @@ export default function ComposeEmail({
         <Paper
           elevation={8}
           sx={{
-            position: 'fixed',
+            position: "fixed",
             bottom: 16,
             right: 16,
             width: 300,
             zIndex: 1300,
             borderRadius: 1,
-            overflow: 'hidden',
+            overflow: "hidden",
           }}
         >
           <Box
             sx={{
               bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
+              color: theme.palette.text.primary,
               p: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
             }}
             onClick={() => setMinimized(false)}
           >
-            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 500, ml: 1 }}>
               {subject || "New Message"}
             </Typography>
             <IconButton
@@ -433,7 +467,7 @@ export default function ComposeEmail({
                 e.stopPropagation();
                 handleClose();
               }}
-              sx={{ color: 'inherit', opacity: 0.8 }}
+              sx={{ color: "inherit", opacity: 0.8 }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>
