@@ -1,94 +1,117 @@
 import * as React from "react";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
+import { useTheme, alpha, styled } from "@mui/material/styles";
+import { 
+  Tabs, Tab, Typography, Box, TextField, Button, Divider, 
+  useMediaQuery, IconButton, Alert, CircularProgress, Paper,
+  Chip, Card, CardContent, Fade, Backdrop, LinearProgress
+} from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
 import LanguageIcon from "@mui/icons-material/Language";
 import EmailIcon from "@mui/icons-material/Email";
-import { styled } from "@mui/material/styles";
-import { Divider, useMediaQuery, IconButton } from "@mui/material";
-import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import Alert from "@mui/material/Alert";
-import axios from "axios";
-import CircularProgress from "@mui/material/CircularProgress";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import ArticleIcon from "@mui/icons-material/Article";
+import { motion } from "framer-motion";
+import axios from "axios";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
+// Styled components with enhanced visual design
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   "& .MuiTabs-indicator": {
     backgroundColor: theme.palette.primary.main,
-    width: 1,
-    borderRadius: 2,
+    width: 3,
+    borderRadius: 3,
   },
 }));
 
 const StyledTab = styled(Tab)(({ theme }) => ({
-  minHeight: 56,
-  minWidth: 110,
-  margin: 10,
+  minHeight: 64,
+  margin: 8,
   textTransform: "none",
-  fontSize: "0.875rem",
+  fontSize: "0.95rem",
+  fontWeight: 500,
   color: theme.palette.text.secondary,
+  borderRadius: 12,
+  transition: "all 0.2s",
   "&.Mui-selected": {
     color: theme.palette.primary.main,
-    backgroundColor: theme.palette.action.hover,
+    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+    fontWeight: 600,
   },
   "&:hover": {
     backgroundColor: theme.palette.action.hover,
   },
-  border: "0.1px solid",
-  borderColor: "divider",
-  position: "relative",
-  justifyContent: "center",
-  alignItems: "center",
+  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+  padding: "12px 20px",
+  "& .MuiTab-iconWrapper": {
+    marginBottom: 8,
+  }
 }));
 
-function TabPanel({
-  children,
-  value,
-  index,
-}: {
-  children: React.ReactNode;
-  value: number;
-  index: number;
-}) {
+// Enhanced TabPanel for consistent styling
+function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
   return (
-    <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box sx={{ p: 3, width: "100%" }}>{children}</Box>}
-    </div>
+    <Box
+      role="tabpanel"
+      hidden={value !== index}
+      sx={{ 
+        width: "100%", 
+        height: "100%",
+        px: { xs: 2, sm: 3 },
+        py: 3
+      }}
+    >
+      {value === index && (
+        <Fade in={value === index}>
+          <div>{children}</div>
+        </Fade>
+      )}
+    </Box>
   );
 }
 
 export default function DataTabs() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const isXsScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  
   const [value, setValue] = React.useState(0);
-  const isSmallScreen = useMediaQuery("(max-width: 1000px)");
   const [textData, setTextData] = React.useState("");
   const [alertVisible, setAlertVisible] = React.useState(false);
   const [error, setError] = React.useState("");
   const [dataPrompt, setDataPrompt] = React.useState("");
   const [isTraining, setIsTraining] = React.useState(false);
   const [trainingCompleted, setTrainingCompleted] = React.useState(false);
+  const [trainingProgress, setTrainingProgress] = React.useState(0);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [fileName, setFileName] = React.useState("");
   const [fileSize, setFileSize] = React.useState(0);
   const [url, setUrl] = React.useState("");
   const [urlList, setUrlList] = React.useState<{ url: string; charCount: number }[]>([]);
   const [charCount, setCharCount] = React.useState(0);
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
 
   const handleTrainAI = async () => {
     setIsTraining(true);
     setTrainingCompleted(false);
+    
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setTrainingProgress(prev => {
+        const newValue = prev + Math.random() * 15;
+        return newValue > 100 ? 100 : newValue;
+      });
+    }, 300);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       setTrainingCompleted(true);
+      clearInterval(progressInterval);
+      setTrainingProgress(100);
     } catch (error) {
       console.error("Error training AI:", error);
     } finally {
@@ -100,15 +123,10 @@ export default function DataTabs() {
     const fetchDataPrompt = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
+        if (!token) return;
 
         const response = await axios.get(`${apiBaseUrl}/api/data/get-text`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.status === 200) {
@@ -122,15 +140,10 @@ export default function DataTabs() {
     const fetchUrlList = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
+        if (!token) return;
 
         const response = await axios.get(`${apiBaseUrl}/api/data/get-urls`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.status === 200) {
@@ -142,10 +155,10 @@ export default function DataTabs() {
     };
 
     fetchDataPrompt();
-    fetchUrlList(); 
+    fetchUrlList();
   }, []);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
@@ -166,20 +179,26 @@ export default function DataTabs() {
     setUrl(event.target.value);
   };
 
+  const showSuccessAlert = () => {
+    setAlertVisible(true);
+    setTimeout(() => setAlertVisible(false), 3000);
+  };
+
+  const showErrorAlert = (message: string) => {
+    setError(message);
+    setTimeout(() => setError(""), 3000);
+  };
+
   const handleSaveData = async () => {
     if (!textData) {
-      setError("Text data cannot be empty.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Text data cannot be empty.");
       return;
     }
 
     if (textData.length > 1000) {
-      setError("Text data cannot exceed 1000 characters.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Text data cannot exceed 1000 characters.");
       return;
     }
-
-    setError("");
 
     try {
       const token = localStorage.getItem("token");
@@ -191,28 +210,21 @@ export default function DataTabs() {
       const response = await axios.post(
         `${apiBaseUrl}/api/data/save-text`,
         { text: textData },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.status === 201) {
-        setAlertVisible(true);
-        setTimeout(() => setAlertVisible(false), 3000);
+        showSuccessAlert();
       }
     } catch (error) {
       console.error("Error saving text data:", error);
-      setError("Error saving text data.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Error saving text data.");
     }
   };
 
   const handleUploadFile = async () => {
     if (!selectedFile) {
-      setError("No file selected.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("No file selected.");
       return;
     }
 
@@ -221,10 +233,7 @@ export default function DataTabs() {
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await axios.post(`${apiBaseUrl}/api/data/upload-file`, formData, {
         headers: {
@@ -234,38 +243,30 @@ export default function DataTabs() {
       });
 
       if (response.status === 201) {
-        setAlertVisible(true);
-        setTimeout(() => setAlertVisible(false), 3000);
+        showSuccessAlert();
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      setError("Only Max 4 MB size and *.pdf file is allowed. Please try again.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Only Max 4 MB size and *.pdf file is allowed. Please try again.");
     }
   };
 
   const handleAnalyzeUrl = async () => {
     if (!url) {
-      setError("URL cannot be empty.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("URL cannot be empty.");
       return;
     }
+    
+    setIsAnalyzing(true);
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await axios.post(
         `${apiBaseUrl}/api/data/analyze-url`,
         { url },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.status === 200) {
@@ -276,23 +277,19 @@ export default function DataTabs() {
       }
     } catch (error) {
       console.error("Error analyzing URL:", error);
-      setError("Error analyzing URL.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Error analyzing URL.");
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
   const handleDeleteUrl = async (urlToDelete: string) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await axios.delete(`${apiBaseUrl}/api/data/delete-url/${encodeURIComponent(urlToDelete)}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 200) {
@@ -300,310 +297,450 @@ export default function DataTabs() {
       }
     } catch (error) {
       console.error("Error deleting URL:", error);
-      setError("Error deleting URL.");
-      setTimeout(() => setError(""), 3000);
+      showErrorAlert("Error deleting URL.");
     }
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", m: 3, gap: 3 }}>
-      <Box
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        gap: 4,
+      }}
+    >
+      {/* Main Tabs Container */}
+      <Paper
+        elevation={0}
         sx={{
           display: "flex",
           flexDirection: isSmallScreen ? "column" : "row",
-          bgcolor: "background.default",
-          border: "2px solid",
-          borderColor: "divider",
-          borderRadius: 2,
-          width: isSmallScreen ? "100%" : "auto",
+          bgcolor: alpha(theme.palette.background.paper, isDark ? 0.4 : 0.7),
+          borderRadius: 3,
+          overflow: "hidden",
+          border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
         }}
       >
-        <StyledTabs
-          orientation={isSmallScreen ? "horizontal" : "vertical"}
-          variant="scrollable"
-          value={value}
-          onChange={handleChange}
-          sx={{
-            justifyContent: "center",
-            borderRight: isSmallScreen ? 0 : 1,
-            borderBottom: isSmallScreen ? 1 : 0,
-            borderColor: "divider",
-            p: 1,
-            width: isSmallScreen ? "100%" : 200,
-          }}
-        >
-          <StyledTab icon={<TextFieldsIcon />} label="Text" />
-          <StyledTab icon={<UploadFileIcon />} label="File" />
-          <StyledTab icon={<LanguageIcon />} label="Website" />
-          <StyledTab icon={<EmailIcon />} label="Mail" />
-        </StyledTabs>
-
-        <TabPanel value={value} index={0}>
-          <Typography variant="h4" sx={{ ml: 2 }}>
-            Text data training
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-            Enter the text data you want to use for training. Maximum 1000
-            characters.
-          </Typography>
-          {alertVisible && (
-            <Alert severity="success" sx={{ mt: 2, ml: 1 }}>
-              Data saved successfully
-            </Alert>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ mt: 2, ml: 1 }}>
-              {error}
-            </Alert>
-          )}
-          <Box
-            component="form"
+        {/* Tabs Navigation */}
+        <Box sx={{ 
+          borderRight: isSmallScreen ? 0 : `1px solid ${theme.palette.divider}`,
+          borderBottom: isSmallScreen ? `1px solid ${theme.palette.divider}` : 0,
+          backgroundColor: isDark ? alpha(theme.palette.background.paper, 0.3) : alpha(theme.palette.background.default, 0.5),
+          pt: 2
+        }}>
+          <StyledTabs
+            orientation={isSmallScreen ? "horizontal" : "vertical"}
+            variant="scrollable"
+            scrollButtons="auto"
+            value={value}
+            onChange={handleChange}
             sx={{
-              "& .MuiTextField-root": {
-                m: 1,
-                width: isSmallScreen ? "100%" : "400px",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                padding: 2,
+              minWidth: isSmallScreen ? "auto" : 180,
+              "& .MuiTabs-flexContainer": {
+                gap: 1,
+                px: 2,
               },
             }}
-            noValidate
-            autoComplete="off"
           >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-            <textarea
-                name="textarea"
-                id="textarea"
-                rows={6}
-                cols={65}
-                required
-                style={{
-                  width: "90%",
-                  height: "100%",
-                  padding: "10px",
-                  borderRadius: "5px",
-                  border: ".5px solid rgba(142, 142, 142, 0.48)",
-                  // outline: "none",
-                  margin: "20px",
-                  resize: "none",
-                  backgroundColor: "transparent",
-                }}
-                placeholder={dataPrompt}
-                value={textData}
-                onChange={handleTextDataChange}
-              >
-                {dataPrompt}
-              </textarea>
-            </div>
-          </Box>
-          <Button
-            variant="contained"
-            size="small"
-            color="primary"
-            endIcon={<ChevronRightRoundedIcon />}
-            fullWidth={isSmallScreen}
-            sx={{ borderRadius: 2, px: 4, py: 1.5, ml: isSmallScreen ? 1 : 2 }}
-            onClick={handleSaveData}
-          >
-            Save Data
-          </Button>
-        </TabPanel>
-
-        <TabPanel value={value} index={1}>
-          {alertVisible && (
-            <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
-              Data saved successfully
-            </Alert>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          <Box
-            sx={{
-              width: isSmallScreen ? "100%" : 500,
-              border: "2px dashed",
-              borderColor: "divider",
-              borderRadius: 2,
-              p: 6,
-              textAlign: "center",
-              "&:hover": { borderColor: "primary.main" },
-            }}
-          >
-            <UploadFileIcon
-              sx={{ fontSize: 40, mb: 1, color: "text.secondary" }}
+            <StyledTab 
+              icon={<TextFieldsIcon fontSize="medium" />} 
+              label="Text"
+              sx={{ width: isXsScreen ? "auto" : (isSmallScreen ? 110 : 160) }}
             />
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Drag and drop files here
+            <StyledTab 
+              icon={<UploadFileIcon fontSize="medium" />} 
+              label="File" 
+              sx={{ width: isXsScreen ? "auto" : (isSmallScreen ? 110 : 160) }}
+            />
+            <StyledTab 
+              icon={<LanguageIcon fontSize="medium" />} 
+              label="Website"
+              sx={{ width: isXsScreen ? "auto" : (isSmallScreen ? 110 : 160) }}
+            />
+            <StyledTab 
+              icon={<EmailIcon fontSize="medium" />} 
+              label="Mail"
+              sx={{ width: isXsScreen ? "auto" : (isSmallScreen ? 110 : 160) }}
+            />
+          </StyledTabs>
+        </Box>
+        
+        {/* Tab Content Area */}
+        <Box sx={{ flexGrow: 1 }}>
+          {/* Text Tab */}
+          <TabPanel value={value} index={0}>
+            <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+              Text Data Training
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Supported formats: PDF (Max 4MB)
+              Enter the text data you want to use for training. Maximum 1000 characters.
             </Typography>
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<UploadFileIcon />}
-            >
-              Browse Files
-              <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-            {selectedFile && (
-              <Box sx={{ mt: 2, textAlign: "left" }}>
-                <Typography variant="body2" color="text.secondary">
-                  <strong>File Name:</strong> {fileName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  <strong>File Size:</strong> {(fileSize / 1024 / 1024).toFixed(2)} MB
-                </Typography>
-              </Box>
-            )}
-          </Box>
-          <Button
-            variant="contained"
-            size="small"
-            color="primary"
-            endIcon={<ChevronRightRoundedIcon />}
-            fullWidth={isSmallScreen}
-            sx={{
-              borderRadius: 2,
-              px: 4,
-              py: 1.5,
-              ml: isSmallScreen ? 1 : 2,
-              mt: 2,
-            }}
-            onClick={handleUploadFile}
-          >
-            Save Data
-          </Button>
-        </TabPanel>
-
-        <TabPanel value={value} index={2}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Website data training
-          </Typography>
-          <TextField
-            variant="outlined"
-            fullWidth
-            placeholder="https://example.com"
-            value={url}
-            onChange={handleUrlChange}
-            sx={{ mb: 3 }}
-            InputProps={{
-              startAdornment: (
-                <LanguageIcon sx={{ color: "action.active", mr: 1 }} />
-              ),
-              sx: { borderRadius: 2 },
-            }}
-          />
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<LanguageIcon />}
-            sx={{ borderRadius: 2 }}
-            onClick={handleAnalyzeUrl}
-          >
-            Analyze Website
-          </Button>
-          {charCount > 0 && (
-            <Typography variant="body1" sx={{ mt: 2 }}>
-              Characters found: {charCount}
-            </Typography>
-          )}
-          <Typography variant="h6" sx={{ mt: 3 }}>
-            Analyzed URLs:
-          </Typography>
-          <Box sx={{ mt: 1 }}>
-            {urlList.map((item, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",  
-                  alignItems: "center",
-                  mb: 1,
-                  backgroundColor: "background.default",
+            
+            {(alertVisible || error) && (
+              <Alert 
+                severity={error ? "error" : "success"} 
+                variant="filled"
+                sx={{ 
+                  mb: 3,
                   borderRadius: 2,
-                  p: 1,
-                  border: "1px solid",
-                  borderColor: "divider",
+                  boxShadow: `0 4px 12px ${alpha(
+                    error ? theme.palette.error.main : theme.palette.success.main, 0.2
+                  )}`
                 }}
               >
-                <Typography variant="body2" color="text.secondary">
-                  {item.url.length > 50 ? `${item.url.slice(0, 50)}...` : item.url} ({item.charCount} chars)
-                </Typography>
-                <IconButton
-                  aria-label="delete"
-                  size="small"
-                  onClick={() => handleDeleteUrl(item.url)}
+                {error || "Data saved successfully"}
+              </Alert>
+            )}
+            
+            <Card 
+              elevation={0}
+              sx={{ 
+                borderRadius: 3,
+                border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+                mb: 3,
+              }}
+            >
+              <CardContent sx={{ pb: 2 }}>
+                <Box sx={{ position: 'relative' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', bottom: -8, right: 0, mb: -1 }}>
+                    {textData.length}/1000
+                  </Typography>
+                  <textarea
+                    name="textarea"
+                    rows={8}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "16px",
+                      borderRadius: "12px",
+                      border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
+                      backgroundColor: alpha(theme.palette.background.paper, 0.4),
+                      color: theme.palette.text.primary,
+                      fontSize: "1rem",
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                    }}
+                    placeholder={dataPrompt || "Enter your training data here..."}
+                    value={textData}
+                    onChange={handleTextDataChange}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+            
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ChevronRightRoundedIcon />}
+              sx={{ 
+                borderRadius: 2, 
+                py: 1.2, 
+                px: 4,
+                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.25)}`
+              }}
+              onClick={handleSaveData}
+            >
+              Save Data
+            </Button>
+          </TabPanel>
+
+          {/* File Tab */}
+          <TabPanel value={value} index={1}>
+            {(alertVisible || error) && (
+              <Alert 
+                severity={error ? "error" : "success"} 
+                variant="filled"
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                  boxShadow: `0 4px 12px ${alpha(
+                    error ? theme.palette.error.main : theme.palette.success.main, 0.2
+                  )}`
+                }}
+              >
+                {error || "File uploaded successfully"}
+              </Alert>
+            )}
+            
+            <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+              File Upload
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Upload files to train your AI model. Supported formats: PDF (Max 4MB).
+            </Typography>
+            
+            <Paper
+              elevation={0}
+              component={motion.div}
+              whileHover={{ boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.15)}` }}
+              sx={{
+                border: `2px dashed ${selectedFile ? theme.palette.primary.main : theme.palette.divider}`,
+                borderRadius: 4,
+                p: 6,
+                textAlign: "center",
+                transition: "all 0.3s ease",
+                backgroundColor: selectedFile ? 
+                  alpha(theme.palette.primary.main, 0.05) : 
+                  alpha(theme.palette.background.paper, 0.5),
+                mb: 3,
+                cursor: "pointer",
+                position: "relative",
+                overflow: "hidden"
+              }}
+            >
+              <input
+                type="file"
+                onChange={handleFileChange}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  opacity: 0,
+                  width: "100%",
+                  height: "100%",
+                  cursor: "pointer"
+                }}
+              />
+              
+              <CloudUploadIcon
+                sx={{ 
+                  fontSize: 60, 
+                  mb: 2, 
+                  color: selectedFile ? theme.palette.primary.main : theme.palette.text.secondary,
+                  opacity: selectedFile ? 0.8 : 0.5
+                }}
+              />
+              
+              {selectedFile ? (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    File Selected
+                  </Typography>
+                  <Box sx={{ 
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 2,
+                    mb: 2
+                  }}>
+                    <ArticleIcon color="primary" />
+                    <Typography variant="body1" fontWeight={500}>
+                      {fileName}
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={`${(fileSize / 1024 / 1024).toFixed(2)} MB`} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                  />
+                </Box>
+              ) : (
+                <>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    Drop files here or click to browse
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Supported formats: PDF (Max 4MB)
+                  </Typography>
+                </>
+              )}
+            </Paper>
+            
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<UploadFileIcon />}
+              fullWidth={isXsScreen}
+              sx={{ 
+                borderRadius: 2, 
+                py: 1.2,
+                px: 4,
+                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.25)}`
+              }}
+              onClick={handleUploadFile}
+            >
+              Upload File
+            </Button>
+          </TabPanel>
+
+          {/* Website Tab */}
+          <TabPanel value={value} index={2}>
+            <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+              Website Data Training
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Extract and analyze content from websites to train your AI model.
+            </Typography>
+            
+            {error && (
+              <Alert 
+                severity="error" 
+                variant="filled"
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.error.main, 0.2)}`
+                }}
+              >
+                {error}
+              </Alert>
+            )}
+            
+            <Box 
+              component="form" 
+              sx={{ mb: 3 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAnalyzeUrl();
+              }}
+            >
+              <TextField
+                variant="outlined"
+                fullWidth
+                placeholder="https://example.com"
+                value={url}
+                onChange={handleUrlChange}
+                sx={{ mb: 2 }}
+                InputProps={{
+                  startAdornment: (
+                    <LanguageIcon sx={{ color: "action.active", mr: 1 }} />
+                  ),
+                  sx: { borderRadius: 2, py: 0.5 }
+                }}
+              />
+              
+              <Button
+                variant="contained"
+                size="large"
+                type="submit"
+                startIcon={<LanguageIcon />}
+                disabled={isAnalyzing}
+                sx={{ 
+                  borderRadius: 2, 
+                  py: 1.2, 
+                  px: 4,
+                  boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.25)}`
+                }}
+              >
+                {isAnalyzing ? "Analyzing..." : "Analyze Website"}
+              </Button>
+              
+              {isAnalyzing && (
+                <Box sx={{ width: '100%', mt: 2 }}>
+                  <LinearProgress />
+                </Box>
+              )}
+            </Box>
+            
+            {/* URL List */}
+            {urlList.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 2, 
+                    pb: 1, 
+                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1 
+                  }}
                 >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                  <LanguageIcon fontSize="small" color="primary" />
+                  Analyzed URLs <Chip label={urlList.length} size="small" color="primary" sx={{ ml: 1 }} />
+                </Typography>
+                
+                <Box 
+                  component={motion.div}
+                  transition={{ staggerChildren: 0.07 }}
+                  sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+                >
+                  {urlList.map((item, index) => (
+                    <Card
+                      key={index}
+                      component={motion.div}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      elevation={0}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        p: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: theme.palette.primary.main,
+                          backgroundColor: alpha(theme.palette.action.hover, 0.1)
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
+                        <Box 
+                          sx={{ 
+                            p: 1, 
+                            borderRadius: '50%', 
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            display: 'flex'
+                          }}
+                        >
+                          <LanguageIcon fontSize="small" color="primary" />
+                        </Box>
+                        <Box sx={{ overflow: 'hidden' }}>
+                          <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: { xs: 150, sm: 250, md: 400 } }}>
+                            {item.url}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {item.charCount.toLocaleString()} characters extracted
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <IconButton
+                        aria-label="delete"
+                        size="small"
+                        onClick={() => handleDeleteUrl(item.url)}
+                        sx={{ 
+                          color: theme.palette.error.main,
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.error.main, 0.1)
+                          }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Card>
+                  ))}
+                </Box>
               </Box>
-            ))}
-          </Box>
-        </TabPanel>
+            )}
+          </TabPanel>
 
-        <TabPanel value={value} index={3}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Email data training
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Coming Soon...
-          </Typography>
-        </TabPanel>
-      </Box>
-
-      <Box
-        sx={{
-          p: 4,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          border: "1px solid",
-          borderRadius: 2,
-          borderColor: "divider",
-          width: "100%",
-        }}
-      >
-        {isTraining ? (
-          <CircularProgress size={60} sx={{ color: "primary.main", mb: 2 }} />
-        ) : trainingCompleted ? (
-          <CheckCircleIcon sx={{ fontSize: 60, color: "green", mb: 2 }} />
-        ) : (
-          <SettingsSuggestIcon
-            sx={{ fontSize: 60, color: "primary.main", mb: 2 }}
-          />
-        )}
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          AI Training Section
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          After providing data, train your AI model to update data and improve
-          its performance.
-        </Typography>
-        {trainingCompleted ? (
-          <Alert variant="outlined" severity="success">
-            AI Model trained successfully with new data!
-          </Alert>
-        ) : (
-          <Alert variant="outlined" severity="info">
-            AI Model is not trained yet. Please train the model to use it.
-          </Alert>
-        )}
-        <Divider sx={{ width: "100%", my: 2 }} />
-        <Button
-          variant="outlined"
-          startIcon={<SettingsSuggestIcon />}
-          sx={{ borderRadius: 2, px: 4, py: 1.5 }}
-          onClick={handleTrainAI}
-          disabled={isTraining}
-        >
-          {isTraining ? "Training..." : "Train AI Model"}
-        </Button>
-      </Box>
+          {/* Email Tab */}
+          <TabPanel value={value} index={3}>
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <EmailIcon sx={{ fontSize: 60, color: alpha(theme.palette.text.secondary, 0.5), mb: 2 }} />
+              <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+                Email Data Training
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Coming Soon...
+              </Typography>
+              <Chip 
+                label="Feature in development" 
+                color="secondary" 
+                variant="outlined" 
+                size="small" 
+                sx={{ mt: 2 }}
+              />
+            </Box>
+          </TabPanel>
+        </Box>
+      </Paper>
     </Box>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "name": "easy-email",
+  "name": "replai-backend",
   "version": "1.0.0",
   "description": "A project for managing emails with Google APIs",
   "main": "server.js",
@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
     "cheerio": "^1.0.0",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
+    "esbuild": "0.25.1",
     "nodemon": "latest",
     "pdf-parse": "^1.1.1"
   },

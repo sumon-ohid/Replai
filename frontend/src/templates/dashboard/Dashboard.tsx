@@ -18,7 +18,7 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from './theme/customizations';
-import Footer from '../marketing-page/components/Footer';
+import Footer from './components/Footer';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -32,6 +32,7 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
       <Box sx={{ display: 'flex' }}>
+        {/* side and navbar */}
         <SideMenu />
         <AppNavbar />
         {/* Main content */}
@@ -44,17 +45,17 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
           })}
         >
           <Stack
-            spacing={2}
+            spacing={1}
             sx={{
               alignItems: 'center',
               mx: 3,
               pb: 5,
-              mt: { xs: 8, md: 0 },
             }}
           >
             <Header />
             <MainGrid />
           </Stack>
+          <Footer />
         </Box>
       </Box>
     </AppTheme>

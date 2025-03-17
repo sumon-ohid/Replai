@@ -24,8 +24,7 @@ import { SitemapStream } from 'sitemap';
 import { createGzip } from 'zlib';
 import { streamToPromise } from 'sitemap';
 import fs from 'fs';
-
-// import { handleSecurityEvent } from "./googleSecurity.js";
+import compression from 'compression';
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -36,18 +35,20 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(compression());
+
 mongoose
   .connect(process.env.MONGO_URL, {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
   })
-  .then(() => console.log("Connected to MongoDB"))
+  .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("Could not connect to MongoDB", err));
 
 app.set('trust proxy', true);
 
 const allowedOrigins = [
-  "http://localhost:5173", // For local development
+  "http://localhost:3001", // For local development
   "http://localhost:3000", // For test
   `${process.env.FRONTEND_URL}`,
   `${process.env.VITE_API_BASE_URL}`,
@@ -77,6 +78,96 @@ app.use(express.json());
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Create public directory if it doesn't exist
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
+}
+
+// Generate and serve robots.txt
+const generateRobotsTxt = () => {
+  try {
+    const robotsTxt = `# Robots.txt file for Replai.tech
+# Generated on: ${new Date().toISOString().split('T')[0]}
+
+# Allow all search engines to index the site
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/api/
+Disallow: /login/
+Disallow: /signup/
+Disallow: /reset-password/
+
+# Disallow sensitive user-specific pages
+Disallow: /dashboard/settings/
+Disallow: /dashboard/account/
+Disallow: /user/*/settings
+
+# Allow access to assets
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+
+# Sitemap location
+Sitemap: https://replai.tech/sitemap.xml
+
+# Crawl delay for specific bots
+User-agent: AdsBot-Google
+Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /assets/
+
+# Block AI training bots (Optional, depending on your preference)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+# Rate limiting for other bots
+User-agent: *
+Crawl-delay: 2
+`;
+
+    fs.writeFileSync(path.join(publicDir, 'robots.txt'), robotsTxt);
+    console.log('robots.txt generated successfully');
+  } catch (error) {
+    console.error('Error generating robots.txt:', error);
+  }
+};
+
+// Generate robots.txt
+generateRobotsTxt();
+
+// Serve the robots.txt file
+app.get('/robots.txt', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+});
+
+// Serve the sitemap.xml file
+app.get('/sitemap.xml', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
+
+// Serve the gzipped sitemap if requested
+app.get('/sitemap.xml.gz', (req, res) => {
+  res.set('Content-Type', 'application/gzip');
+  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml.gz'));
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/emails", handleEmails);
 app.use("/api/emails", emailsRouter);
@@ -91,26 +182,21 @@ app.use("/api/user", userController);
 app.use("/api/user", deleteUser);
 app.use("/api/calendar", googleCalendar);
 
-// Google security event
-// app.post("/security-events", handleSecurityEvent);
-
 app.use(express.static(path.join(__dirname, "dist")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, 'localhost', () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
-
-// Sitemap
-// Fixed sitemap generation function
+// Sitemap generation function remains the same
 async function generateSitemap() {
   try {
     const smStream = new SitemapStream({ hostname: 'https://replai.tech' });
     
-    // Add URLs
+    // Add URLs with improved SEO parameters
     smStream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
     smStream.write({ url: '/login', changefreq: 'weekly', priority: 0.8 });
     smStream.write({ url: '/signup', changefreq: 'weekly', priority: 0.8 });
@@ -119,12 +205,19 @@ async function generateSitemap() {
     smStream.write({ url: '/features', changefreq: 'weekly', priority: 0.8 });
     smStream.write({ url: '/contact', changefreq: 'monthly', priority: 0.7 });
     smStream.write({ url: '/privacy', changefreq: 'monthly', priority: 0.5 });
-
+    smStream.write({ url: '/terms', changefreq: 'monthly', priority: 0.5 });
+    smStream.write({ url: '/about', changefreq: 'monthly', priority: 0.6 });
+    smStream.write({ url: '/blog', changefreq: 'weekly', priority: 0.7 });
+    
+    // Add key feature pages for better SEO
+    smStream.write({ url: '/features/ai-email-analysis', changefreq: 'monthly', priority: 0.8 });
+    smStream.write({ url: '/features/smart-scheduling', changefreq: 'monthly', priority: 0.8 });
+    smStream.write({ url: '/features/email-automation', changefreq: 'monthly', priority: 0.8 });
+    
     // Close the stream
     smStream.end();
     
     // Create directory if it doesn't exist
-    const publicDir = path.join(__dirname, 'public');
     if (!fs.existsSync(publicDir)) {
       fs.mkdirSync(publicDir, { recursive: true });
     }

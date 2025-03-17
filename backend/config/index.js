@@ -17,7 +17,7 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // API settings
-  apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${process.env.PORT_FRONT || 5173}`,
+  apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${process.env.PORT_FRONT || 3001}`,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
   
   // Database settings

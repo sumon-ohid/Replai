@@ -27,7 +27,6 @@ import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import googleCalendarPlugin from "@fullcalendar/google-calendar";
 import {
-  EventSourceInput,
   DateSelectArg,
   EventClickArg,
   EventInput,

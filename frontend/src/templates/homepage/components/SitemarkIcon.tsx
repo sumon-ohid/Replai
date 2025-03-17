@@ -1,0 +1,14 @@
+import Box from '@mui/material/Box';
+import logo from '../../../../logo/logo_light.png';
+
+export default function SitemarkIcon() {
+  return (
+    <Box
+      component="img"
+      src={logo}
+      alt="Logo"
+      sx={{ width: 110, height: "auto", display: 'block', ml: 1 }}
+      onClick={() => window.location.href = '/'}
+    />
+  );
+}

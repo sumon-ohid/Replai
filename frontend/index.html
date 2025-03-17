@@ -9,69 +9,30 @@
     <!-- SEO Meta Tags -->
     <meta
       name="description"
-      content="Replai is an AI-powered email automation platform that streamlines business communication, enhances productivity, and improves response efficiency. Try it today!"
+      content="Replai is an AI-powered email automation platform that streamlines business communication and improves response efficiency. Try it today!"
     />
     <meta
       name="keywords"
-      content="Replai, AI email automation, AI Email Agent, email AI assistant, smart email replies, business email management, automated responses"
+      content="Email agent, Replai Tech, AI email assistant, smart email replies, email automation, business communication, automated responses"
     />
     <meta name="author" content="Replai Tech" />
-
-    <!-- SEO Optimization -->
-    <meta
-      name="robots"
-      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
-    />
-    <meta
-      name="keywords"
-      content="AI email assistant, smart email replies, email automation, AI business tools, productivity software, email management, intelligent email, email AI, automated responses, business communication"
-    />
-    <meta name="author" content="Replai Tech" />
-    <meta name="referrer" content="no-referrer-when-downgrade" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
-    <meta name="format-detection" content="telephone=no" />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#ffffff" />
-    <meta
-      name="msapplication-config"
-      content="./favicon_io/browserconfig.xml"
-    />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="Replai" />
-    <meta name="application-name" content="Replai" />
-    <meta name="msapplication-TileColor" content="#ffffff" />
-    <meta
-      name="msapplication-TileImage"
-      content="./favicon_io/ms-icon-144x144.png"
-    />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Google Verification -->
-    <meta
-      name="google-site-verification"
-      content="w6zBXbE5ugc7zH8DE4bpTXjiFd_fB-raSILT26CyRN4"
-    />
-
-    <!-- Algolia Search Verification -->
-    <meta name="algolia-site-verification" content="9679A957051F0AF8" />
-
-    <!-- Open Graph Meta Tags (For Social Media) -->
-    <meta
-      property="og:title"
-      content="Replai - AI Email Automation for Smarter Business Communication"
-    />
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Replai - AI Email Automation" />
     <meta
       property="og:description"
       content="Replai is an AI-powered email automation tool that streamlines email management for businesses."
     />
     <meta
       property="og:image"
-      content="https://replai.tech/assets/logo_light-CNUfdC-4.png"
+      content="https://replai.tech/assets/logo_light.webp"
     />
     <meta property="og:url" content="https://replai.tech" />
     <meta property="og:type" content="website" />
 
-    <!-- Twitter Card Meta Tags -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Replai - AI Email Automation" />
     <meta
@@ -80,17 +41,14 @@
     />
     <meta
       name="twitter:image"
-      content="https://replai.tech/assets/logo_light-CNUfdC-4.png"
+      content="https://replai.tech/assets/logo_light.webp"
     />
 
     <!-- Canonical URL -->
     <link rel="canonical" href="https://replai.tech" />
 
-    <!-- Tailwind CSS (Consider using a proper build instead of @tailwindcss/browser) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <!-- Google Tag Manager -->
-    <script>
+    <!-- <script defer>
       (function (w, d, s, l, i) {
         w[l] = w[l] || [];
         w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
@@ -101,16 +59,23 @@
         j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
         f.parentNode.insertBefore(j, f);
       })(window, document, "script", "dataLayer", "GTM-WQXQBWMF");
-    </script>
+    </script> -->
+    <!-- End Google Tag Manager -->
 
-    <!-- Structured Data - Organization -->
+    <!-- Google Tag Manager -->
+    <!-- <script
+      async
+      src="https://www.googletagmanager.com/gtm.js?id=GTM-WQXQBWMF"
+    ></script> -->
+
+    <!-- Structured Data -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Replai",
         "url": "https://replai.tech",
-        "logo": "https://replai.tech/assets/logo_light-CNUfdC-4.png",
+        "logo": "https://replai.tech/assets/logo_light.webp",
         "sameAs": [
           "https://twitter.com/replaitech",
           "https://www.linkedin.com/company/replaitech",
@@ -125,42 +90,25 @@
       }
     </script>
 
-    <!-- Structured Data - SoftwareApplication -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Replai",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD/EUR"
-        },
-        "description": "AI-powered email automation platform that streamlines business communication",
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "127"
-        }
-      }
-    </script>
-
-    <!-- End Google Tag Manager -->
+    <!-- Minimized & Deferred Styles -->
+    <!-- <link rel="preload" href="/styles/main.css" as="style" />
+    <link rel="stylesheet" href="/styles/main.css" /> -->
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->
-    <noscript
+    <!-- <noscript
       ><iframe
         src="https://www.googletagmanager.com/ns.html?id=GTM-WQXQBWMF"
         height="0"
         width="0"
         style="display: none; visibility: hidden"
       ></iframe
-    ></noscript>
+    ></noscript> -->
     <!-- End Google Tag Manager (noscript) -->
+
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Defer JavaScript -->
+    <script type="module" defer src="/src/main.tsx"></script>
   </body>
 </html>

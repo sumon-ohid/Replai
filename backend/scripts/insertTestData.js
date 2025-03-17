@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import SentEmail from '../models/SentEmail.js';
 
-mongoose.connect('mongodb://localhost:27017/easy-email', {
+mongoose.connect('mongodb://localhost:27017/replai-database', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

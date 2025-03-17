@@ -1,6 +1,8 @@
 import express from 'express';
 import auth from '../middleware/auth.js';
 import getSentEmailModel from '../models/SentEmail.js';
+import getEmailModel from '../models/Email.js';
+import getDraftModel from '../models/Draft.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -9,85 +11,208 @@ const router = express.Router();
 const getDateRange = (timeRange) => {
   const now = new Date();
   const startDate = new Date();
+  const previousStartDate = new Date();
+  const previousEndDate = new Date(startDate);
   
   switch (timeRange) {
+    case 'daily':
+      startDate.setHours(0, 0, 0, 0);
+      previousStartDate.setDate(now.getDate() - 1);
+      previousStartDate.setHours(0, 0, 0, 0);
+      previousEndDate.setHours(0, 0, 0, 0);
+      break;
     case 'week':
-      startDate.setDate(now.getDate() - 7);
+      // Start from the beginning of this week (Sunday)
+      const dayOfWeek = startDate.getDay();
+      startDate.setDate(startDate.getDate() - dayOfWeek);
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Previous period is last week
+      previousStartDate.setDate(startDate.getDate() - 7);
+      previousEndDate.setDate(startDate.getDate() - 1);
+      previousEndDate.setHours(23, 59, 59, 999);
       break;
     case 'month':
-      startDate.setMonth(now.getMonth() - 1);
+      // Start from the beginning of this month
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Previous period is last month
+      previousStartDate.setMonth(startDate.getMonth() - 1);
+      previousEndDate.setDate(0); // Last day of previous month
+      previousEndDate.setHours(23, 59, 59, 999);
       break;
     case 'year':
-      startDate.setFullYear(now.getFullYear() - 1);
+      // Start from the beginning of this year
+      startDate.setMonth(0, 1);
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Previous period is last year
+      previousStartDate.setFullYear(startDate.getFullYear() - 1);
+      previousEndDate.setFullYear(startDate.getFullYear() - 1, 11, 31);
+      previousEndDate.setHours(23, 59, 59, 999);
       break;
     default:
-      startDate.setDate(now.getDate() - 7); // Default to week
+      // Default to week
+      const defaultDayOfWeek = startDate.getDay();
+      startDate.setDate(startDate.getDate() - defaultDayOfWeek);
+      startDate.setHours(0, 0, 0, 0);
+      
+      previousStartDate.setDate(startDate.getDate() - 7);
+      previousEndDate.setDate(startDate.getDate() - 1);
+      previousEndDate.setHours(23, 59, 59, 999);
   }
   
-  return { startDate, endDate: now };
+  return { 
+    currentPeriod: { startDate, endDate: now },
+    previousPeriod: { startDate: previousStartDate, endDate: previousEndDate }
+  };
 };
 
-// Endpoint to get stats data
+// Helper to calculate percentage change
+const calculatePercentChange = (previous, current) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100);
+};
+
+// Helper to calculate average response time
+const calculateAvgResponseTime = (responseTimes) => {
+  if (responseTimes.length === 0) return { value: 0, formatted: "0s" };
+  
+  const totalMs = responseTimes.reduce((sum, time) => sum + time, 0);
+  const avgMs = totalMs / responseTimes.length;
+  
+  // Format as minutes and seconds
+  const minutes = Math.floor(avgMs / 60000);
+  const seconds = Math.floor((avgMs % 60000) / 1000);
+  
+  const formatted = minutes > 0 ? `${minutes}.${Math.floor(seconds/6)}m` : `${seconds}s`;
+  
+  return { value: avgMs, formatted };
+};
+
+// Endpoint to get comprehensive stats data
 router.get('/stats', auth, async (req, res) => {
   try {
     const userId = req.user._id;
+    const timeRange = req.query.range || 'week';
+    
     const SentEmail = getSentEmailModel(userId);
-
-    // Calculate the start of today and the start of 30 days ago
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const startOf30DaysAgo = new Date();
-    startOf30DaysAgo.setDate(startOf30DaysAgo.getDate() - 30);
-    startOf30DaysAgo.setHours(0, 0, 0, 0);
-
-    // Fetch the number of emails sent today
-    const emailsSentToday = await SentEmail.countDocuments({
-      dateSent: { $gte: startOfToday },
+    const Email = getEmailModel(userId);
+    const Draft = getDraftModel(userId);
+    
+    // Get date ranges for current and previous periods
+    const { currentPeriod, previousPeriod } = getDateRange(timeRange);
+    
+    // CURRENT PERIOD METRICS
+    // 1. Emails Processed (all emails received/handled)
+    const currentEmailsProcessed = await Email.countDocuments({
+      date: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
     });
-
-    // Fetch the number of emails sent in the last 30 days
-    const emailsSentInLast30Days = await SentEmail.countDocuments({
-      dateSent: { $gte: startOf30DaysAgo },
+    
+    // 2. Auto-Responses (sent automatically)
+    const currentAutoResponses = await SentEmail.countDocuments({
+      dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
+      autoGenerated: true
     });
-
-    // Fetch the data for the last 30 days
-    const emailsSentData = await SentEmail.aggregate([
-      { $match: { dateSent: { $gte: startOf30DaysAgo } } },
+    
+    // 3. Drafts Saved
+    const currentDraftsSaved = await Draft.countDocuments({
+      createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
+    });
+    
+    // 4. Response Time Data
+    const responseTimeData = await SentEmail.find({
+      dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
+      replyToEmailId: { $exists: true, $ne: null }
+    }).select('responseTime');
+    
+    const currentResponseTimes = responseTimeData
+      .filter(email => email.responseTime)
+      .map(email => email.responseTime);
+    
+    const currentAvgResponseTime = calculateAvgResponseTime(currentResponseTimes);
+    
+    // PREVIOUS PERIOD METRICS
+    // 1. Emails Processed
+    const previousEmailsProcessed = await Email.countDocuments({
+      date: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
+    });
+    
+    // 2. Auto-Responses
+    const previousAutoResponses = await SentEmail.countDocuments({
+      dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
+      autoGenerated: true
+    });
+    
+    // 3. Drafts Saved
+    const previousDraftsSaved = await Draft.countDocuments({
+      createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
+    });
+    
+    // 4. Response Time Data
+    const prevResponseTimeData = await SentEmail.find({
+      dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
+      replyToEmailId: { $exists: true, $ne: null }
+    }).select('responseTime');
+    
+    const previousResponseTimes = prevResponseTimeData
+      .filter(email => email.responseTime)
+      .map(email => email.responseTime);
+    
+    const previousAvgResponseTime = calculateAvgResponseTime(previousResponseTimes);
+    
+    // Calculate percentage changes
+    const processedChange = calculatePercentChange(previousEmailsProcessed, currentEmailsProcessed);
+    const autoResponsesChange = calculatePercentChange(previousAutoResponses, currentAutoResponses);
+    const draftsSavedChange = calculatePercentChange(previousDraftsSaved, currentDraftsSaved);
+    
+    // For response time, a decrease is actually positive
+    const responseTimeChange = previousAvgResponseTime.value > 0 ? 
+      -calculatePercentChange(previousAvgResponseTime.value, currentAvgResponseTime.value) : 
+      0;
+    
+    // Format the stats data for the dashboard
+    const dashboardStats = [
       {
-        $group: {
-          _id: {
-            year: { $year: '$dateSent' },
-            month: { $month: '$dateSent' },
-            day: { $dayOfMonth: '$dateSent' },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
-    ]);
-
-    const statsData = [
-      {
-        title: 'Email sent today',
-        value: emailsSentToday.toString(),
-        interval: 'Last 30 days',
-        trend: 'up',
-        data: emailsSentData.map((item) => item.count),
+        id: 'emails-processed',
+        title: 'Emails Processed',
+        value: currentEmailsProcessed,
+        change: processedChange,
+        icon: 'MailOutlineIcon',
+        color: 'primary'
       },
       {
-        title: 'Total email sent',
-        value: emailsSentInLast30Days.toString(),
-        interval: 'Last 30 days',
-        trend: 'up',
-        data: emailsSentData.map((item) => item.count),
+        id: 'auto-responses',
+        title: 'Auto-Responses',
+        value: currentAutoResponses,
+        change: autoResponsesChange,
+        icon: 'AutorenewIcon',
+        color: 'success'
       },
+      {
+        id: 'drafts-saved',
+        title: 'Drafts Saved',
+        value: currentDraftsSaved,
+        change: draftsSavedChange,
+        icon: 'NotesRoundedIcon',
+        color: 'warning'
+      },
+      {
+        id: 'avg-response-time',
+        title: 'Avg Response Time',
+        value: currentAvgResponseTime.formatted,
+        change: responseTimeChange,
+        icon: 'TimerIcon',
+        color: 'info',
+        isInverted: true // Indicates that a decrease is positive
+      }
     ];
-
-    res.json(statsData);
+    
+    res.json(dashboardStats);
   } catch (error) {
-    console.error('Error fetching stats data:', error);
-    res.status(500).send('Error fetching stats data');
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).send('Error fetching dashboard statistics');
   }
 });
 

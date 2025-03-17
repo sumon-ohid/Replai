@@ -1,85 +1,445 @@
-import * as React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Stack from '@mui/material/Stack';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import AnalyticsRoundedIcon from '@mui/icons-material/AnalyticsRounded';
-import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
-import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
-import HelpRoundedIcon from '@mui/icons-material/HelpRounded';
-import AttachEmailIcon from '@mui/icons-material/AttachEmail';
-import { useTheme } from '@mui/material/styles';
-import StorageIcon from '@mui/icons-material/Storage';
-import CancelScheduleSendIcon from '@mui/icons-material/CancelScheduleSend';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import { text } from 'stream/consumers';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Box,
+  List,
+  Typography,
+  Tooltip,
+  Divider,
+  alpha,
+  Badge,
+  useMediaQuery,
+  IconButton,
+} from "@mui/material";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import AttachEmailIcon from "@mui/icons-material/AttachEmail";
+import StorageIcon from "@mui/icons-material/Storage";
+import CancelScheduleSendIcon from "@mui/icons-material/CancelScheduleSend";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import HelpRoundedIcon from "@mui/icons-material/HelpRounded";
+import { useTheme } from "@mui/material/styles";
+import { Button } from "@mui/material";
+import DraftsIcon from '@mui/icons-material/Drafts';
 
-const mainListItems = [
-  { text: 'Home', icon: <HomeRoundedIcon />, path: '/dashboard' },
-  { text: 'Connected', icon: <AttachEmailIcon />, path: '/connected' },
-  { text: 'Data', icon: <StorageIcon />, path: '/data' },
-  { text: 'Blocklist', icon: <CancelScheduleSendIcon />, path: '/blocklist' },
-  { text: 'Plan & Billing', icon: <CreditCardIcon />, path: '/billing' },
-  { text: 'Calendar', icon: <CalendarMonthIcon />, path: '/calendar' },
+interface MenuContentProps {
+  collapsed: boolean;
+}
+
+// Main navigation items
+const mainNavItems = [
+  {
+    text: "Home",
+    icon: <HomeRoundedIcon />,
+    path: "/dashboard",
+    description: "Dashboard overview",
+  },
+  {
+    text: "Inbox",
+    icon: <DraftsIcon />,
+    path: "/inbox",
+    description: "Email inbox",
+    // badge: 2,
+  },
+  {
+    text: "Email Manager",
+    icon: <AttachEmailIcon />,
+    path: "/email-manager",
+    description: "Connected email accounts",
+    // badge: 1,
+  },
+  {
+    text: "Data",
+    icon: <StorageIcon />,
+    path: "/data",
+    description: "Data management",
+  },
+  {
+    text: "Blocklist",
+    icon: <CancelScheduleSendIcon />,
+    path: "/blocklist",
+    description: "Email blocklist settings",
+  },
+  {
+    text: "Plan & Billing",
+    icon: <CreditCardIcon />,
+    path: "/billing",
+    description: "Subscription management",
+  },
+  {
+    text: "Calendar",
+    icon: <CalendarMonthIcon />,
+    path: "/calendar",
+    description: "Schedule overview",
+    // badge: 2
+  },
 ];
 
-const secondaryListItems = [
-  { text: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
-  { text: 'About', icon: <InfoRoundedIcon />, path: '/about' },
-  { text: 'Feedback', icon: <HelpRoundedIcon />, path: '/feedback' },
+// Secondary navigation items
+const secondaryNavItems = [
+  {
+    text: "Settings",
+    icon: <SettingsRoundedIcon />,
+    path: "/settings",
+    description: "Account settings",
+  },
+  {
+    text: "About",
+    icon: <InfoRoundedIcon />,
+    path: "/about",
+    description: "About Replai",
+  },
+  {
+    text: "Feedback",
+    icon: <HelpRoundedIcon />,
+    path: "/feedback",
+    description: "Send us your feedback",
+  },
 ];
 
-export default function MenuContent() {
+export default function MenuContent({ collapsed }: MenuContentProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    
+    if (isMobile) {
+      // Close the drawer when navigation is performed on mobile
+      const event = new CustomEvent("close-drawer");
+      window.dispatchEvent(event);
+    }
+    
+    // Store the current collapsed state in localStorage
+    // This ensures the state persists between navigation and page refreshes
+    if (localStorage) {
+      localStorage.setItem("sideMenuCollapsed", String(collapsed));
+    }
+  };
+
+  // Menu item component
+  const NavItem = ({
+    item,
+    index,
+    isActive,
+  }: {
+    item: {
+      text: string;
+      icon: React.ReactNode;
+      path: string;
+      description?: string;
+      badge?: number;
+    };
+    index: number;
+    isActive: boolean;
+  }) => {
+    const activeGradient = `linear-gradient(90deg, ${alpha(
+      theme.palette.primary.main,
+      collapsed ? 0.2 : 0.1
+    )} 0%, ${alpha(theme.palette.primary.light, collapsed ? 0.1 : 0.05)} 100%)`;
+
+    return (
+      <Tooltip 
+        title={collapsed ? item.text : item.description || item.text} 
+        placement={isMobile ? "top" : "right"}
+        arrow
+      >
+        <Box
+          onClick={() => handleNavigation(item.path)}
+          sx={{
+            mb: 0.5,
+            position: "relative",
+            borderRadius: 2,
+            overflow: "hidden",
+            cursor: "pointer",
+          }}
+        >
+          {/* Active indicator */}
+          {isActive && (
+            <Box
+              sx={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: collapsed ? 3 : 4,
+                borderRadius: "0 4px 4px 0",
+                background: `linear-gradient(to bottom, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                boxShadow: `0 0 8px ${alpha(
+                  theme.palette.primary.main,
+                  0.6
+                )}`,
+              }}
+            />
+          )}
+
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "flex-start",
+              px: collapsed ? 0.5 : 2,
+              py: collapsed ? 1 : 1.5,
+              backgroundColor: isActive ? activeGradient : "transparent",
+              borderRadius: 2,
+              "&:hover": {
+                backgroundColor: isActive
+                  ? activeGradient
+                  : theme.palette.mode === "dark"
+                  ? alpha(theme.palette.action.hover, 0.15)
+                  : alpha(theme.palette.action.hover, 0.08),
+              },
+            }}
+          >
+            {/* Icon */}
+            <Box
+              sx={{
+                mr: collapsed ? 0 : 2,
+                width: collapsed ? 36 : 40,
+                height: collapsed ? 36 : 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                color: isActive
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
+                backgroundColor: isActive
+                  ? alpha(
+                      theme.palette.primary.main,
+                      theme.palette.mode === "dark" ? 0.15 : 0.1
+                    )
+                  : "transparent",
+                position: "relative",
+              }}
+            >
+              {item.icon}
+              {/* Badge in collapsed mode */}
+              {collapsed && item.badge && (
+                <Box
+                  sx={{
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: theme.palette.error.main,
+                    color: theme.palette.error.contrastText,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    fontSize: "0.65rem",
+                    fontWeight: 600,
+                    border: `2px solid ${theme.palette.background.paper}`,
+                  }}
+                >
+                  {item.badge}
+                </Box>
+              )}
+            </Box>
+
+            {/* Text and badge - only when not collapsed */}
+            {!collapsed && (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive
+                      ? theme.palette.text.primary
+                      : theme.palette.text.secondary,
+                  }}
+                >
+                  {item.text}
+                </Typography>
+
+                {item.badge && (
+                  <Box
+                    sx={{
+                      minWidth: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: theme.palette.error.main,
+                      color: theme.palette.error.contrastText,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      ml: 1,
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {item.badge}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Tooltip>
+    );
   };
 
   return (
-    <Stack sx={{ flexGrow: 1, p: 1, justifyContent: 'space-between' }}>
-      <List dense>
-        {mainListItems.map((item, index) => (
-          <ListItem key={index} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              onClick={() => handleNavigation(item.path)}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        p: collapsed ? 0.5 : 1.5,
+        pt: collapsed ? 2 : 3,
+        pb: collapsed ? 2 : 4,
+        borderRadius: "16px 16px 0 0",
+        backgroundColor:
+          theme.palette.mode === "dark"
+            ? alpha(theme.palette.background.default, 0.6)
+            : alpha(theme.palette.background.default, 0.8),
+        overflow: collapsed ? "visible" : "auto",
+      }}
+    >
+      {/* Main navigation */}
+      <Box>
+        {!collapsed && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              px: 2,
+              mb: 1.5,
+              display: "block",
+              fontWeight: 500,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Main
+          </Typography>
+        )}
+
+        <List sx={{ p: 0 }}>
+          {mainNavItems.map((item, index) => (
+            <NavItem
+              key={item.text}
+              item={item}
+              index={index}
+              isActive={location.pathname === item.path}
+            />
+          ))}
+        </List>
+      </Box>
+
+      {/* Divider */}
+      <Box sx={{ py: collapsed ? 1 : 2 }}>
+        <Divider sx={{ opacity: 0.6, mx: collapsed ? 1 : 0 }} />
+      </Box>
+
+      {/* Secondary navigation */}
+      <Box mt={collapsed ? 0 : "auto"}>
+        {!collapsed && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              px: 2,
+              mb: 1.5,
+              display: "block",
+              fontWeight: 500,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Support
+          </Typography>
+        )}
+
+        <List sx={{ p: 0 }}>
+          {secondaryNavItems.map((item, index) => (
+            <NavItem
+              key={item.text}
+              item={item}
+              index={index}
+              isActive={location.pathname === item.path}
+            />
+          ))}
+        </List>
+      </Box>
+
+      {/* View documentations - only when not collapsed */}
+      {!collapsed && (
+        <Box
+          sx={{
+            mt: 4,
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                background:
+                  theme.palette.mode === "dark"
+                    ? `linear-gradient(145deg, ${alpha(
+                        theme.palette.info.dark,
+                        0.15
+                      )}, ${alpha("#121212", 0.3)})`
+                    : `linear-gradient(145deg, ${alpha(
+                        theme.palette.info.light,
+                        0.15
+                      )}, ${alpha("#e3f2fd", 0.3)})`,
+                border: "1px solid",
+                borderColor: alpha(theme.palette.info.main, 0.2),
+              }}
             >
-              <ListItemIcon sx={{ color: location.pathname === item.path ? theme.palette.primary.main : 'inherit' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <List dense>
-        {secondaryListItems.map((item, index) => (
-          <ListItem key={index} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              onClick={() => handleNavigation(item.path)}
-              // sx={{
-              //   backgroundColor: location.pathname === item.path ? theme.palette.primary.main : 'inherit',
-              //   color: location.pathname === item.path ? theme.palette.primary.main : 'inherit',
-              // }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === item.path ? theme.palette.primary.main : 'inherit' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Stack>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: theme.palette.info.main,
+                  fontWeight: 600,
+                  mb: 0.5,
+                }}
+              >
+                Need some help?
+              </Typography>
+              <Typography variant="caption" sx={{ display: "block", mb: 1.5 }}>
+                Check our documentation or contact <br/> support team
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  borderColor: alpha(theme.palette.info.main, 0.5),
+                  color: theme.palette.info.main,
+                  "&:hover": {
+                    borderColor: theme.palette.info.main,
+                    backgroundColor: alpha(theme.palette.info.main, 0.1),
+                  },
+                }}
+                onClick={() => handleNavigation("/docs")}
+              >
+                View Documentation
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 }

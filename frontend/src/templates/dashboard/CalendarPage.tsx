@@ -8,7 +8,6 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
 import AppNavbar from "./components/AppNavbar";
 import Header from "./components/Header";
-import MainGrid from "./components/MainGrid";
 import SideMenu from "./components/SideMenu";
 import AppTheme from "../shared-theme/AppTheme";
 import {
@@ -17,14 +16,10 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from "./theme/customizations";
-import BlockListData from "./components/BlockListData";
 import { Typography } from "@mui/material";
-import { Alert } from "@mui/material";
 import Stack from "@mui/material/Stack";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid"; // a plugin!
 import EnhancedCalendar from "./components/EnhancedCalendar";
-import Footer from '../marketing-page/components/Footer';
+import Footer from './components/Footer';
 
 const xThemeComponents = {
   ...chartsCustomizations,

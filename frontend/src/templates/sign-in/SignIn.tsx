@@ -21,7 +21,6 @@ import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons
 import axios from 'axios';
 import { useState } from 'react';
 import Alert from '@mui/material/Alert';
-import { useAuth } from '../../AuthContext';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -32,6 +31,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
   width: '100%',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
+  overflow: 'auto',
   margin: 'auto',
   [theme.breakpoints.up('sm')]: {
     maxWidth: '450px',
@@ -47,6 +47,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 const SignInContainer = styled(Stack)(({ theme }) => ({
   height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
   minHeight: '100%',
+  overflow: 'auto',
   padding: theme.spacing(2),
   [theme.breakpoints.up('sm')]: {
     padding: theme.spacing(4),
