@@ -5,10 +5,13 @@ import {
   useMediaQuery,
   Drawer,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import EmailSidebar from "./EmailSidebar";
 import EmailHeader from "./EmailHeader";
 import EmailList from "./EmailList";
@@ -25,6 +28,9 @@ export default function EmailClient() {
 
   // Add state for collapsible sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  
+  // Add state for fullscreen mode
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
 
   // Add pagination state
   const [page, setPage] = React.useState(0);
@@ -42,6 +48,11 @@ export default function EmailClient() {
   // Toggle sidebar collapse
   const handleToggleSidebar = () => {
     setSidebarCollapsed((prev) => !prev);
+  };
+  
+  // Toggle fullscreen mode
+  const handleToggleFullScreen = () => {
+    setIsFullScreen((prev) => !prev);
   };
 
   // Reset pagination when folder or search term changes
@@ -80,11 +91,19 @@ export default function EmailClient() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: isFullScreen ? "100vh" : "calc(100vh - 64px)", // Adjust the height based on fullscreen state
         maxHeight: "100vh",
         width: "100%",
         overflow: "hidden",
         bgcolor: "background.default",
+        position: isFullScreen ? "fixed" : "relative",
+        top: isFullScreen ? 0 : "auto",
+        left: isFullScreen ? 0 : "auto",
+        right: isFullScreen ? 0 : "auto",
+        bottom: isFullScreen ? 0 : "auto",
+        zIndex: isFullScreen ? 1300 : "auto", // Use a high z-index when in fullscreen
+        m: isFullScreen ? 0 : undefined,
+        p: isFullScreen ? 0 : undefined,
       }}
     >
       {/* Mobile navigation - only visible on mobile */}
@@ -93,7 +112,7 @@ export default function EmailClient() {
           currentFolder={state.currentFolder}
           onOpenSidebar={handlers.toggleMobileSidebar}
           unreadCount={state.unreadCount}
-          onCompose={handlers.handleCompose} // Add this line to pass the compose handler
+          onCompose={handlers.handleCompose} 
         />
       )}
 
@@ -102,6 +121,7 @@ export default function EmailClient() {
           display: "flex",
           flexGrow: 1,
           overflow: "hidden",
+          width: "100%",
         }}
       >
         {/* Sidebar - hidden on mobile, shown in drawer instead */}
@@ -119,29 +139,6 @@ export default function EmailClient() {
               position: "relative",
             }}
           >
-            {/* Toggle collapse button */}
-            {/* <IconButton 
-              onClick={handleToggleSidebar}
-              sx={{
-                position: 'absolute',
-                right: -12,
-                top: 20,
-                zIndex: 10,
-                bgcolor: 'background.default',
-                border: '1px solid',
-                borderColor: 'divider',
-                boxShadow: 1,
-                width: 32,
-                height: 32,
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              size="small"
-            >
-              {sidebarCollapsed ? <MenuIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
-            </IconButton> */}
-
             <EmailSidebar
               accounts={state.accounts}
               selectedAccount={state.selectedAccount}
@@ -205,11 +202,11 @@ export default function EmailClient() {
               md: isMobile ? "100%" : `calc(100% - ${sidebarWidth}px)`,
             },
             backgroundColor: "background.default",
-            borderRadius: { xs: 1, md: 2 },
-            border: 1,
+            borderRadius: isFullScreen ? 0 : { xs: 1, md: 2 },
+            border: isFullScreen ? 0 : 1,
             borderColor: "divider",
-            mt: { xs: 1, md: 0 },
-            transition: theme.transitions.create(["width", "margin"], {
+            mt: isFullScreen ? 0 : { xs: 1, md: 0 },
+            transition: theme.transitions.create(["width", "margin", "border-radius"], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
@@ -226,6 +223,8 @@ export default function EmailClient() {
             onMarkAllRead={() => handlers.handleMarkAllRead()}
             onToggleSidebar={!isMobile ? handleToggleSidebar : undefined}
             isSidebarCollapsed={!isMobile ? sidebarCollapsed : false}
+            isFullScreen={isFullScreen}
+            onToggleFullScreen={handleToggleFullScreen}
           />
 
           {/* Content: Either email list or email detail */}

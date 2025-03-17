@@ -17,17 +17,21 @@ import RefreshIcon from "@mui/icons-material/RefreshOutlined";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 
 interface EmailHeaderProps {
-  currentFolder: string;
   searchTerm: string;
   onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onClearSearch: () => void;
   onRefresh: () => void;
-  onMarkAllRead: () => void;
   isLoading: boolean;
+  currentFolder: string;
+  onMarkAllRead: () => void;
   onToggleSidebar?: () => void;
   isSidebarCollapsed?: boolean;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
 }
 
 export default function EmailHeader({
@@ -40,6 +44,8 @@ export default function EmailHeader({
   isLoading,
   onToggleSidebar,
   isSidebarCollapsed = false,
+  isFullScreen,
+  onToggleFullScreen,
 }: EmailHeaderProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -156,6 +162,18 @@ export default function EmailHeader({
           flexShrink: 0,
         }}
       >
+        {onToggleFullScreen && (
+          <Tooltip title={isFullScreen ? "Exit full screen" : "Full screen"}>
+            <IconButton
+              onClick={onToggleFullScreen}
+              color="inherit"
+              size="small"
+              sx={{ ml: 1 }}
+            >
+              {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="Refresh">
           <IconButton
             onClick={onRefresh}
