@@ -7,6 +7,14 @@ import mongoose from 'mongoose';
  */
 const getDraftModel = (userId) => {
   const draftSchema = new mongoose.Schema({
+    // Reference to user
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      index: true
+    },
+    
     // Draft status
     status: {
       type: String,
@@ -78,6 +86,10 @@ const getDraftModel = (userId) => {
       path: String,
       contentId: String
     }],
+    hasAttachments: {
+      type: Boolean,
+      default: false
+    },
     
     // Tracking and metadata
     source: {
@@ -111,6 +123,29 @@ const getDraftModel = (userId) => {
       }
     },
     
+    // Stats tracking fields
+    category: {
+      type: String,
+      default: 'Uncategorized',
+      index: true
+    },
+    disposition: {
+      type: String,
+      enum: ['saved', 'sent', 'discarded', 'expired'],
+      default: 'saved',
+      index: true
+    },
+    
+    // Time tracking for stats
+    completionTime: {
+      type: Number, // Time in ms taken to complete the draft
+      default: 0
+    },
+    editCount: {
+      type: Number,
+      default: 1
+    },
+    
     // Version history for drafts
     versions: [{
       timestamp: {
@@ -138,9 +173,16 @@ const getDraftModel = (userId) => {
     updatedAt: {
       type: Date,
       default: Date.now
+    },
+    
+    // When this draft was sent or discarded
+    finalizedAt: {
+      type: Date,
+      index: true
     }
   }, { 
-    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    strict: false // Allow additional fields for flexibility
   });
   
   // Add text index for search
@@ -149,8 +191,28 @@ const getDraftModel = (userId) => {
     'body.text': 'text'
   });
   
-  // Pre-save middleware to track versions
+  // Pre-save middleware to track versions and update stats fields
   draftSchema.pre('save', function(next) {
+    // Update hasAttachments based on attachments array
+    if (this.attachments && this.attachments.length > 0) {
+      this.hasAttachments = true;
+    } else {
+      this.hasAttachments = false;
+    }
+    
+    // Track edit count
+    if (!this.isNew && this.isModified('body') || this.isModified('subject')) {
+      this.editCount = (this.editCount || 1) + 1;
+    }
+    
+    // Update finalizedAt when status changes to sent or discarded
+    if (this.isModified('status')) {
+      if (this.status === 'sent' || this.status === 'discarded') {
+        this.finalizedAt = new Date();
+        this.disposition = this.status === 'sent' ? 'sent' : 'discarded';
+      }
+    }
+    
     // Only add to version history if this is a modification to an existing draft
     if (!this.isNew) {
       const currentVersion = {
@@ -167,6 +229,15 @@ const getDraftModel = (userId) => {
     
     next();
   });
+  
+  // Helper method to calculate completionTime
+  draftSchema.methods.finalize = function(status) {
+    this.status = status;
+    this.disposition = status === 'sent' ? 'sent' : 'discarded';
+    this.finalizedAt = new Date();
+    this.completionTime = this.finalizedAt - this.createdAt;
+    return this.save();
+  };
   
   // Ensure we don't recreate the model if it already exists
   const modelName = `Draft_${userId}`;

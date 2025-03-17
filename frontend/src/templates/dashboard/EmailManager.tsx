@@ -118,7 +118,7 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
       if (!token) return;
       
       try {
-        const response = await axios.get(`${apiBaseUrl}/api/emails/stats`, {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/basic`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(response.data as any);
@@ -456,21 +456,9 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                   }}
                 />
               </Typography>
-              
-              {/* Animated content wrapper */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={refreshTrigger}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
-                    <EmailConnectionStatus refreshTrigger={refreshTrigger} />
-                  </React.Suspense>
-                </motion.div>
-              </AnimatePresence>
+
+               {/* get ConnectedEmails from './components/GetConnectedEmails'; */}
+              <GetConnectedEmails/>
             </Box>
           </Box>
           <Footer />

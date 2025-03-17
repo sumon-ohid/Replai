@@ -7,11 +7,17 @@ import mongoose from 'mongoose';
  */
 const getSentEmailModel = (userId) => {
   const sentEmailSchema = new mongoose.Schema({
+    // Reference to user
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true
+    },
+    
     // Message identifiers
     messageId: {
       type: String,
       required: true,
-      unique: true,
       index: true
     },
     threadId: {
@@ -23,8 +29,8 @@ const getSentEmailModel = (userId) => {
     // Email content
     subject: String,
     body: {
-      text: String,
-      html: String
+      type: mongoose.Schema.Types.Mixed, // Handle both string and object formats
+      default: ''
     },
     
     // Email participants
@@ -58,6 +64,39 @@ const getSentEmailModel = (userId) => {
       index: true
     },
     
+    // Email type and status
+    type: {
+      type: String,
+      enum: ['sent', 'draft', 'scheduled'],
+      default: 'sent',
+      index: true
+    },
+    received: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    
+    // Auto-response tracking
+    autoResponded: {
+      type: Boolean,
+      default: false, 
+      index: true
+    },
+    
+    // Analytics categorization
+    category: {
+      type: String,
+      default: 'Uncategorized',
+      index: true
+    },
+    
+    sentiment: {
+      type: String,
+      default: 'neutral',
+      enum: ['positive', 'neutral', 'negative']
+    },
+    
     // Reply and response data
     isReply: {
       type: Boolean,
@@ -69,7 +108,8 @@ const getSentEmailModel = (userId) => {
     },
     responseTime: {
       type: Number,  // in milliseconds
-      index: true
+      index: true,
+      default: 0
     },
     
     // AI generation status
@@ -139,20 +179,39 @@ const getSentEmailModel = (userId) => {
     // System timestamps
     createdAt: {
       type: Date,
-      default: Date.now
+      default: Date.now,
+      index: true
     },
     updatedAt: {
       type: Date,
       default: Date.now
     }
   }, { 
-    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    // Add this to prevent strict validation errors on fields not in the schema
+    strict: false
   });
   
   // Add text index for search
   sentEmailSchema.index({
     'subject': 'text',
-    'body.text': 'text'
+    'body': 'text'
+  });
+  
+  // Pre-save hook to ensure dateSent is set
+  sentEmailSchema.pre('save', function(next) {
+    // If dateSent is not set, use the current date
+    if (!this.dateSent) {
+      this.dateSent = new Date();
+    }
+    
+    // Handle case where body is a string but schema expects an object
+    if (typeof this.body === 'string') {
+      const bodyText = this.body;
+      this.body = { text: bodyText };
+    }
+    
+    next();
   });
   
   // Ensure we don't recreate the model if it already exists

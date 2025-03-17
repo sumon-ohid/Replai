@@ -5,6 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import getSentEmailModel from '../models/SentEmail.js';
+import getEmailModel from '../models/Email.js'; // Import this to save received emails
 import User from '../models/User.js';
 import BlockList from '../models/BlockList.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -73,6 +74,75 @@ const getEmailBody = (payload) => {
     return Buffer.from(payload.body.data, 'base64').toString('utf-8');
   }
   return '(No content found)';
+};
+
+// Helper function to extract HTML body if available
+const getEmailHtmlBody = (payload) => {
+  if (payload.parts) {
+    const htmlPart = payload.parts.find(part => part.mimeType === 'text/html');
+    if (htmlPart && htmlPart.body.data) {
+      return Buffer.from(htmlPart.body.data, 'base64').toString('utf-8');
+    }
+  }
+  return null;
+};
+
+// Helper function to parse email addresses
+const parseEmailAddress = (fullAddress) => {
+  if (!fullAddress) return { name: '', email: '' };
+  
+  const matches = fullAddress.match(/<([^<>]+)>/) || [];
+  if (matches.length > 1) {
+    const email = matches[1];
+    const name = fullAddress.replace(`<${email}>`, '').trim();
+    return { name, email };
+  } else {
+    // If no angle brackets, assume the entire string is an email
+    return { name: '', email: fullAddress.trim() };
+  }
+};
+
+// Helper function to analyze email sentiment (simplified)
+const analyzeEmailSentiment = (text) => {
+  const positiveWords = ['thanks', 'happy', 'great', 'good', 'appreciate', 'excellent', 'pleased'];
+  const negativeWords = ['issue', 'problem', 'error', 'mistake', 'wrong', 'bad', 'unhappy', 'disappointed'];
+  
+  text = text.toLowerCase();
+  
+  let positiveScore = positiveWords.reduce((count, word) => {
+    return count + (text.includes(word) ? 1 : 0);
+  }, 0);
+  
+  let negativeScore = negativeWords.reduce((count, word) => {
+    return count + (text.includes(word) ? 1 : 0);
+  }, 0);
+  
+  if (positiveScore > negativeScore) return 'positive';
+  if (negativeScore > positiveScore) return 'negative';
+  return 'neutral';
+};
+
+// Helper function to categorize email content
+const categorizeEmail = (subject, body, from) => {
+  subject = subject.toLowerCase();
+  body = body.toLowerCase();
+  from = from.toLowerCase();
+  
+  // Simple categorization logic
+  if (from.includes('newsletter') || subject.includes('newsletter')) {
+    return 'updates';
+  } else if (from.includes('noreply') || from.includes('no-reply')) {
+    return 'updates';
+  } else if (subject.includes('invoice') || subject.includes('receipt') || subject.includes('payment')) {
+    return 'updates';
+  } else if (from.includes('linkedin') || from.includes('twitter') || from.includes('facebook')) {
+    return 'social';
+  } else if (subject.includes('offer') || subject.includes('discount') || subject.includes('sale')) {
+    return 'promotions';
+  }
+  
+  // Default
+  return 'primary';
 };
 
 // Start Google OAuth flow
@@ -152,15 +222,81 @@ const createEmailBot = async (tokens, googleUserId, localUserId, userEmail) => {
     oauth2Client.setCredentials(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
+    // Function to save received email to database for stats tracking
+    const saveReceivedEmail = async (emailData, userId) => {
+      try {
+        const { payload, id, threadId } = emailData;
+        const headers = payload.headers;
+        const fromHeader = headers.find(h => h.name === 'From');
+        const subjectHeader = headers.find(h => h.name === 'Subject');
+        const toHeader = headers.find(h => h.name === 'To');
+        const dateHeader = headers.find(h => h.name === 'Date');
+        
+        const from = fromHeader?.value || '';
+        const subject = subjectHeader?.value || '(No Subject)';
+        const to = toHeader?.value || '';
+        const dateStr = dateHeader?.value || new Date().toISOString();
+        const date = new Date(dateStr);
+        
+        const plainBody = getEmailBody(payload);
+        const htmlBody = getEmailHtmlBody(payload);
+        
+        // Parse email addresses
+        const fromParsed = parseEmailAddress(from);
+        const toParsed = parseEmailAddress(to);
+        
+        // Create and save to Email model
+        const Email = getEmailModel(userId);
+        const email = new Email({
+          userId,
+          messageId: id,
+          threadId,
+          subject,
+          snippet: plainBody.substring(0, 150) + (plainBody.length > 150 ? '...' : ''),
+          body: {
+            text: plainBody,
+            html: htmlBody
+          },
+          from: {
+            name: fromParsed.name,
+            email: fromParsed.email
+          },
+          to: [{
+            name: toParsed.name,
+            email: toParsed.email
+          }],
+          date,
+          receivedDate: new Date(),
+          folder: 'inbox',
+          category: categorizeEmail(subject, plainBody, from),
+          sentiment: analyzeEmailSentiment(plainBody),
+          source: 'gmail'
+        });
+        
+        await email.save();
+        return email;
+      } catch (error) {
+        console.error('Error saving received email to database:', error);
+        return null;
+      }
+    };
+
     // Function to respond to an individual email
     const respondToEmail = async (emailId, userId, userPrompt = '') => {
       try {
+        const startTime = Date.now(); // Record start time for response time tracking
         const emailRes = await gmail.users.messages.get({ userId: 'me', id: emailId, format: 'full' });
+        
+        // First, save the received email to the database for stats tracking
+        const savedEmail = await saveReceivedEmail(emailRes.data, userId);
+        
         const { payload } = emailRes.data;
         const headers = payload.headers;
         const fromHeader = headers.find(h => h.name === 'From');
         const subjectHeader = headers.find(h => h.name === 'Subject');
         const toHeader = headers.find(h => h.name === 'To');
+        const dateHeader = headers.find(h => h.name === 'Date');
+        
         const from = fromHeader?.value || '';
         const subject = subjectHeader?.value || 'Your email';
         const to = toHeader?.value || '';
@@ -230,26 +366,83 @@ Guidelines:
           .replace(/\//g, '_')
           .replace(/=+$/, '');
       
-        await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
-        console.log(`Replied to email from ${from}`);
-      
-        // Save sent email to database with appropriate flags for analytics
-        const SentEmail = getSentEmailModel(userId);
-        const sentEmail = new SentEmail({
-          userId,
-          from: toHeader?.value,
-          to: from,
-          subject: `Re: ${subject}`,
-          body: responseText,
-          type: 'sent',
-          received: false,
-          autoResponded: true,
-          responseTime: 5, // Placeholder, ideally calculate actual response time
-          category: 'Auto-Response', // You could have AI categorize emails
-          sentiment: 'neutral' // You could use AI to analyze sentiment
+        const sentMessageRes = await gmail.users.messages.send({ 
+          userId: 'me', 
+          requestBody: { raw: encodedMessage, threadId: emailRes.data.threadId }
         });
+        console.log(`Replied to email from ${from}`);
         
-        await sentEmail.save();
+        // Calculate response time
+        const responseTime = Date.now() - startTime;
+      
+        try {
+          // Save sent email to database with appropriate flags for analytics
+          const SentEmail = getSentEmailModel(userId);
+          
+          // Parse email addresses
+          const fromParsed = parseEmailAddress(toHeader?.value);
+          const toParsed = parseEmailAddress(from);
+          
+          // Get thread and message IDs
+          const threadId = emailRes.data.threadId || `thread_${Date.now()}`;
+          const messageId = sentMessageRes.data.id || `message_${Date.now()}`;
+          
+          const sentEmail = new SentEmail({
+            userId,
+            from: {
+              name: fromParsed.name,
+              email: fromParsed.email 
+            },
+            to: [{
+              name: toParsed.name,
+              email: toParsed.email
+            }],
+            subject: `Re: ${subject}`,
+            body: responseText,
+            type: 'sent',
+            received: false,
+            autoResponded: true,
+            responseTime: responseTime, // Use actual response time
+            category: categorizeEmail(subject, originalBody, from),
+            sentiment: analyzeEmailSentiment(responseText),
+            threadId: threadId,
+            messageId: messageId,
+            replyToEmailId: emailRes.data.id,
+            isReply: true,
+            generationType: 'auto-reply',
+            autoGenerated: true,
+            dateSent: new Date(),
+            // Add metrics fields for stats
+            metadata: {
+              processingTime: responseTime,
+              originalEmailReceived: new Date(dateHeader?.value || Date.now()),
+              isAutoResponse: true
+            }
+          });
+          
+          await sentEmail.save();
+          console.log(`Saved response to database for ${from}`);
+          
+          // Update the original email to mark it as processed and auto-replied
+          if (savedEmail) {
+            savedEmail.processed = true;
+            savedEmail.autoReplied = true;
+            savedEmail.processingStatus = 'processed';
+            savedEmail.processingDate = new Date();
+            savedEmail.processingTime = responseTime;
+            savedEmail.processingLog.push({
+              timestamp: new Date(),
+              status: 'processed',
+              message: 'Auto-replied by AI'
+            });
+            await savedEmail.save();
+            console.log(`Updated original email status as processed`);
+          }
+          
+        } catch (saveError) {
+          console.error('Error saving sent email to database:', saveError);
+          // Continue execution even if saving fails
+        }
       
       } catch (error) {
         console.error('Error responding to email:', error);
@@ -323,20 +516,5 @@ Guidelines:
     throw new Error('Error creating email bot.');
   }
 };
-
-// List connected email accounts
-// router.get('/connected', auth, async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id);
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-    
-//     res.json({ connectedEmails: user.connectedEmails || [] });
-//   } catch (error) {
-//     console.error('Error fetching connected emails:', error);
-//     res.status(500).json({ message: 'Failed to fetch connected emails' });
-//   }
-// });
 
 export default router;

@@ -12,50 +12,57 @@ const getDateRange = (timeRange) => {
   const now = new Date();
   const startDate = new Date();
   const previousStartDate = new Date();
-  const previousEndDate = new Date(startDate);
+  const previousEndDate = new Date();
   
   switch (timeRange) {
     case 'daily':
-      startDate.setHours(0, 0, 0, 0);
-      previousStartDate.setDate(now.getDate() - 1);
-      previousStartDate.setHours(0, 0, 0, 0);
-      previousEndDate.setHours(0, 0, 0, 0);
-      break;
-    case 'week':
-      // Start from the beginning of this week (Sunday)
-      const dayOfWeek = startDate.getDay();
-      startDate.setDate(startDate.getDate() - dayOfWeek);
+      // Current day (midnight to now)
       startDate.setHours(0, 0, 0, 0);
       
-      // Previous period is last week
+      // Previous day (previous midnight to previous midnight)
+      previousStartDate.setDate(now.getDate() - 1);
+      previousStartDate.setHours(0, 0, 0, 0);
+      previousEndDate.setDate(now.getDate() - 1);
+      previousEndDate.setHours(23, 59, 59, 999);
+      break;
+    case 'week':
+      // Current week (starting from Monday)
+      const dayOfWeek = startDate.getDay() || 7; // Convert Sunday (0) to 7
+      const daysToMonday = dayOfWeek - 1;
+      startDate.setDate(startDate.getDate() - daysToMonday);
+      startDate.setHours(0, 0, 0, 0);
+      
+      // Previous week (previous Monday to previous Sunday)
       previousStartDate.setDate(startDate.getDate() - 7);
       previousEndDate.setDate(startDate.getDate() - 1);
       previousEndDate.setHours(23, 59, 59, 999);
       break;
     case 'month':
-      // Start from the beginning of this month
+      // Current month (1st of this month to now)
       startDate.setDate(1);
       startDate.setHours(0, 0, 0, 0);
       
-      // Previous period is last month
+      // Previous month
       previousStartDate.setMonth(startDate.getMonth() - 1);
-      previousEndDate.setDate(0); // Last day of previous month
+      previousStartDate.setDate(1);
+      previousEndDate.setFullYear(startDate.getFullYear(), startDate.getMonth(), 0);
       previousEndDate.setHours(23, 59, 59, 999);
       break;
     case 'year':
-      // Start from the beginning of this year
+      // Current year (Jan 1st to now)
       startDate.setMonth(0, 1);
       startDate.setHours(0, 0, 0, 0);
       
-      // Previous period is last year
-      previousStartDate.setFullYear(startDate.getFullYear() - 1);
+      // Previous year
+      previousStartDate.setFullYear(startDate.getFullYear() - 1, 0, 1);
       previousEndDate.setFullYear(startDate.getFullYear() - 1, 11, 31);
       previousEndDate.setHours(23, 59, 59, 999);
       break;
     default:
       // Default to week
-      const defaultDayOfWeek = startDate.getDay();
-      startDate.setDate(startDate.getDate() - defaultDayOfWeek);
+      const defaultDayOfWeek = startDate.getDay() || 7;
+      const defaultDaysToMonday = defaultDayOfWeek - 1;
+      startDate.setDate(startDate.getDate() - defaultDaysToMonday);
       startDate.setHours(0, 0, 0, 0);
       
       previousStartDate.setDate(startDate.getDate() - 7);
@@ -69,32 +76,66 @@ const getDateRange = (timeRange) => {
   };
 };
 
-// Helper to calculate percentage change
+// Helper to calculate percentage change with proper handling of edge cases
 const calculatePercentChange = (previous, current) => {
+  if (previous === 0 && current === 0) return 0;
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
 };
 
-// Helper to calculate average response time
+// Helper to calculate average response time with better formatting
 const calculateAvgResponseTime = (responseTimes) => {
-  if (responseTimes.length === 0) return { value: 0, formatted: "0s" };
+  if (!responseTimes || responseTimes.length === 0) return { value: 0, formatted: "0s" };
   
-  const totalMs = responseTimes.reduce((sum, time) => sum + time, 0);
-  const avgMs = totalMs / responseTimes.length;
+  const totalSecs = responseTimes.reduce((sum, time) => sum + time, 0) / 1000;
+  const avgSecs = totalSecs / responseTimes.length;
   
-  // Format as minutes and seconds
-  const minutes = Math.floor(avgMs / 60000);
-  const seconds = Math.floor((avgMs % 60000) / 1000);
-  
-  const formatted = minutes > 0 ? `${minutes}.${Math.floor(seconds/6)}m` : `${seconds}s`;
-  
-  return { value: avgMs, formatted };
+  // Format based on size
+  if (avgSecs < 60) {
+    return { value: avgSecs * 1000, formatted: `${Math.round(avgSecs)}s` };
+  } else if (avgSecs < 3600) {
+    const mins = Math.floor(avgSecs / 60);
+    const secs = Math.round(avgSecs % 60);
+    return { value: avgSecs * 1000, formatted: `${mins}m ${secs}s` };
+  } else {
+    const hrs = Math.floor(avgSecs / 3600);
+    const mins = Math.floor((avgSecs % 3600) / 60);
+    return { value: avgSecs * 1000, formatted: `${hrs}h ${mins}m` };
+  }
 };
 
-// Endpoint to get comprehensive stats data
+// Basic stats endpoint (just total counts)
+router.get('/basic', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const SentEmail = getSentEmailModel(userId);
+    const Email = getEmailModel(userId);
+    
+    // Get total counts
+    const totalEmails = await Email.countDocuments({ userId });
+    const processedEmails = await Email.countDocuments({ userId, processed: true });
+    const automatedResponses = await SentEmail.countDocuments({ userId, autoResponded: true });
+    
+    res.json({
+      totalEmails,
+      processedEmails,
+      automatedResponses
+    });
+  } catch (error) {
+    console.error('Error fetching basic stats:', error);
+    res.status(500).send('Error fetching stats');
+  }
+});
+
+// Comprehensive stats endpoint
 router.get('/stats', auth, async (req, res) => {
   try {
     const userId = req.user._id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).send('Invalid user ID');
+    }
+    
     const timeRange = req.query.range || 'week';
     
     const SentEmail = getSentEmailModel(userId);
@@ -104,61 +145,78 @@ router.get('/stats', auth, async (req, res) => {
     // Get date ranges for current and previous periods
     const { currentPeriod, previousPeriod } = getDateRange(timeRange);
     
+    // console.log('Current period:', {
+    //   start: currentPeriod.startDate.toISOString(),
+    //   end: currentPeriod.endDate.toISOString()
+    // });
+    // console.log('Previous period:', {
+    //   start: previousPeriod.startDate.toISOString(),
+    //   end: previousPeriod.endDate.toISOString()
+    // });
+    
     // CURRENT PERIOD METRICS
-    // 1. Emails Processed (all emails received/handled)
+    // 1. Emails Processed (all emails received)
     const currentEmailsProcessed = await Email.countDocuments({
-      date: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
+      userId,
+      createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
     });
     
     // 2. Auto-Responses (sent automatically)
     const currentAutoResponses = await SentEmail.countDocuments({
+      userId,
       dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
-      autoGenerated: true
+      autoResponded: true
     });
     
     // 3. Drafts Saved
     const currentDraftsSaved = await Draft.countDocuments({
+      userId,
       createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
     });
     
     // 4. Response Time Data
     const responseTimeData = await SentEmail.find({
+      userId,
       dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
-      replyToEmailId: { $exists: true, $ne: null }
+      responseTime: { $exists: true, $ne: null }
     }).select('responseTime');
     
     const currentResponseTimes = responseTimeData
-      .filter(email => email.responseTime)
-      .map(email => email.responseTime);
+      .map(email => email.responseTime || 0)
+      .filter(time => time > 0);
     
     const currentAvgResponseTime = calculateAvgResponseTime(currentResponseTimes);
     
     // PREVIOUS PERIOD METRICS
     // 1. Emails Processed
     const previousEmailsProcessed = await Email.countDocuments({
-      date: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
+      userId,
+      createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
     });
     
     // 2. Auto-Responses
     const previousAutoResponses = await SentEmail.countDocuments({
+      userId,
       dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
-      autoGenerated: true
+      autoResponded: true
     });
     
     // 3. Drafts Saved
     const previousDraftsSaved = await Draft.countDocuments({
+      userId,
       createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
     });
     
     // 4. Response Time Data
     const prevResponseTimeData = await SentEmail.find({
+      userId,
       dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
-      replyToEmailId: { $exists: true, $ne: null }
+      responseTime: { $exists: true, $ne: null }
     }).select('responseTime');
     
     const previousResponseTimes = prevResponseTimeData
-      .filter(email => email.responseTime)
-      .map(email => email.responseTime);
+      .map(email => email.responseTime || 0)
+      .filter(time => time > 0);
     
     const previousAvgResponseTime = calculateAvgResponseTime(previousResponseTimes);
     
@@ -167,10 +225,11 @@ router.get('/stats', auth, async (req, res) => {
     const autoResponsesChange = calculatePercentChange(previousAutoResponses, currentAutoResponses);
     const draftsSavedChange = calculatePercentChange(previousDraftsSaved, currentDraftsSaved);
     
-    // For response time, a decrease is actually positive
-    const responseTimeChange = previousAvgResponseTime.value > 0 ? 
-      -calculatePercentChange(previousAvgResponseTime.value, currentAvgResponseTime.value) : 
-      0;
+    // For response time, a decrease is actually positive (faster is better)
+    let responseTimeChange = 0;
+    if (previousAvgResponseTime.value > 0 && currentAvgResponseTime.value > 0) {
+      responseTimeChange = -calculatePercentChange(previousAvgResponseTime.value, currentAvgResponseTime.value);
+    }
     
     // Format the stats data for the dashboard
     const dashboardStats = [
@@ -208,6 +267,22 @@ router.get('/stats', auth, async (req, res) => {
         isInverted: true // Indicates that a decrease is positive
       }
     ];
+    
+    // debug information in development
+    // if (process.env.NODE_ENV !== 'production') {
+    //   console.log('Stats results:', {
+    //     currentEmailsProcessed,
+    //     previousEmailsProcessed,
+    //     currentAutoResponses,
+    //     previousAutoResponses,
+    //     currentDraftsSaved,
+    //     previousDraftsSaved,
+    //     currentResponseTimes: currentResponseTimes.length,
+    //     previousResponseTimes: previousResponseTimes.length,
+    //     currentAvgResponseTime,
+    //     previousAvgResponseTime
+    //   });
+    // }
     
     res.json(dashboardStats);
   } catch (error) {

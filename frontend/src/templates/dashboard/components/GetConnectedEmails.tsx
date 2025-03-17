@@ -621,7 +621,7 @@ export default function GetConnectedEmails() {
               Refresh All
             </Button>
 
-            <Button
+            {/* <Button
               variant="contained"
               size="small"
               startIcon={<AddIcon />}
@@ -638,7 +638,7 @@ export default function GetConnectedEmails() {
               }}
             >
               Add Account
-            </Button>
+            </Button> */}
           </Stack>
         </Box>
 
@@ -757,18 +757,6 @@ export default function GetConnectedEmails() {
                 Connect your email accounts to start automating responses and
                 get analytics
               </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{
-                  borderRadius: 2,
-                  px: 3,
-                  py: 1,
-                }}
-                onClick={handleCreateBot}
-              >
-                Connect Your First Account
-              </Button>
             </Paper>
           )
         ) : (

@@ -91,7 +91,7 @@ export default function ConnectEmailDialog({ open, onClose, provider }: ConnectE
         sx: { borderRadius: 3 }
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ pb: 1, bgcolor: "background.default" }}>
         Connect Custom Email
         <IconButton
           aria-label="close"
@@ -108,7 +108,7 @@ export default function ConnectEmailDialog({ open, onClose, provider }: ConnectE
         </IconButton>
       </DialogTitle>
       
-      <DialogContent>
+      <DialogContent sx={{ pb: 3,  bgcolor: "background.default"  }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Enter your email server details to connect via IMAP/SMTP. This information can 
           typically be found in your email provider's help center.
@@ -120,7 +120,7 @@ export default function ConnectEmailDialog({ open, onClose, provider }: ConnectE
               fullWidth
               id="email"
               name="email"
-              label="Email Address"
+              placeholder="Email Address"
               value={formik.values.email}
               onChange={formik.handleChange}
               error={formik.touched.email && Boolean(formik.errors.email)}
@@ -132,7 +132,7 @@ export default function ConnectEmailDialog({ open, onClose, provider }: ConnectE
               fullWidth
               id="password"
               name="password"
-              label="Password or App Password"
+              placeholder="Password or App Password"
               type="password"
               value={formik.values.password}
               onChange={formik.handleChange}
@@ -192,7 +192,7 @@ export default function ConnectEmailDialog({ open, onClose, provider }: ConnectE
         </form>
       </DialogContent>
       
-      <DialogActions sx={{ px: 3, pb: 3 }}>
+      <DialogActions sx={{ px: 3, pb: 3,  bgcolor: "background.default"  }}>
         <Button 
           onClick={onClose} 
           disabled={loading} 

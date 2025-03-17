@@ -7,6 +7,14 @@ import mongoose from 'mongoose';
  */
 const getEmailModel = (userId) => {
   const emailSchema = new mongoose.Schema({
+    // Reference to user
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      index: true
+    },
+    
     // Email metadata
     messageId: {
       type: String,
@@ -111,7 +119,12 @@ const getEmailModel = (userId) => {
       index: true
     },
     
-    // AI processing status
+    // AI processing status - THIS IS THE KEY CHANGE
+    processed: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
     processingStatus: {
       type: String,
       enum: ['pending', 'processing', 'processed', 'failed', 'skipped'],
@@ -126,6 +139,14 @@ const getEmailModel = (userId) => {
       status: String,
       message: String
     }],
+    processingTime: {
+      type: Number, // Time taken to process in ms
+      default: 0
+    },
+    processingDate: {
+      type: Date,
+      index: true
+    },
     
     // Email actions
     hasReplies: {
@@ -138,7 +159,8 @@ const getEmailModel = (userId) => {
     },
     autoReplied: {
       type: Boolean,
-      default: false
+      default: false,
+      index: true // Add index for stats queries
     },
     
     // Attachments
@@ -168,14 +190,16 @@ const getEmailModel = (userId) => {
     // System timestamps
     createdAt: {
       type: Date,
-      default: Date.now
+      default: Date.now,
+      index: true
     },
     updatedAt: {
       type: Date,
       default: Date.now
     }
   }, { 
-    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
+    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },
+    strict: false // Allow additional fields
   });
   
   // Add text index for search
@@ -191,7 +215,24 @@ const getEmailModel = (userId) => {
     if (!this.receivedDate) {
       this.receivedDate = new Date();
     }
+    
+    // Sync processingStatus with processed boolean
+    if (this.processingStatus === 'processed' && !this.processed) {
+      this.processed = true;
+      if (!this.processingDate) {
+        this.processingDate = new Date();
+      }
+    }
+    
     next();
+  });
+  
+  // Virtual for time to process
+  emailSchema.virtual('timeToProcess').get(function() {
+    if (this.processingDate && this.receivedDate) {
+      return this.processingDate - this.receivedDate;
+    }
+    return null;
   });
   
   // Ensure we don't recreate the model if it already exists
