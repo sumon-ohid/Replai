@@ -377,7 +377,7 @@ export default function ComposeEmail({
 
           {/* Attachments */}
           {attachments.length > 0 && (
-            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "background.default" }}>
               <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
                 Attachments ({attachments.length})
               </Typography>
