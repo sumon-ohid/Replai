@@ -14,17 +14,22 @@ import InboxIcon from "@mui/icons-material/Inbox";
 import DraftsIcon from "@mui/icons-material/Drafts";
 import SendIcon from "@mui/icons-material/Send";
 import StarIcon from "@mui/icons-material/Star";
+import CreateIcon from "@mui/icons-material/Create";
+import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
 
 interface EmailMobileNavProps {
   currentFolder: string;
   onOpenSidebar: () => void;
   unreadCount: number;
+  onCompose?: () => void;
 }
 
 export default function EmailMobileNav({
   currentFolder,
   onOpenSidebar,
   unreadCount,
+  onCompose,
 }: EmailMobileNavProps) {
   const theme = useTheme();
 
@@ -58,6 +63,9 @@ export default function EmailMobileNav({
       <Toolbar
         sx={{
           px: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
         <IconButton
@@ -98,6 +106,41 @@ export default function EmailMobileNav({
             )}
           </Typography>
         </Box>
+        {/* Compose button */}
+        {onCompose && (
+          <Tooltip title="Compose new email" placement="right">
+            <Button
+              variant="outlined"
+              disableElevation
+              startIcon={<CreateIcon />}
+              onClick={onCompose}
+              sx={{
+                borderRadius: 8,
+                px: 2,
+                py: 0.75,
+                display: "flex",
+                textTransform: "none",
+                justifyContent: "right",
+                alignItems: "right",
+                minWidth: 0,
+                [theme.breakpoints.down("sm")]: {
+                  px: 1.5,
+                  "& .MuiButton-startIcon": {
+                    mr: 0,
+                  },
+                  "& .MuiButton-startIcon>*:nth-of-type(1)": {
+                    fontSize: "1.2rem",
+                  },
+                  "& .MuiButton-endIcon>*:nth-of-type(1)": {
+                    fontSize: "1rem",
+                  },
+                },
+              }}
+            >
+              <Box sx={{ display: { xs: "none", sm: "block" } }}>Compose</Box>
+            </Button>
+          </Tooltip>
+        )}
       </Toolbar>
     </AppBar>
   );
