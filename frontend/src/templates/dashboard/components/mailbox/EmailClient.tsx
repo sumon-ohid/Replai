@@ -167,6 +167,7 @@ export default function EmailClient() {
                 bgcolor: "background.paper",
               },
               display: { xs: "block", md: "none" },
+              zIndex: 1500,
             }}
           >
             <EmailSidebar
