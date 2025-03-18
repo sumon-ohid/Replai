@@ -170,16 +170,16 @@ export const stopConnection = async (connectionKey) => {
 
 export const getConnection = (userId, email) => {
   const connectionKey = `${userId}:${email}`;
-  console.log(`Looking for connection with key: ${connectionKey}`);
+  // console.log(`Looking for connection with key: ${connectionKey}`);
   const connection = activeConnections.get(connectionKey);
   
   // Debug info
-  if (!connection) {
-    console.log(`No active connection found for ${connectionKey}`);
+  // if (!connection) {
+  //   console.log(`No active connection found for ${connectionKey}`);
     
-    // Log all active connections to help debug
-    console.log('Active connections:', Array.from(activeConnections.keys()));
-  }
+  //   // Log all active connections to help debug
+  //   console.log('Active connections:', Array.from(activeConnections.keys()));
+  // }
   
   return connection;
 };

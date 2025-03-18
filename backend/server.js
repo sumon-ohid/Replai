@@ -32,6 +32,9 @@ import MongoStore from 'connect-mongo';
 import authConfig from './emails/config/authConfig.js';
 import { requireAuth } from './emails/middleware/emailAuthMiddleware.js';
 import connectedEmailsRoutes from './emails/routes/connectedEmailsRoutes.js';
+import emailExtraRoutes from './emails/routes/index.js';
+import { initializeAllConnections } from './emails/managers/connectionManager.js';
+import { errorMiddleware } from './emails/utils/errorHandler.js';
 
 
 // Define __dirname
@@ -53,8 +56,7 @@ mongoose
     serverSelectionTimeoutMS: 5000 // Give up initial connection after 5 seconds
   })
   .then(() => {
-    console.log("✅ Connected to MongoDB");
-    
+    console.log("✅ Connected to MongoDB");    
     // Initialize email connections after successful DB connection
     connectionManager.initializeAllConnections()
       .then(success => {
@@ -262,6 +264,10 @@ app.use("/api/emails/v2", emailRoutes);
 app.use("/api/emails/auth", emailAuthRoutes);
 app.use("/api/emails/stats", emailStatsRoutes);
 app.use("/api/emails/auth/connected", connectedEmailsRoutes);
+
+// Extra email routes for additional features
+app.use("/api/emails/extras", emailExtraRoutes);
+app.use(errorMiddleware);
 
 // Connection status endpoint with proper auth middleware
 app.get("/api/emails/connection/status", requireAuth, async (req, res) => {
