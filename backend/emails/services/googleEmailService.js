@@ -252,7 +252,8 @@ const checkForNewGoogleEmails = async (gmail, userId, userEmail, config) => {
   }
 };
 
-// Updateed the processGoogleMessage function
+
+// Update the processGoogleMessage function to properly await the Promise
 
 const processGoogleMessage = async (gmail, messageId, userId, userEmail, config) => {
   try {
@@ -285,7 +286,11 @@ const processGoogleMessage = async (gmail, messageId, userId, userEmail, config)
     const fromHeader = headers.find(h => h.name.toLowerCase() === 'from');
     const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject');
     
-    // Extract email body - fix here to ensure we have a string
+    // Ensure values are strings
+    const fromValue = fromHeader ? String(fromHeader.value || '') : '';
+    const subjectValue = subjectHeader ? String(subjectHeader.value || '') : '';
+    
+    // Extract email body - ensure we have a string
     let body = '';
     let htmlBody = '';
     
@@ -324,46 +329,94 @@ const processGoogleMessage = async (gmail, messageId, userId, userEmail, config)
     
     // Ensure body is a string at this point
     if (typeof body !== 'string') {
-      body = htmlBody || '';
-      if (typeof body !== 'string') {
-        body = '';
-      }
+      body = String(body || '');
     }
+    
+    // Ensure htmlBody is a string
+    if (typeof htmlBody !== 'string') {
+      htmlBody = String(htmlBody || '');
+    }
+    
+    // Parse the sender information
+    const sender = parseEmailAddress(fromValue);
     
     // Process the email
     const emailData = {
       provider: 'google',
       providerId: messageId,
-      threadId,
+      threadId: threadId,
+      messageId: messageId,
       userId,
       userEmail,
-      from: fromHeader ? fromHeader.value : '',
-      to: userEmail,
-      subject: subjectHeader ? subjectHeader.value : '',
-      body, // Now we're sure this is a string
+      from: fromValue,
+      to: String(userEmail || ''),
+      subject: subjectValue,
+      body,
       htmlBody,
+      date: new Date(parseInt(message.internalDate)),
       receivedAt: new Date(parseInt(message.internalDate)),
       read: !(message.labelIds || []).includes('UNREAD'),
-      processed: false
+      processed: false,
+      // Add required fields based on the validation error
+      from: {
+        email: sender.email || '',
+        name: sender.name || ''
+      }
     };
     
-    // Process and save the email
-    const processedData = await processEmailContent(emailData);
-    const newEmail = new Email(processedData);
-    await newEmail.save();
-    
-    // Mark as read if configured
-    if (config.markAsRead) {
-      await gmail.users.messages.modify({
-        userId: 'me',
-        id: messageId,
-        requestBody: {
-          removeLabelIds: ['UNREAD']
+    try {
+      // Process the email content - IMPORTANT: AWAIT THE PROMISE HERE
+      const processedData = await processEmailContent(emailData);
+      
+      // Create and save the email document with processed data
+      const newEmail = new Email({
+        ...processedData,
+        // Ensure these required fields are explicitly set
+        category: processedData.category || 'uncategorized',
+        threadId: processedData.threadId || messageId,
+        messageId: processedData.messageId || messageId,
+        date: processedData.date || new Date(parseInt(message.internalDate)),
+        userId: processedData.userId || userId,
+        from: {
+          email: processedData.sender?.email || sender.email || '',
+          name: processedData.sender?.name || sender.name || ''
         }
       });
+      
+      await newEmail.save();
+      
+      // Mark as read if configured
+      if (config.markAsRead) {
+        await gmail.users.messages.modify({
+          userId: 'me',
+          id: messageId,
+          requestBody: {
+            removeLabelIds: ['UNREAD']
+          }
+        });
+      }
+      
+      return newEmail;
+    } catch (processingError) {
+      console.error('Error processing email content:', processingError);
+      
+      // Still save a basic version of the email
+      const basicEmail = new Email({
+        ...emailData,
+        category: 'uncategorized',
+        processed: true,
+        processedAt: new Date(),
+        processingError: processingError.message,
+        // Ensure these required fields are explicitly set
+        threadId: emailData.threadId || messageId,
+        messageId: emailData.messageId || messageId,
+        date: emailData.date || new Date(parseInt(message.internalDate)),
+        userId: emailData.userId || userId
+      });
+      
+      await basicEmail.save();
+      return basicEmail;
     }
-    
-    return newEmail;
   } catch (error) {
     console.error('Error processing Google message:', error);
     throw error;

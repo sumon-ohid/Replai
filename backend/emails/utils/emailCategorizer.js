@@ -89,64 +89,88 @@ const CATEGORY_KEYWORDS = {
  * @param {string} from - Sender email address or name+address
  * @returns {string} - Email category
  */
-export const categorizeEmail = (subject = '', body = '', from = '') => {
 
-  body = typeof body === 'string' ? body : (body ? JSON.stringify(body) : "");
-
-  subject = (subject || '').toLowerCase();
-  body = (body || '').toLowerCase();
-  from = (from || '').toLowerCase();
-  
-  // Extract domain from sender
-  const emailMatch = from.match(/<([^<>]+@[^<>]+)>/) || from.match(/([^\s]+@[^\s]+)/);
-  const senderEmail = emailMatch ? emailMatch[1] : '';
-  const senderDomain = senderEmail.split('@')[1] || '';
-  
-  // Check against known patterns in sender domain
-  for (const [category, domainPatterns] of Object.entries(DOMAIN_PATTERNS)) {
-    if (domainPatterns.some(pattern => 
-      senderDomain.includes(pattern) || senderEmail.includes(pattern))) {
-      return category;
-    }
-  }
-  
-  // Check for automated/system emails
-  if (from.includes('noreply') || from.includes('no-reply') || from.includes('donotreply')) {
-    return 'updates';
-  }
-  
-  // Check subject and body for category keywords
-  const combinedText = `${subject} ${body.substring(0, 1000)}`;
-  
-  // First check for important emails
-  if (CATEGORY_KEYWORDS.important.some(keyword => combinedText.includes(keyword))) {
-    return 'important';
-  }
-  
-  // Then check other categories
-  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (category === 'important') continue; // Already checked
+/**
+ * Categorize an email based on content analysis
+ */
+export const categorizeEmail = async (email) => {
+  try {
+    // Make sure subject is a string
+    const subject = typeof email.subject === 'string' ? email.subject : String(email.subject || '');
+    const body = typeof email.body === 'string' ? email.body : String(email.body || '');
     
-    // Count how many keywords match
-    const matchCount = keywords.reduce((count, keyword) => 
-      count + (combinedText.includes(keyword) ? 1 : 0), 0);
+    // Default category
+    let category = 'uncategorized';
+    let confidence = 0;
     
-    // If 2+ keywords match, categorize accordingly
-    if (matchCount >= 2) {
-      return category;
+    // Check against predefined categories
+    const categories = {
+      'promotion': ['offer', 'discount', 'sale', 'promotion', 'deal', 'limited time', 'coupon'],
+      'newsletter': ['newsletter', 'update', 'weekly', 'monthly', 'digest', 'latest news'],
+      'social': ['invitation', 'connect', 'friend', 'follow', 'network', 'social', 'like', 'comment'],
+      'bill': ['receipt', 'invoice', 'payment', 'bill', 'subscription', 'renewal', 'transaction'],
+      'travel': ['booking', 'reservation', 'flight', 'hotel', 'travel', 'itinerary', 'confirmation'],
+      'shopping': ['order', 'shipped', 'delivery', 'tracking', 'purchase', 'return', 'refund'],
+      'personal': ['hello', 'hi', 'hey', 'question', 'request', 'help', 'thanks', 'thank you'],
+      'urgent': ['urgent', 'important', 'immediately', 'attention', 'critical', 'emergency'],
+      'work': ['project', 'meeting', 'deadline', 'report', 'team', 'client', 'status']
+    };
+    
+    // Calculate keyword matches for each category
+    const scores = {};
+    
+    for (const [cat, keywords] of Object.entries(categories)) {
+      scores[cat] = 0;
+      
+      for (const keyword of keywords) {
+        // Safely check if the keyword is in subject or body
+        if (subject.toLowerCase().includes(keyword.toLowerCase())) {
+          scores[cat] += 2; // Higher weight for subject matches
+        }
+        
+        if (body.toLowerCase().includes(keyword.toLowerCase())) {
+          scores[cat] += 1;
+        }
+      }
     }
+    
+    // Find highest scoring category
+    let maxScore = 0;
+    for (const [cat, score] of Object.entries(scores)) {
+      if (score > maxScore) {
+        maxScore = score;
+        category = cat;
+        // Calculate rough confidence - could be more sophisticated
+        confidence = Math.min(0.5 + (score / 10), 0.95);
+      }
+    }
+    
+    // For very low scores, keep as uncategorized
+    if (maxScore <= 1) {
+      category = 'uncategorized';
+      confidence = 0.3;
+    }
+    
+    // Return a plain object, not a Promise
+    return {
+      category,
+      confidence,
+      keywords: categories[category] || []
+    };
+  } catch (error) {
+    console.error('Error categorizing email:', error);
+    
+    // Return safe default on error
+    return {
+      category: 'uncategorized',
+      confidence: 0,
+      keywords: [],
+      error: error.message
+    };
   }
-  
-  // Special case for transaction emails
-  if (subject.includes('receipt') || subject.includes('invoice') || 
-      subject.includes('order') || subject.includes('payment') ||
-      subject.includes('transaction')) {
-    return 'updates';
-  }
-  
-  // Default fallback for personal emails
-  return 'primary';
 };
+
+// Other functions in the file...
 
 /**
  * Identify email subtype for more specific categorization

@@ -16,18 +16,66 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
  * Process email content for category and sentiment
  */
 
-export const processEmailContent = async (subject, body, from) => {
-  const sanitizedBody = typeof body === 'string' ? body : 
-                        (body ? JSON.stringify(body) : "");
+// Fix the processEmailContent function to ensure it resolves properly
+
+/**
+ * Process email content to extract useful information
+ */
+export const processEmailContent = async (emailData) => {
+  try {
+    // Ensure emailData has all required fields as strings
+    const safeData = {
+      ...emailData,
+      subject: typeof emailData.subject === 'string' ? emailData.subject : String(emailData.subject || ''),
+      body: typeof emailData.body === 'string' ? emailData.body : String(emailData.body || ''),
+      from: emailData.from
+    };
     
-  // Categorize and analyze sentiment
-  const category = categorizeEmail(subject, sanitizedBody, from);
-  const sentiment = analyzeEmailSentiment(sanitizedBody);
-  
-  return {
-    category,
-    sentiment
-  };
+    // Get sender details if not already parsed
+    const sender = typeof safeData.from === 'string' 
+      ? parseEmailAddress(safeData.from) 
+      : safeData.from;
+    
+    // Categorize the email - IMPORTANT: AWAIT THE RESULT
+    const categoryInfo = await categorizeEmail(safeData);
+    
+    // Extract any possible action items
+    const actionItems = extractActionItems(safeData.body);
+    
+    // Determine if email requires a response
+    const requiresResponse = determineIfResponseNeeded(safeData, categoryInfo);
+    
+    // Determine email priority
+    const priority = calculatePriority(safeData, categoryInfo, requiresResponse);
+    
+    // Return processed data
+    return {
+      ...safeData,
+      sender: {
+        name: sender.name || '',
+        email: sender.email || ''
+      },
+      category: categoryInfo.category || 'uncategorized',
+      confidence: categoryInfo.confidence || 0,
+      keywords: categoryInfo.keywords || [],
+      actionItems,
+      requiresResponse,
+      priority,
+      processed: true,
+      processedAt: new Date()
+    };
+  } catch (error) {
+    console.error('Error processing email content:', error);
+    
+    // On error, still return data with basic safe values
+    return {
+      ...emailData,
+      category: 'uncategorized',
+      processed: true,
+      processedAt: new Date(),
+      processingError: error.message
+    };
+  }
 };
 
 /**
