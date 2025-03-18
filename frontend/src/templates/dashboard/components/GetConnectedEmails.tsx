@@ -104,7 +104,7 @@ export default function GetConnectedEmails() {
     setError(null);
 
     try {
-      const response = await axios.get(`${apiBaseUrl}/api/emails/connected`, {
+      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/connected`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -188,7 +188,7 @@ export default function GetConnectedEmails() {
       // Use POST to /disconnect with email in body
       // (as seen in the handleEmails.js file you shared earlier)
       await axios.post(
-        `${apiBaseUrl}/api/emails/disconnect`,
+        `${apiBaseUrl}/api/emails/auth/disconnect`,
         { email },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -230,7 +230,7 @@ export default function GetConnectedEmails() {
     try {
       // Update the server
       await axios.patch(
-        `${apiBaseUrl}/api/emails/connected/mode/${email.email}`,
+        `${apiBaseUrl}/api/emails/auth/connected/mode/${email.email}`,
         { mode: newMode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -285,7 +285,7 @@ export default function GetConnectedEmails() {
     try {
       // Update the server
       await axios.patch(
-        `${apiBaseUrl}/api/emails/connected/auto-reply/${email.email}`,
+        `${apiBaseUrl}/api/emails/auth/connected/auto-reply/${email.email}`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -336,7 +336,7 @@ export default function GetConnectedEmails() {
     try {
       // Update the server
       await axios.patch(
-        `${apiBaseUrl}/api/emails/connected/sync/${email.email}`,
+        `${apiBaseUrl}/api/emails/auth/connected/sync/${email.email}`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -381,10 +381,11 @@ export default function GetConnectedEmails() {
     }
   };
 
-  // Update the handleRefreshAccount function to use the new endpoint
+  // Update the handleRefreshAccount function:
+  
   const handleRefreshAccount = async (email: EmailAccount) => {
     if (!email) return;
-
+  
     // Set specific account to syncing status
     const updatedEmails = connectedEmails.map((acc) =>
       acc.id === email.id
@@ -392,27 +393,27 @@ export default function GetConnectedEmails() {
         : acc
     );
     setConnectedEmails(updatedEmails);
-
+  
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
       return;
     }
-
+  
     try {
-      // Call the sync endpoint (from handleEmails.js)
-      const response = await axios.patch(
-        `${apiBaseUrl}/api/emails/connected/sync/${email.email}`,
-        { enabled: true },
+      // Use POST instead of PATCH for refresh
+      const response = await axios.post(
+        `${apiBaseUrl}/api/emails/auth/connected/refresh/${email.email}`,
+        {}, // Empty body
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       // Get last sync time from response
       const data = response.data as { lastSync?: string };
       const lastSync = data.lastSync
         ? formatLastSync(data.lastSync)
         : "Just now";
-
+  
       // Update with new last sync time
       const newEmails = connectedEmails.map((acc) =>
         acc.id === email.id
@@ -424,7 +425,7 @@ export default function GetConnectedEmails() {
           : acc
       );
       setConnectedEmails(newEmails);
-
+  
       setSnackbar({
         open: true,
         message: "Account refreshed successfully",
@@ -432,21 +433,21 @@ export default function GetConnectedEmails() {
       });
     } catch (error) {
       console.error("Error refreshing account:", error);
-
+  
       // Show error state
       const errorEmails = connectedEmails.map((acc) =>
         acc.id === email.id ? { ...acc, status: "error" as "error" } : acc
       );
-
+  
       setConnectedEmails(errorEmails);
-
+  
       setSnackbar({
         open: true,
         message: "Failed to refresh account",
         severity: "error",
       });
     }
-
+  
     handleCloseMenu();
   };
 
@@ -538,6 +539,7 @@ export default function GetConnectedEmails() {
         },
       });
       const authUrl = (response.data as { authUrl: string }).authUrl;
+      console.log("Auth URL:", authUrl);
       window.location.href = authUrl;
     } catch (error) {
       console.error("Error creating bot:", error);

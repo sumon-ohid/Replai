@@ -42,6 +42,7 @@ export default function HighlightedCard() {
         }
       });
       const authUrl = (response.data as { authUrl: string }).authUrl;
+      
       window.location.href = authUrl;
     } catch (error) {
       console.error('Error connecting to Gmail:', error);

@@ -8,8 +8,8 @@ dotenv.config();
 
 const router = express.Router();
 const oauth2Client = new google.auth.OAuth2(
-  process.env.CLIENT_ID,
-  process.env.CLIENT_SECRET,
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
   `${process.env.VITE_API_BASE_URL}/api/auth/google/callback`
 );
 

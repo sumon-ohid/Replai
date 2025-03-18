@@ -273,12 +273,12 @@ export default function MainGrid() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/emails/stats?range=${timeRange}`, {
+      const response = await axios.get(`${apiBaseUrl}/api/emails/stats/dashboard?range=${timeRange}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setData(response.data as any);
+      setData(response.data as Stat[]);
     } catch (error) {
       console.error('Error fetching stats data:', error);
       setError('An error occurred. Please try again later.');

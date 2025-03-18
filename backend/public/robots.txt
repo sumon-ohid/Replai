@@ -1,5 +1,5 @@
 # Robots.txt file for Replai.tech
-# Generated on: 2025-03-17
+# Generated on: 2025-03-18
 
 # Allow all search engines to index the site
 User-agent: *
@@ -35,7 +35,7 @@ User-agent: Googlebot-Image
 Allow: /images/
 Allow: /assets/
 
-# Block AI training bots (Optional, depending on your preference)
+# Block AI training bots
 User-agent: GPTBot
 Disallow: /
 

@@ -1,0 +1,27 @@
+backend/
+├── emails/
+│   ├── controllers/
+│   │   ├── emailController.js
+│   │   ├── draftController.js
+│   │   └── statsController.js
+│   ├── services/
+│   │   ├── googleEmailService.js
+│   │   ├── outlookEmailService.js
+│   │   ├── customEmailService.js
+│   │   ├── draftService.js
+│   │   └── emailProcessingService.js
+│   ├── utils/
+│   │   ├── emailParser.js
+│   │   ├── sentimentAnalyzer.js
+│   │   └── emailCategorizer.js
+│   ├── config/
+│   │   ├── authConfig.js
+│   │   └── emailConfig.js
+│   ├── middleware/
+│   │   └── emailAuthMiddleware.js
+│   ├── routes/
+│   │   ├── emailRoutes.js
+│   │   ├── authRoutes.js
+│   │   └── statsRoutes.js
+│   └── managers/
+│       └── connectionManager.js

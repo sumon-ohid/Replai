@@ -73,7 +73,7 @@ export default function EmailConnectionStatus({ refreshTrigger }: EmailConnectio
       }
       
       try {
-        const response = await axios.get(`${apiBaseUrl}/api/emails/connected`, {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/auth/connected`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setConnectedEmails(response.data as ConnectedEmail[]);
@@ -158,7 +158,7 @@ export default function EmailConnectionStatus({ refreshTrigger }: EmailConnectio
     }
     
     try {
-      await axios.delete(`${apiBaseUrl}/api/emails/${emailId}`, {
+      await axios.delete(`${apiBaseUrl}/api/emails/auth/${emailId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

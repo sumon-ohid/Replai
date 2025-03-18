@@ -504,13 +504,11 @@ export default function SideMenu() {
             &copy; {new Date().getFullYear()} Replai.tech
           </Typography>
           <DrawerToggleButton onClick={handleToggleDrawer}>
-            <Tooltip title={expanded ? "Collapse" : "Expand"} placement="right">
               {expanded ? (
                 <ChevronLeftIcon fontSize="small" />
               ) : (
                 <ChevronRightIcon fontSize="small" />
               )}
-            </Tooltip>
           </DrawerToggleButton>
         </Box>
       </Drawer>
