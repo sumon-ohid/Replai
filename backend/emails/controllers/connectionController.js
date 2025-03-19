@@ -1,4 +1,5 @@
-import EmailAccount from '../../models/emailSchema.js';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
+import getConnectedEmailModels from '../../models/ConnectedEmailModels.js';
 import User from '../../models/User.js';
 import ConnectionManager from '../managers/connectionManager.js';
 import { asyncHandler } from '../utils/errorHandler.js';
@@ -10,26 +11,22 @@ class ConnectionController {
   static listConnections = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     
-    const accounts = await EmailAccount.find({ userId }).select('-credentials -tokens.accessToken -tokens.refreshToken');
+    const accounts = await ConnectedEmail.find({ userId }).select('-credentials.password -tokens');
     const activeConnections = ConnectionManager.getUserConnections(userId);
     
     // Merge account data with connection status
-    const connections = accounts.map(account => {
-      const active = activeConnections.find(conn => conn.email === account.email) || null;
-      
-      return {
-        email: account.email,
-        provider: account.provider,
-        name: account.name || account.email.split('@')[0],
-        connected: !!active,
-        status: active ? active.status : 'disconnected',
-        lastSync: account.stats?.lastSync || null,
-        syncEnabled: account.syncConfig?.enabled ?? true,
-        folders: account.syncConfig?.folders || ['INBOX'],
-        aiEnabled: account.aiSettings?.enabled ?? false,
-        aiMode: account.aiSettings?.mode || 'suggest'
-      };
-    });
+    const connections = accounts.map(account => ({
+      email: account.email,
+      provider: account.provider,
+      name: account.name,
+      connected: !!activeConnections.find(conn => conn.email === account.email),
+      status: account.status,
+      lastSync: account.stats?.lastSync || null,
+      syncEnabled: account.syncConfig?.enabled ?? true,
+      folders: account.syncConfig?.folders || ['INBOX'],
+      aiEnabled: account.aiSettings?.enabled ?? false,
+      aiMode: account.aiSettings?.mode || 'suggest'
+    }));
     
     res.json(connections);
   });
@@ -42,13 +39,13 @@ class ConnectionController {
     const { provider, email, credentials, tokens, syncConfig, name } = req.body;
     
     // Check if connection already exists
-    const existingAccount = await EmailAccount.findOne({ userId, email });
+    const existingAccount = await ConnectedEmail.findOne({ userId, email });
     if (existingAccount) {
       return res.status(400).json({ error: 'Email already connected' });
     }
     
-    // Create new email account
-    const account = new EmailAccount({
+    // Create new connected email account
+    const account = new ConnectedEmail({
       userId,
       provider,
       email,
@@ -58,16 +55,20 @@ class ConnectionController {
       syncConfig: syncConfig || {
         enabled: true,
         folders: ['INBOX'],
-        interval: 60 // 60 seconds
+        interval: 60
       },
       aiSettings: {
         enabled: false,
         mode: 'suggest',
         responseTemplates: []
-      }
+      },
+      status: 'disconnected'
     });
     
     await account.save();
+
+    // Initialize the models for this email account
+    const emailModels = getConnectedEmailModels(account._id.toString());
 
     console.log('New email account added:', account.email);
     
@@ -93,14 +94,9 @@ class ConnectionController {
         });
       }
       
-      // Also add to user's connectedEmails array
-      await User.findByIdAndUpdate(userId, {
-        $push: { connectedEmails: {
-          email,
-          provider,
-          name: account.name
-        }}
-      });
+      // Update connection status
+      account.status = 'active';
+      await account.save();
       
       res.status(201).json({
         success: true,
@@ -109,18 +105,30 @@ class ConnectionController {
           provider,
           name: account.name,
           connected: true,
-          syncEnabled: account.syncConfig.enabled
+          syncEnabled: account.syncConfig.enabled,
+          status: 'active'
         }
       });
     } catch (error) {
       console.error('Connection initialization error:', error);
+      
+      // Update error status
+      account.status = 'error';
+      account.lastError = {
+        message: error.message,
+        date: new Date(),
+        code: error.code || 'CONN_INIT_ERROR'
+      };
+      await account.save();
+      
       res.status(500).json({ 
         error: `Failed to initialize connection: ${error.message}`,
         account: {
           email,
           provider,
           name: account.name,
-          connected: false
+          connected: false,
+          status: 'error'
         }
       });
     }
@@ -133,8 +141,8 @@ class ConnectionController {
     const userId = req.user._id;
     const { email } = req.params;
     
-    const account = await EmailAccount.findOne({ userId, email })
-      .select('-credentials.password -tokens.accessToken -tokens.refreshToken');
+    const account = await ConnectedEmail.findOne({ userId, email })
+      .select('-credentials.password -tokens');
     
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
@@ -145,14 +153,13 @@ class ConnectionController {
     const result = {
       email: account.email,
       provider: account.provider,
-      name: account.name || account.email.split('@')[0],
+      name: account.name,
       connected: !!connection,
-      status: connection ? connection.status : 'disconnected',
+      status: account.status,
       lastSync: account.stats?.lastSync || null,
       syncConfig: account.syncConfig || {},
       aiSettings: account.aiSettings || {},
-      stats: account.stats || {},
-      folders: account.folders || []
+      stats: account.stats || {}
     };
     
     res.json(result);
@@ -166,7 +173,7 @@ class ConnectionController {
     const { email } = req.params;
     const updates = req.body;
     
-    const account = await EmailAccount.findOne({ userId, email });
+    const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
     }
@@ -183,7 +190,9 @@ class ConnectionController {
     await account.save();
     
     // Update connection config if active
-    await ConnectionManager.updateConnectionConfig(userId, email, updates);
+    if (account.status === 'active') {
+      await ConnectionManager.updateConnectionConfig(userId, email, updates);
+    }
     
     res.json({
       success: true,
@@ -191,6 +200,7 @@ class ConnectionController {
         email: account.email,
         provider: account.provider,
         name: account.name,
+        status: account.status,
         syncConfig: account.syncConfig,
         aiSettings: account.aiSettings
       }
@@ -198,31 +208,39 @@ class ConnectionController {
   });
 
   /**
-   * Delete connection
+   * Delete connection and associated data
    */
   static deleteConnection = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email } = req.params;
     
-    const account = await EmailAccount.findOne({ userId, email });
+    const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
     }
     
     // Stop connection if active
-    await ConnectionManager.stopConnection(userId, email);
+    if (account.status === 'active') {
+      await ConnectionManager.stopConnection(userId, email);
+    }
     
-    // Remove from database
-    await EmailAccount.deleteOne({ userId, email });
+    // Get the models for this email account
+    const emailModels = getConnectedEmailModels(account._id.toString());
     
-    // Also remove from user's connectedEmails array
-    await User.findByIdAndUpdate(userId, {
-      $pull: { connectedEmails: { email } }
-    });
+    // Delete all data for this email account
+    await Promise.all([
+      // Delete the connection record
+      ConnectedEmail.deleteOne({ _id: account._id }),
+      
+      // Delete all emails, drafts, and sent emails
+      emailModels.Email.collection.drop().catch(() => {}),
+      emailModels.Draft.collection.drop().catch(() => {}),
+      emailModels.Sent.collection.drop().catch(() => {})
+    ]);
     
     res.json({
       success: true,
-      message: `Email ${email} has been disconnected and removed`
+      message: `Email ${email} has been disconnected and all data removed`
     });
   });
 
@@ -233,7 +251,7 @@ class ConnectionController {
     const userId = req.user._id;
     const { email } = req.params;
     
-    const account = await EmailAccount.findOne({ userId, email });
+    const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
     }
@@ -242,19 +260,45 @@ class ConnectionController {
       const result = await ConnectionManager.checkEmails(userId, email);
       
       if (!result.success) {
-        return res.status(400).json({ 
-          error: result.error || 'Failed to check emails'
-        });
+        // Update error status
+        account.lastError = {
+          message: result.error,
+          date: new Date(),
+          code: 'CHECK_EMAILS_ERROR'
+        };
+        await account.save();
+        
+        return res.status(400).json({ error: result.error });
       }
+      
+      // Update sync stats
+      account.stats = account.stats || {};
+      account.stats.lastSync = new Date();
+      account.stats.syncHistory = account.stats.syncHistory || [];
+      account.stats.syncHistory.push({
+        date: new Date(),
+        emailsProcessed: result.count,
+        success: true
+      });
+      await account.save();
       
       res.json({
         success: true,
         message: `Checked emails for ${email}`,
         count: result.count,
-        lastSync: result.lastSync
+        lastSync: account.stats.lastSync
       });
     } catch (error) {
       console.error('Error checking emails:', error);
+      
+      // Update error status
+      account.lastError = {
+        message: error.message,
+        date: new Date(),
+        code: 'CHECK_EMAILS_ERROR'
+      };
+      await account.save();
+      
       res.status(500).json({ error: `Error checking emails: ${error.message}` });
     }
   });
@@ -266,7 +310,7 @@ class ConnectionController {
     const userId = req.user._id;
     const { email } = req.params;
     
-    const account = await EmailAccount.findOne({ userId, email });
+    const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
     }
@@ -275,6 +319,11 @@ class ConnectionController {
       // This will be a background job
       ConnectionManager.startFullSync(userId, email);
       
+      // Update sync start in stats
+      account.stats = account.stats || {};
+      account.stats.lastSync = new Date();
+      await account.save();
+      
       res.json({
         success: true,
         message: `Full sync started for ${email}`,
@@ -282,6 +331,15 @@ class ConnectionController {
       });
     } catch (error) {
       console.error('Error starting sync:', error);
+      
+      // Update error status
+      account.lastError = {
+        message: error.message,
+        date: new Date(),
+        code: 'SYNC_START_ERROR'
+      };
+      await account.save();
+      
       res.status(500).json({ error: `Error starting sync: ${error.message}` });
     }
   });
@@ -294,25 +352,28 @@ class ConnectionController {
     const { email } = req.params;
     const { enabled } = req.body;
     
-    const account = await EmailAccount.findOne({ userId, email });
+    const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });
     }
     
-    // Update database
+    // Update sync config
     account.syncConfig = account.syncConfig || {};
     account.syncConfig.enabled = enabled;
+    account.status = enabled ? 'active' : 'paused';
     await account.save();
     
-    // Update connection
-    await ConnectionManager.updateConnectionConfig(userId, email, {
-      syncConfig: account.syncConfig
-    });
+    // Update connection if exists
+    if (account.status === 'active') {
+      await ConnectionManager.updateConnectionConfig(userId, email, {
+        syncConfig: account.syncConfig
+      });
+    }
     
     res.json({
       success: true,
       email,
-      status: enabled ? 'active' : 'paused'
+      status: account.status
     });
   });
 }

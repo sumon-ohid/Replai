@@ -4,10 +4,12 @@ import authConfig from '../config/authConfig.js';
 import { google } from 'googleapis';
 import * as msal from '@azure/msal-node';
 import User from '../../models/User.js';
-import googleEmailService from '../services/googleEmailService.js';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
+import getConnectedEmailModels, { validateEmailCollections } from '../../models/ConnectedEmailModels.js';
+import { initializeGoogleConnection } from '../services/googleEmailService.js';
 import outlookEmailService from '../services/outlookEmailService.js';
 import customEmailService from '../services/customEmailService.js';
-import connectionManager, { setupGoogleEmailSync } from '../managers/connectionManager.js';
+import connectionManager from '../managers/connectionManager.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,9 +18,36 @@ const dashboardUrl = process.env.DASHBOARD_URL;
 const router = express.Router();
 
 /**
+ * Set up email collections for a connected email
+ */
+async function setupEmailCollections(userId, email, connectedEmailId) {
+  try {
+    console.log(`Setting up email collections for ${email} (${connectedEmailId})`);
+
+    // First validate/create collections
+    await validateEmailCollections(connectedEmailId);
+
+    // Initialize models
+    const models = getConnectedEmailModels(connectedEmailId);
+
+    // Verify collections by trying to access them
+    await Promise.all([
+      models.Email.findOne(),
+      models.Draft.findOne(),
+      models.Sent.findOne()
+    ]);
+
+    console.log(`Successfully set up collections for ${email}`);
+    return true;
+  } catch (error) {
+    console.error(`Error setting up collections for ${email}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Google OAuth routes
  */
-// Start Google OAuth flow
 router.get('/google', requireAuth, (req, res) => {
   try {
     const oauth2Client = new google.auth.OAuth2(
@@ -27,7 +56,6 @@ router.get('/google', requireAuth, (req, res) => {
       authConfig.google.redirectUri
     );
 
-    // Create state parameter with userId and timestamp
     const state = Buffer.from(JSON.stringify({
       userId: req.user._id.toString(),
       timestamp: Date.now()
@@ -36,13 +64,11 @@ router.get('/google', requireAuth, (req, res) => {
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: authConfig.google.scopes,
-      prompt: 'consent', // Always ask for consent to ensure refresh token
+      prompt: 'consent',
       state: state,
     });
     
-    // Store user ID in session for the callback
     req.session.userId = req.user._id;
-    
     res.json({ authUrl });
   } catch (error) {
     console.error('Error starting Google auth:', error);
@@ -50,7 +76,6 @@ router.get('/google', requireAuth, (req, res) => {
   }
 });
 
-// Google OAuth callback
 router.get('/google/callback', async (req, res) => {
   const { code, state } = req.query;
   let userId = req.session.userId;
@@ -60,98 +85,90 @@ router.get('/google/callback', async (req, res) => {
       const parsedState = JSON.parse(Buffer.from(state, 'base64').toString());
       userId = parsedState.userId;
       
-      // Optional: Check if the timestamp is recent (preventing replay attacks)
-      const timestamp = parsedState.timestamp;
-      if (Date.now() - timestamp > 10 * 60 * 1000) { // 10 minutes
+      if (Date.now() - parsedState.timestamp > 10 * 60 * 1000) {
         console.warn('State parameter expired');
       }
     } catch (error) {
       console.error('Error parsing state:', error);
     }
   }
-  
 
   if (!code || !userId) {
     return res.redirect(`${dashboardUrl}?error=missing_params`);
   }
 
-  // console.log('✈ Google callback:', dashboardUrl);
-
   try {
-    // Create OAuth client
     const oauth2Client = new google.auth.OAuth2(
       authConfig.google.clientId,
       authConfig.google.clientSecret,
       authConfig.google.redirectUri
     );
     
-    // Get tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
     
-    // Log tokens for debugging
-    console.log('Tokens received from Google:', {
-      hasAccessToken: !!tokens.access_token,
-      hasRefreshToken: !!tokens.refresh_token,
-      expiresIn: tokens.expires_in
-    });
-
-    // Check if refresh token is missing
     if (!tokens.refresh_token) {
-      console.warn('No refresh token returned by Google. User may need to revoke access and reconnect.');
-      
-      // Option 1: Redirect to an error page instructing the user to disconnect from Google first
+      console.warn('No refresh token returned by Google');
       return res.redirect(`${dashboardUrl}?error=no_refresh_token&message=${encodeURIComponent('Please disconnect your Google account from Google security settings and try again.')}`);
     }
     
-    // Get user info from Google
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const googleUser = await oauth2.userinfo.get();
-    const googleUserEmail = googleUser.data.email;
-    
-    // Update user record with connected email
+    const { email: googleUserEmail, name: googleUserName } = googleUser.data;
+
+    // Create/update ConnectedEmail record
+    const connectedEmail = await ConnectedEmail.findOneAndUpdate(
+      { userId, email: googleUserEmail },
+      {
+        userId,
+        email: googleUserEmail,
+        name: googleUserName || googleUserEmail.split('@')[0],
+        provider: 'google',
+        tokens: {
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          expiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000)
+        },
+        status: 'active'
+      },
+      { upsert: true, new: true }
+    );
+
+    // Set up collections before proceeding
+    await setupEmailCollections(userId, googleUserEmail, connectedEmail._id);
+
+    // Update user's connected emails array
     await User.findByIdAndUpdate(userId, {
-      $pull: { connectedEmails: { email: googleUserEmail } } // Remove if exists
+      $pull: { connectedEmails: { email: googleUserEmail } }
     });
-    
-    // Make sure to properly save the tokens
+
     await User.findByIdAndUpdate(userId, {
       $push: { 
-        connectedEmails: { 
+        connectedEmails: {
           email: googleUserEmail,
           provider: 'google',
-          tokens: {
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-            expiryDate: new Date(Date.now() + (tokens.expires_in || 3600) * 1000)
-          },
-          connected: true,
-          connectedAt: new Date()
-        } 
+          name: googleUserName || googleUserEmail.split('@')[0],
+          status: 'active'
+        }
       }
     });
     
     // Initialize the Google connection in the background
     setTimeout(async () => {
       try {
-        await googleEmailService.initializeGoogleConnection(
+        await initializeGoogleConnection(
           userId,
           googleUserEmail,
           tokens.refresh_token,
           tokens.access_token,
-          {
-            syncEnabled: true,
-            mode: 'auto-reply',
-            markAsRead: true
-          }
+          { syncEnabled: true }
         );
         console.log(`Google email successfully connected for ${googleUserEmail}`);
       } catch (syncError) {
         console.error(`Failed to set up email sync for ${googleUserEmail}:`, syncError);
       }
-    }, 100); // Small delay to not block response
+    }, 100);
 
-    // Send a success message back to the dashboard
     res.redirect(`${dashboardUrl}?success=true`);
   } catch (error) {
     console.error('Error in Google callback:', error);
@@ -160,176 +177,8 @@ router.get('/google/callback', async (req, res) => {
 });
 
 /**
- * Outlook OAuth routes
+ * Disconnect email route
  */
-// Start Outlook OAuth flow
-router.get('/outlook', requireAuth, (req, res) => {
-  try {
-    // Create MSAL application
-    const msalConfig = {
-      auth: {
-        clientId: authConfig.outlook.clientId,
-        authority: authConfig.outlook.authority,
-        clientSecret: authConfig.outlook.clientSecret
-      }
-    };
-    
-    const msalClient = new msal.ConfidentialClientApplication(msalConfig);
-    
-    // Generate auth URL
-    const authUrlParameters = {
-      scopes: authConfig.outlook.scopes,
-      redirectUri: authConfig.outlook.redirectUri,
-      prompt: 'consent'
-    };
-    
-    const authUrl = msalClient.getAuthCodeUrl(authUrlParameters);
-    
-    // Store user ID in session for the callback
-    req.session.userId = req.user._id;
-    
-    res.json({ authUrl });
-  } catch (error) {
-    console.error('Error starting Outlook auth:', error);
-    res.status(500).json({ error: 'Failed to start Outlook authentication' });
-  }
-});
-
-// Outlook OAuth callback
-router.get('/outlook/callback', async (req, res) => {
-  const { code } = req.query;
-  const userId = req.session.userId;
-  
-  if (!code || !userId) {
-    return res.redirect(`${dashboardUrl}?error=missing_params`);
-  }
-  
-  try {
-    const msalConfig = {
-      auth: {
-        clientId: authConfig.outlook.clientId,
-        authority: authConfig.outlook.authority,
-        clientSecret: authConfig.outlook.clientSecret
-      }
-    };
-    
-    const msalClient = new msal.ConfidentialClientApplication(msalConfig);
-    
-    // Exchange code for tokens
-    const tokenResponse = await msalClient.acquireTokenByCode({
-      code,
-      scopes: authConfig.outlook.scopes,
-      redirectUri: authConfig.outlook.redirectUri
-    });
-    
-    if (!tokenResponse || !tokenResponse.accessToken) {
-      throw new Error('Failed to get access token');
-    }
-    
-    // Get user info from Microsoft Graph
-    const msGraph = await fetch('https://graph.microsoft.com/v1.0/me', {
-      headers: { Authorization: `Bearer ${tokenResponse.accessToken}` }
-    });
-    
-    if (!msGraph.ok) {
-      throw new Error('Failed to get user info from Microsoft Graph');
-    }
-    
-    const graphData = await msGraph.json();
-    const outlookUserEmail = graphData.mail || graphData.userPrincipalName;
-    
-    if (!outlookUserEmail) {
-      throw new Error('Could not retrieve email from Microsoft account');
-    }
-    
-    // Update user record with connected email
-    await User.findByIdAndUpdate(userId, {
-      $pull: { connectedEmails: { email: outlookUserEmail } } // Remove if exists
-    });
-    
-    await User.findByIdAndUpdate(userId, {
-      $push: { 
-        connectedEmails: { 
-          email: outlookUserEmail,
-          provider: 'outlook',
-          tokens: {
-            accessToken: tokenResponse.accessToken,
-            refreshToken: tokenResponse.refreshToken,
-            expiryDate: new Date(Date.now() + tokenResponse.expiresIn * 1000)
-          },
-          connected: true,
-          connectedAt: new Date()
-        } 
-      }
-    });
-    
-    // Setup email sync for this account
-    await connectionManager.setupOutlookEmailSync(userId, outlookUserEmail, tokenResponse);
-    
-    // Redirect back to dashboard
-    res.redirect(`${dashboardUrl}?success=true`);
-  } catch (error) {
-    console.error('Error in Outlook callback:', error);
-    res.redirect(`${dashboardUrl}?error=auth_failed`);
-  }
-});
-
-/**
- * Custom email (IMAP/SMTP) routes
- */
-// Connect custom email account
-router.post('/custom', requireAuth, async (req, res) => {
-  try {
-    const {
-      email,
-      password,
-      imapHost,
-      imapPort,
-      imapSecure,
-      smtpHost,
-      smtpPort,
-      smtpSecure,
-      displayName
-    } = req.body;
-    
-    // Validate required fields
-    if (!email || !password || !imapHost || !smtpHost) {
-      return res.status(400).json({ error: 'Missing required email configuration' });
-    }
-    
-    // Create connection config
-    const config = {
-      email,
-      password,
-      imapHost,
-      imapPort: imapPort || 993,
-      imapSecure: imapSecure !== false,
-      smtpHost,
-      smtpPort: smtpPort || 587,
-      smtpSecure: smtpSecure || false
-    };
-    
-    // Test and save connection
-    const result = await customEmailService.connectCustomEmail(config, req.user._id);
-    
-    if (!result.success) {
-      return res.status(400).json({ error: result.error });
-    }
-    
-    // Setup email sync
-    await connectionManager.setupCustomEmailSync(req.user._id, email, config);
-    
-    res.json({ success: true, message: 'Custom email connected successfully' });
-  } catch (error) {
-    console.error('Error connecting custom email:', error);
-    res.status(500).json({ error: 'Failed to connect custom email account' });
-  }
-});
-
-/**
- * Common email operations
- */
-// Disconnect any email account
 router.post('/disconnect', requireAuth, async (req, res) => {
   try {
     const { email } = req.body;
@@ -339,67 +188,91 @@ router.post('/disconnect', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'Email is required' });
     }
     
-    // Find the email in user's connected accounts
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find(e => e.email === email);
-    
+    // Get connected email record
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
     if (!connectedEmail) {
-      return res.status(404).json({ message: 'Email not found in connected accounts' });
+      return res.status(404).json({ message: 'Connected email not found' });
     }
     
-    // Disconnect based on provider
+    // Stop active connection
     const provider = connectedEmail.provider;
-    let result;
+    let disconnectResult;
     
     switch (provider) {
       case 'google':
-        result = await connectionManager.disconnectGoogleEmail(userId, email);
+        disconnectResult = await connectionManager.disconnectGoogleEmail(userId, email);
         break;
       case 'outlook':
-        result = await connectionManager.disconnectOutlookEmail(userId, email);
+        disconnectResult = await connectionManager.disconnectOutlookEmail(userId, email);
         break;
       case 'custom':
-        result = await connectionManager.disconnectCustomEmail(userId, email);
+        disconnectResult = await connectionManager.disconnectCustomEmail(userId, email);
         break;
       default:
         return res.status(400).json({ message: `Unsupported provider: ${provider}` });
     }
     
-    if (result.success) {
-      res.json({ message: 'Email disconnected successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
+    if (!disconnectResult.success) {
+      return res.status(500).json({ error: disconnectResult.error });
     }
+    
+    // Drop email collections
+    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+    await Promise.all([
+      emailModels.Email.collection.drop().catch(() => {}),
+      emailModels.Draft.collection.drop().catch(() => {}),
+      emailModels.Sent.collection.drop().catch(() => {})
+    ]);
+    
+    // Delete ConnectedEmail record
+    await ConnectedEmail.deleteOne({ _id: connectedEmail._id });
+    
+    // Remove from user's connected emails
+    await User.findByIdAndUpdate(userId, {
+      $pull: { connectedEmails: { email } }
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Email ${email} has been disconnected and all data removed` 
+    });
   } catch (error) {
     console.error('Error disconnecting email:', error);
     res.status(500).json({ message: 'Failed to disconnect email' });
   }
 });
 
-// List all connected emails
-// router.get('/connected', requireAuth, async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id);
+/**
+ * List connected emails
+ */
+router.get('/connected', requireAuth, async (req, res) => {
+  try {
+    console.log('Fetching connected emails for user:', req.user._id);
     
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
+    const connectedEmails = await ConnectedEmail.find({
+      userId: req.user._id
+    }).select('-tokens -credentials');
     
-//     // Map to safe version without tokens
-//     const connectedEmails = user.connectedEmails.map(email => ({
-//       email: email.email,
-//       provider: email.provider,
-//       connected: email.connected,
-//       connectedAt: email.connectedAt,
-//       syncPaused: email.syncPaused || false,
-//       displayName: email.displayName || email.email
-//     }));
-    
-//     res.json({ connectedEmails });
-//   } catch (error) {
-//     console.error('Error fetching connected emails:', error);
-//     res.status(500).json({ error: 'Failed to fetch connected emails' });
-//   }
-// });
+    const mappedEmails = connectedEmails.map(email => {
+      console.log(`Mapped email account: ${email.email} with ID: ${email._id}`);
+      return {
+        id: email._id,
+        email: email.email,
+        provider: email.provider,
+        name: email.name,
+        status: email.status,
+        syncEnabled: email.syncConfig?.enabled ?? true,
+        lastSync: email.stats?.lastSync,
+        aiEnabled: email.aiSettings?.enabled ?? false
+      };
+    });
+
+    console.log(`Returning ${mappedEmails.length} connected email(s)`, mappedEmails);
+    res.json(mappedEmails);
+  } catch (error) {
+    console.error('Error fetching connected emails:', error);
+    res.status(500).json({ error: 'Failed to fetch connected emails' });
+  }
+});
 
 export default router;

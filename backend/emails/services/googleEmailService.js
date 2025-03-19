@@ -1,124 +1,36 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { addConnection } from '../managers/connectionManager.js';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
+import getConnectedEmailModels from '../../models/ConnectedEmailModels.js';
 import { processEmailContent } from './emailProcessingService.js';
-import getEmailModel from '../../models/Email.js';
-import { 
-  parseEmailAddress,
-  extractPlainTextBody as getEmailBody, // Use the correct function name
-  extractHtmlBody as getEmailHtmlBody   // Use the correct function name
-} from '../utils/emailParser.js';
-import authConfig from '../config/authConfig.js';
+import { parseEmailAddress, extractPlainTextBody, extractHtmlBody } from '../utils/emailParser.js';
+import connectionManager from '../managers/connectionManager.js';
 
 /**
- * Initialize a Google email connection
- * @param {String} userId - MongoDB user ID
- * @param {String} email - Email address
- * @param {String} refreshToken - OAuth refresh token
- * @param {String} accessToken - OAuth access token (optional)
- * @param {Object} config - Connection configuration
- * @returns {String} Connection key
+ * Process a single Google message
  */
-
-export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
+export async function processGoogleMessage(gmail, userId, userEmail, messageId, config = {}) {
   try {
-    // Set default config values
-    const connectionConfig = {
-      syncEnabled: true,
-      mode: 'auto-reply',
-      markAsRead: true,
-      folders: ['INBOX'],
-      ...config
-    };
-    
-    // Configure OAuth client
-    const oauth2Client = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    // Set credentials
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-      access_token: accessToken,
+    // Get the connected email account
+    const connectedEmail = await ConnectedEmail.findOne({
+      userId,
+      email: userEmail,
+      provider: 'google'
     });
-    
-    // Create Gmail API client
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
-    // Test connection
-    try {
-      await gmail.users.getProfile({ userId: 'me' });
-      console.log(`Google connection for ${email} verified`);
-    } catch (apiError) {
-      console.error(`Failed to verify Google connection for ${email}:`, apiError);
-      throw new Error(`Gmail API connection failed: ${apiError.message}`);
-    }
-    
-    // Set up email checking interval
-    const interval = connectionConfig.syncEnabled
-      ? setInterval(() => checkForNewGoogleEmails(gmail, userId, email, connectionConfig), 60000)
-      : null;
-    
-    // Check immediately
-    if (connectionConfig.syncEnabled) {
-      try {
-        await checkForNewGoogleEmails(gmail, userId, email, connectionConfig);
-      } catch (initialCheckError) {
-        console.error(`Initial email check failed for ${email}:`, initialCheckError);
-        // Continue anyway, as this isn't fatal
-      }
-    }
-    
-    const connection = {
-      gmail,
-      oauth2Client,
-      interval,
-      config: connectionConfig,
-      updateConfig: async (newConfig) => {
-        // Handle config changes
-        if (newConfig.syncEnabled !== connectionConfig.syncEnabled) {
-          if (newConfig.syncEnabled && !interval) {
-            connection.interval = setInterval(
-              () => checkForNewGoogleEmails(gmail, userId, email, newConfig), 
-              60000
-            );
-          } else if (!newConfig.syncEnabled && interval) {
-            clearInterval(interval);
-            connection.interval = null;
-          }
-        }
-        
-        // Update local config
-        Object.assign(connectionConfig, newConfig);
-      }
-    };
-    
-    return addConnection(userId, email, 'google', connection);
-  } catch (error) {
-    console.error(`Failed to initialize Google connection for ${email}:`, error);
-    throw error;
-  }
-};
 
-// Check for valid categories
-function getValidCategories(userId) {
-  try {
-    const Email = getEmailModel(userId);
-    const categoryEnum = Email.schema.path('category').enumValues;
-    return categoryEnum || ['primary', 'social', 'promotions', 'updates', 'forums'];
-  } catch (error) {
-    console.warn('Error getting valid categories, using defaults:', error);
-    // Fallback to common Gmail categories
-    return ['primary', 'social', 'promotions', 'updates', 'forums'];
-  }
-}
+    if (!connectedEmail) {
+      throw new Error('Connected email account not found');
+    }
 
-// Fix the email processing function
-async function processGoogleMessage(gmail, userId, userEmail, messageId, config = {}) {
-  
-  try {
+    // Get models for this email account
+    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+
+    // Check if message already exists
+    const existingEmail = await emailModels.Email.findOne({ messageId });
+    if (existingEmail) {
+      return existingEmail;
+    }
+
     // Fetch the full message
     const messageResponse = await gmail.users.messages.get({
       userId: 'me',
@@ -130,157 +42,228 @@ async function processGoogleMessage(gmail, userId, userEmail, messageId, config 
     const headers = message.payload.headers;
     
     // Extract headers
-    const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value || '(No Subject)';
+    const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value || '';
     const from = headers.find(h => h.name.toLowerCase() === 'from')?.value || '';
     const to = headers.find(h => h.name.toLowerCase() === 'to')?.value || '';
     const date = headers.find(h => h.name.toLowerCase() === 'date')?.value || '';
     
-    // Get the message body - both plain text and HTML if available
-    const bodyText = getEmailBody(message);
-    const bodyHtml = getEmailHtmlBody(message);
+    // Get message bodies
+    const bodyText = extractPlainTextBody(message);
+    const bodyHtml = extractHtmlBody(message);
     
     // Parse email addresses
     const parsedFrom = parseEmailAddress(from);
+    const parsedTo = parseEmailAddress(to);
     
-    let parsedTo = [];
-    const toResult = parseEmailAddress(to);
-    if (Array.isArray(toResult)) {
-      parsedTo = toResult.map(recipient => ({
-        email: recipient.email,
-        name: recipient.name || ''
-      }));
-    } else if (toResult && typeof toResult === 'object') {
-      // Handle single recipient case
-      parsedTo = [{
-        email: toResult.email,
-        name: toResult.name || ''
-      }];
-    }
+    const toRecipients = Array.isArray(parsedTo) ? parsedTo : [parsedTo];
     
-    // Get the Email model with the current connection
-    const Email = getEmailModel(userId);
-    
-    const validCategories = getValidCategories(userId);
-    const category = validCategories[0]; // Default to first category
-
-    const fromEmail = parsedFrom?.email || userEmail || 'unknown@example.com';
-    const fromName = parsedFrom?.name || '';
-
-    console.log(`Processing email ${message.id} from ${fromEmail}`);
-    console.log("name", fromName);
-    
-    
-    // Create the email document
+    // Create email data
     const emailData = {
       userId,
       messageId: message.id,
       threadId: message.threadId,
-      externalId: message.id,
       provider: 'google',
-      folder: 'inbox',
-      category: category,
-      subject,
-      snippet: message.snippet || '',
-      body: { // Use object format for body
-        text: bodyText || '',
-        html: bodyHtml || ''
-      },
+      providerId: message.id,
+      
       from: {
-        email: fromEmail, // Ensure this is never empty
-        name: fromName
+        email: parsedFrom?.email || from.split('@')[0] + '@example.com', // Fallback to prevent validation error
+        name: parsedFrom?.name || ''
       },
-      to: parsedTo.length > 0 ? parsedTo : [{ email: userEmail, name: '' }],
-      cc: [],
-      bcc: [],
+      
+      to: toRecipients.map(recipient => ({
+        email: recipient.email || '',
+        name: recipient.name || ''
+      })),
+      
+      subject,
       date: new Date(date),
+      receivedAt: new Date(),
+      
+      body: {
+        text: bodyText,
+        html: bodyHtml
+      },
+      
       read: !message.labelIds?.includes('UNREAD'),
-      starred: message.labelIds?.includes('STARRED'),
-      labels: message.labelIds || [],
-      attachments: []
+      category: determineEmailCategory(message),
+      
+      attachments: processAttachments(message)
     };
 
-    // If there are attachments, extract information about them
-    if (message.payload.parts && message.payload.parts.some(p => p.filename && p.filename.length > 0)) {
-      emailData.attachments = message.payload.parts
-        .filter(p => p.filename && p.filename.length > 0)
-        .map(p => ({
-          id: p.body.attachmentId || '',
-          filename: p.filename,
-          contentType: p.mimeType,
-          size: p.body.size || 0
-        }));
-    }
-
-    // Check if the email already exists
-    const existingEmail = await Email.findOne({
-      externalId: message.id,
-      userId
-    }).exec();
-
-    if (existingEmail) {
-      console.log(`Email ${message.id} already exists, skipping`);
-      return existingEmail;
-    }
-
-    // Create and save the email document
-    const email = new Email(emailData);
-    const savedEmail = await email.save();
-    
-    console.log(`Saved email ${message.id} from ${parsedFrom.email}`);
-    
-    // Process the email content for AI analysis if enabled
+    // Process email content if enabled
     if (config.processContent !== false) {
-      try {
-        await processEmailContent(savedEmail);
-      } catch (processingError) {
-        console.error('Error processing email content:', processingError);
-      }
+      const processedData = await processEmailContent({
+        ...emailData,
+        userEmail
+      });
+      Object.assign(emailData, processedData);
     }
-    
+
+    // Save to the correct collection
+    const emailDoc = new emailModels.Email(emailData);
+    const savedEmail = await emailDoc.save();
+
+    // Update sync stats
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      $inc: { 'stats.totalEmails': 1 },
+      $set: { 'stats.lastSync': new Date() }
+    });
+
     return savedEmail;
   } catch (error) {
-    console.warn('Error processing Google message:', error);
+    console.error('Error processing Google message:', error);
     throw error;
   }
 }
 
-// Fix the checkForNewGoogleEmails function with corrected parameter order
-async function checkForNewGoogleEmails(gmail, userId, userEmail, config) {
+/**
+ * Helper to determine category from Gmail labels
+ * Maps Gmail categories to our schema's valid categories:
+ * ['inbox', 'sent', 'draft', 'trash', 'spam', 'important', 'uncategorized']
+ */
+function determineEmailCategory(message) {
+  if (!message.labelIds) return 'uncategorized';
+  
+  if (message.labelIds.includes('SENT')) return 'sent';
+  if (message.labelIds.includes('DRAFT')) return 'draft';
+  if (message.labelIds.includes('TRASH')) return 'trash';
+  if (message.labelIds.includes('SPAM')) return 'spam';
+  if (message.labelIds.includes('IMPORTANT')) return 'important';
+  
+  // Map Gmail categories to inbox
+  if (message.labelIds.includes('INBOX') ||
+      message.labelIds.includes('CATEGORY_PRIMARY') ||
+      message.labelIds.includes('CATEGORY_SOCIAL') ||
+      message.labelIds.includes('CATEGORY_PROMOTIONS') ||
+      message.labelIds.includes('CATEGORY_UPDATES') ||
+      message.labelIds.includes('CATEGORY_FORUMS')) {
+    return 'inbox';
+  }
+  
+  return 'uncategorized';
+}
+
+/**
+ * Helper to process attachments
+ */
+function processAttachments(message) {
+  if (!message.payload.parts) return [];
+  
+  return message.payload.parts
+    .filter(part => part.filename && part.filename.length > 0)
+    .map(part => ({
+      name: part.filename,
+      type: part.mimeType,
+      size: part.body.size || 0,
+      attachmentId: part.body.attachmentId
+    }));
+}
+
+/**
+ * Initialize a Google email connection
+ */
+export async function initializeGoogleConnection(userId, email, refreshToken, accessToken = null, config = {}) {
   try {
-    // Fetch recent messages - just a small number initially
-    const response = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 3,  // Just get a few messages initially
-      q: 'is:unread'  // Focus on unread messages
+    console.log('Initializing Google connection:', { email });
+    
+    const oauth2Client = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken,
+      access_token: accessToken,
     });
 
-    if (!response.data.messages || response.data.messages.length === 0) {
-      console.log('No new Google emails to process');
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    // Test connection
+    await gmail.users.getProfile({ userId: 'me' });
+
+    // Get or create ConnectedEmail record
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    if (!connectedEmail) {
+      throw new Error('Connected email record not found. Please reconnect the account.');
+    }
+
+    // Initialize models
+    getConnectedEmailModels(connectedEmail._id.toString());
+    
+    // Start sync process
+    if (config.syncEnabled) {
+      const interval = setInterval(
+        () => checkForNewGoogleEmails(gmail, userId, email, config),
+        60000
+      );
+      
+      // Do initial sync
+      await checkForNewGoogleEmails(gmail, userId, email, config);
+      
+      // Register connection
+      connectionManager.addConnection(userId, email, 'google', {
+        gmail,
+        oauth2Client,
+        interval,
+        config
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error initializing Google connection:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check for new Google emails
+ */
+export async function checkForNewGoogleEmails(gmail, userId, email, config = {}) {
+  try {
+    // Get ConnectedEmail record for collections
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    if (!connectedEmail) {
+      throw new Error('Connected email not found');
+    }
+
+    // List recent messages
+    const response = await gmail.users.messages.list({
+      userId: 'me',
+      maxResults: 20,
+      q: 'newer_than:1d is:unread'
+    });
+
+    if (!response.data.messages?.length) {
+      console.log('No new emails to sync');
       return [];
     }
 
-    console.log(`Found ${response.data.messages.length} new Google emails for ${userEmail}`);
+    console.log(`Found ${response.data.messages.length} messages to sync`);
 
-    // Process each message
+    // Process messages
     const processedMessages = [];
     for (const message of response.data.messages) {
       try {
-        // FIX: Correct parameter order for processGoogleMessage
         const processed = await processGoogleMessage(
-          gmail, 
+          gmail,
           userId,
-          userEmail,
+          email,
           message.id,
           config
         );
-        
-        if (processed) {
-          processedMessages.push(processed);
-        }
+        if (processed) processedMessages.push(processed);
       } catch (error) {
-        console.error('Error processing Google message:', error);
+        console.error(`Error processing message ${message.id}:`, error);
       }
     }
+
+    // Update sync stats
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      'stats.lastSync': new Date(),
+      $inc: { 'stats.totalEmails': processedMessages.length }
+    });
 
     return processedMessages;
   } catch (error) {
@@ -289,309 +272,8 @@ async function checkForNewGoogleEmails(gmail, userId, userEmail, config) {
   }
 }
 
-// const checkForNewGoogleEmails = async (gmail, userId, userEmail, config) => {
-//   try {
-//     // If sync is disabled, don't check for emails
-//     if (!config.syncEnabled) return;
-    
-//     // Calculate time 15 minutes ago for newer emails
-//     const fifteenMinutesAgo = new Date();
-//     fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
-//     const timeFilter = Math.floor(fifteenMinutesAgo.getTime() / 1000);
-    
-//     // Build query for unread emails in configured folders
-//     const query = `is:unread after:${timeFilter}`;
-    
-//     // List messages matching query
-//     const response = await gmail.users.messages.list({
-//       userId: 'me',
-//       q: query,
-//       maxResults: 10
-//     });
-    
-//     const messages = response.data.messages || [];
-//     if (messages.length > 0) {
-//       console.log(`Found ${messages.length} new Google emails for ${userEmail}`);
-//     }
-    
-//     // Process each message
-//     for (const message of messages) {
-//       await processGoogleMessage(gmail, message.id, userId, userEmail, config);
-//     }
-//   } catch (error) {
-//     console.error('Error checking Google emails:', error);
-//   }
-// };
-
-// export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
-//   try {
-//     console.log('Initializing Google connection with:', {
-//       userId,
-//       email,
-//       hasRefreshToken: !!refreshToken,
-//       hasAccessToken: !!accessToken,
-//       config
-//     });
-
-//     // Use imported authConfig instead of undefined variable
-//     const oauth2Client = new google.auth.OAuth2(
-//       authConfig.google.clientId,
-//       authConfig.google.clientSecret,
-//       authConfig.google.redirectUri
-//     );
-
-//     // Set credentials
-//     oauth2Client.setCredentials({
-//       refresh_token: refreshToken,
-//       access_token: accessToken
-//     });
-
-//     // Create Gmail API client
-//     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
-//     try {
-//       // Verify the connection works
-//       const profile = await gmail.users.getProfile({
-//         userId: 'me'
-//       });
-      
-//       console.log(`Verified Google connection for ${email}`);
-      
-//       // Start sync process in the background without waiting
-//       setTimeout(() => {
-//         checkForNewGoogleEmails(gmail, userId, email, config)
-//           .catch(error => {
-//             console.error('Error checking Google emails:', error);
-//           });
-//       }, 100);
-      
-//       return true;
-//     } catch (error) {
-//       console.error('Error verifying Google connection:', error);
-//       throw error;
-//     }
-//   } catch (error) {
-//     console.error('Error initializing Google connection:', error);
-//     throw error;
-//   }
-// };
-
-/**
- * Create a new Google email service
- * @param {String} userId - MongoDB user ID
- * @param {String} email - Email address
- * @param {String} refreshToken - OAuth refresh token
- * @param {String} accessToken - OAuth access token (optional)
- * @returns {Object} Google email service object
- */
-export const createService = (userId, email, refreshToken, accessToken = null) => {
-  // Configure OAuth client
-  const oauth2Client = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
-  
-  // Set credentials
-  oauth2Client.setCredentials({
-    refresh_token: refreshToken,
-    access_token: accessToken,
-  });
-  
-  // Create Gmail API client
-  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-  
-  return {
-    // Get emails from inbox
-    getEmails: async (options = {}) => {
-      const { limit = 10, pageToken = null, query = '' } = options;
-      
-      try {
-        const response = await gmail.users.messages.list({
-          userId: 'me',
-          maxResults: limit,
-          pageToken,
-          q: query
-        });
-        
-        const { messages = [], nextPageToken } = response.data;
-        
-        // Fetch full details for each message
-        const fullMessages = await Promise.all(
-          messages.map(async ({ id }) => {
-            const { data } = await gmail.users.messages.get({
-              userId: 'me',
-              id,
-              format: 'full'
-            });
-            
-            return data;
-          })
-        );
-        
-        // Format messages
-        const formattedMessages = fullMessages.map(message => {
-          const { payload, id, threadId, labelIds } = message;
-          const headers = payload.headers || [];
-          
-          const fromHeader = headers.find(h => h.name.toLowerCase() === 'from');
-          const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject');
-          
-          return {
-            id,
-            threadId,
-            from: fromHeader ? fromHeader.value : '',
-            subject: subjectHeader ? subjectHeader.value : '',
-            snippet: message.snippet || '',
-            date: new Date(parseInt(message.internalDate)),
-            labels: labelIds || [],
-            isUnread: labelIds?.includes('UNREAD') || false
-          };
-        });
-        
-        return {
-          messages: formattedMessages,
-          nextPageToken
-        };
-      } catch (error) {
-        console.error('Error fetching Google emails:', error);
-        throw error;
-      }
-    },
-    
-    // Send an email
-    sendEmail: async (options) => {
-      const { to, subject, body, cc, bcc, threadId } = options;
-      
-      try {
-        // Create the email message
-        const mailContent = [
-          'From: ' + email,
-          'To: ' + to,
-          subject ? 'Subject: ' + subject : '',
-          cc ? 'Cc: ' + cc : '',
-          bcc ? 'Bcc: ' + bcc : '',
-          'Content-Type: text/html; charset=utf-8',
-          '',
-          body
-        ].filter(Boolean).join('\r\n');
-        
-        // Encode the message
-        const encodedMessage = Buffer.from(mailContent).toString('base64')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
-        
-        // Send the message
-        const response = await gmail.users.messages.send({
-          userId: 'me',
-          requestBody: {
-            threadId: threadId,
-            raw: encodedMessage
-          }
-        });
-        
-        return { 
-          success: true, 
-          messageId: response.data.id, 
-          threadId: response.data.threadId 
-        };
-      } catch (error) {
-        console.error('Error sending Google email:', error);
-        throw error;
-      }
-    },
-    
-    // Create a draft
-    createDraft: async (options) => {
-      const { to, subject, body, cc, bcc, threadId } = options;
-      
-      try {
-        // Create the email message
-        const mailContent = [
-          'From: ' + email,
-          'To: ' + to,
-          subject ? 'Subject: ' + subject : '',
-          cc ? 'Cc: ' + cc : '',
-          bcc ? 'Bcc: ' + bcc : '',
-          'Content-Type: text/html; charset=utf-8',
-          '',
-          body
-        ].filter(Boolean).join('\r\n');
-        
-        // Encode the message
-        const encodedMessage = Buffer.from(mailContent).toString('base64')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
-        
-        // Create the draft
-        const response = await gmail.users.drafts.create({
-          userId: 'me',
-          requestBody: {
-            message: {
-              threadId: threadId,
-              raw: encodedMessage
-            }
-          }
-        });
-        
-        return { 
-          success: true, 
-          draftId: response.data.id, 
-          messageId: response.data.message.id,
-          threadId: response.data.message.threadId 
-        };
-      } catch (error) {
-        console.error('Error creating Google draft:', error);
-        throw error;
-      }
-    },
-    
-    // Get email by ID
-    getEmailById: async (messageId) => {
-      try {
-        const { data } = await gmail.users.messages.get({
-          userId: 'me',
-          id: messageId,
-          format: 'full'
-        });
-        
-        const { payload, threadId, labelIds } = data;
-        const headers = payload.headers || [];
-        
-        const fromHeader = headers.find(h => h.name.toLowerCase() === 'from');
-        const toHeader = headers.find(h => h.name.toLowerCase() === 'to');
-        const ccHeader = headers.find(h => h.name.toLowerCase() === 'cc');
-        const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject');
-        const dateHeader = headers.find(h => h.name.toLowerCase() === 'date');
-        
-        const plainBody = getEmailBody(payload);
-        const htmlBody = getEmailHtmlBody(payload);
-        
-        return {
-          id: messageId,
-          threadId,
-          from: fromHeader ? fromHeader.value : '',
-          to: toHeader ? toHeader.value : '',
-          cc: ccHeader ? ccHeader.value : '',
-          subject: subjectHeader ? subjectHeader.value : '',
-          date: dateHeader ? new Date(dateHeader.value) : new Date(parseInt(data.internalDate)),
-          snippet: data.snippet || '',
-          body: plainBody,
-          htmlBody,
-          labels: labelIds || [],
-          isUnread: labelIds?.includes('UNREAD') || false
-        };
-      } catch (error) {
-        console.error('Error fetching Google email by ID:', error);
-        throw error;
-      }
-    }
-  };
-};
-
 export default {
   initializeGoogleConnection,
-  createService
+  processGoogleMessage,
+  checkForNewGoogleEmails
 };
