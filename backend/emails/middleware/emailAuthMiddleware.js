@@ -316,6 +316,7 @@ export const verifyEmailAuth = async (req, res, next) => {
     // Find this email in user's connected emails
     const connectedEmail = req.user.connectedEmails.find(e => e.email === email);
     
+    
     if (!connectedEmail) {
       return res.status(403).json({ error: 'This email is not connected to your account' });
     }

@@ -1,7 +1,53 @@
 import * as React from "react";
 import axios from "axios";
 
-// Types
+// Debug utility
+const debug = (message: string, ...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(`[EmailClient] ${message}`, ...args);
+  }
+};
+
+// API Types
+interface EmailAccountResponse {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  provider: string;
+}
+
+interface EmailResponse {
+  _id: string;
+  subject: string;
+  from?: {
+    name?: string;
+    email: string;
+  };
+  to: Array<{
+    name?: string;
+    email: string;
+  }>;
+  body?: {
+    html?: string;
+    text?: string;
+  };
+  snippet?: string;
+  date: string;
+  read: boolean;
+  starred: boolean;
+  attachments?: Array<{
+    id?: string;
+    _id?: string;
+    filename: string;
+    size?: number;
+    contentType: string;
+  }>;
+  labels?: string[];
+  folder?: string;
+}
+
+// Client Types
 export interface EmailAccount {
   id: string;
   name: string;
@@ -18,18 +64,10 @@ export interface EmailData {
     email: string;
     avatar?: string;
   };
-  to: {
+  to: Array<{
     name: string;
     email: string;
-  }[];
-  cc?: {
-    name: string;
-    email: string;
-  }[];
-  bcc?: {
-    name: string;
-    email: string;
-  }[];
+  }>;
   content: string;
   preview: string;
   date: string;
@@ -37,24 +75,24 @@ export interface EmailData {
   isRead: boolean;
   isStarred: boolean;
   hasAttachments: boolean;
-  attachments?: {
+  attachments?: Array<{
     id: string;
     name: string;
     size: number;
     type: string;
     url: string;
-  }[];
+  }>;
   labels?: string[];
   folder: string;
 }
 
-// State type
 interface EmailClientState {
   accounts: EmailAccount[];
   selectedAccount: string;
   emails: EmailData[];
   filteredEmails: EmailData[];
   loading: boolean;
+  error: string | null;
   searchTerm: string;
   currentFolder: string;
   selectedEmailId: string | null;
@@ -69,14 +107,41 @@ interface EmailClientState {
   hasNextEmail: boolean;
 }
 
-// Hook to manage email client state and actions
-export const useEmailClient = () => {
+// Return type for useEmailClient hook
+interface UseEmailClientReturn {
+  state: EmailClientState;
+  handlers: {
+    handleAccountChange: (accountId: string) => void;
+    handleFolderChange: (folder: string) => void;
+    handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    handleClearSearch: () => void;
+    handleRefresh: () => void;
+    handleEmailSelect: (emailId: string) => Promise<void>;
+    handleCloseDetailView: () => void;
+    handleToggleStar: (emailId: string) => Promise<void>;
+    handleToggleRead: (emailId: string) => Promise<void>;
+    handleMarkAllRead: () => Promise<void>;
+    toggleMobileSidebar: () => void;
+    handleCompose: () => void;
+    handleCloseCompose: () => void;
+    handleReplyEmail: (email: EmailData) => void;
+    handleForwardEmail: (email: EmailData) => void;
+    handleDeleteEmail: (emailId: string) => Promise<void>;
+    handlePreviousEmail: () => void;
+    handleNextEmail: () => void;
+    handleSendEmail: (data: any) => Promise<void>;
+  };
+  selectedEmail: EmailData | null;
+}
+
+export const useEmailClient = (): UseEmailClientReturn => {
   const [state, setState] = React.useState<EmailClientState>({
-    accounts: [], // We'll fetch real accounts
+    accounts: [],
     selectedAccount: "",
     emails: [],
     filteredEmails: [],
     loading: true,
+    error: null,
     searchTerm: "",
     currentFolder: "inbox",
     selectedEmailId: null,
@@ -92,14 +157,13 @@ export const useEmailClient = () => {
   });
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const initialized = React.useRef(false);
+  const lastFetchRef = React.useRef({ accountId: "", folder: "", timestamp: 0 });
 
-  // Function to get JWT token
-  const getAuthToken = () => {
-    return localStorage.getItem("token");
-  };
+  const getAuthToken = () => localStorage.getItem("token");
 
-  // Create axios instance with auth headers
   const api = React.useMemo(() => {
+    debug("Creating API instance");
     return axios.create({
       baseURL: apiBaseUrl,
       headers: {
@@ -108,12 +172,132 @@ export const useEmailClient = () => {
     });
   }, [apiBaseUrl]);
 
-  // Fetch user's email accounts
-  const fetchAccounts = React.useCallback(async () => {
-    try {
-      const response = await api.get("/api/emails/auth/connected");
+  const handleError = (error: any, message: string) => {
+    console.error(message, error);
+    setState(prev => ({ ...prev, error: message }));
+  };
 
-      const accounts = (response.data as any[]).map((account: any) => ({
+  const fetchEmails = React.useCallback(
+    async (accountId: string, folder: string, force = false) => {
+      const now = Date.now();
+      const lastFetch = lastFetchRef.current;
+      
+      if (!force && 
+          lastFetch.accountId === accountId && 
+          lastFetch.folder === folder && 
+          now - lastFetch.timestamp < 5000) {
+        debug("Skipping fetch - too soon", { accountId, folder });
+        return;
+      }
+
+      debug("Fetching emails", { accountId, folder });
+      setState(prev => ({ ...prev, loading: true }));
+
+      try {
+        const account = state.accounts.find(a => a.id === accountId);
+        if (!account || !account.email) {
+          debug("Error: No matching account found for ID", accountId);
+          throw new Error(`Email account not found for ID: ${accountId}`);
+        }
+
+        debug(`Fetching emails for ${account.email}`, { folder });
+        const { data } = await api.get<EmailResponse[]>(`/api/emails/list/${account.email}`, {
+          params: { folder }
+        });
+
+        debug(`Received ${data.length} emails`);
+
+        const emails: EmailData[] = data.map(email => ({
+          id: email._id,
+          subject: email.subject || "(No Subject)",
+          from: {
+            name: email.from?.name || email.from?.email?.split("@")[0] || "Unknown",
+            email: email.from?.email || "",
+            avatar: email.from?.name ? email.from.name.charAt(0).toUpperCase() : "?",
+          },
+          to: email.to.map(t => ({
+            name: t.name || t.email.split("@")[0],
+            email: t.email,
+          })),
+          content: email.body?.html || email.body?.text || "",
+          preview: email.snippet || "",
+          date: new Date(email.date).toLocaleString(),
+          timestamp: new Date(email.date).getTime(),
+          isRead: email.read === true,
+          isStarred: email.starred === true,
+          hasAttachments: Array.isArray(email.attachments) && email.attachments.length > 0,
+          attachments: email.attachments?.map(att => ({
+            id: att.id || att._id || "",
+            name: att.filename,
+            size: att.size || 0,
+            type: att.contentType,
+            url: `${apiBaseUrl}/api/emails/attachments/${email._id}/${att.id || att._id}`,
+          })),
+          labels: email.labels || [],
+          folder: email.folder || folder,
+        }));
+
+        const unreadCounts = {
+          inbox: emails.filter(e => e.folder === "inbox" && !e.isRead).length,
+          drafts: emails.filter(e => e.folder === "drafts").length,
+          sent: 0,
+          starred: emails.filter(e => e.isStarred).length,
+          trash: 0,
+        };
+
+        lastFetchRef.current = { accountId, folder, timestamp: now };
+
+        debug("Setting state with fetched emails", { 
+          total: emails.length,
+          unread: unreadCounts.inbox 
+        });
+
+        setState(prev => ({
+          ...prev,
+          emails,
+          filteredEmails: prev.searchTerm 
+            ? emails.filter(email =>
+                email.subject.toLowerCase().includes(prev.searchTerm.toLowerCase())
+              )
+            : emails,
+          loading: false,
+          unreadCounts,
+          unreadCount: unreadCounts.inbox,
+          error: null,
+        }));
+
+      } catch (error) {
+        console.error("Error fetching emails:", error);
+        setState(prev => ({ 
+          ...prev, 
+          loading: false,
+          error: error instanceof Error ? error.message : "Failed to fetch emails"
+        }));
+      }
+    },
+    [api, apiBaseUrl, state.accounts]
+  );
+
+  const initialize = React.useCallback(async () => {
+    if (initialized.current) {
+      debug("Already initialized, skipping");
+      return;
+    }
+
+    debug("Initializing email client");
+    initialized.current = true;
+
+    try {
+      const { data } = await api.get<EmailAccountResponse[]>("/api/emails/auth/connected");
+      debug("Received accounts", data);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        debug("No accounts found");
+        setState(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      const accounts = data.map(account => ({
         id: account._id,
         name: account.name || account.email.split("@")[0],
         email: account.email,
@@ -121,262 +305,137 @@ export const useEmailClient = () => {
         provider: account.provider,
       }));
 
+      debug("Transformed accounts", accounts);
+
       if (accounts.length > 0) {
-        setState((prev) => ({
+        const firstAccount = accounts[0];
+        debug("Setting first account as active", firstAccount);
+
+        setState(prev => ({
           ...prev,
           accounts,
-          selectedAccount: accounts[0].id,
-          loading: false,
+          selectedAccount: firstAccount.id,
+          loading: true,
         }));
 
-        // Fetch emails for the first account
-        // fetchEmails(accounts[0].id, state.currentFolder);
-      } else {
-        setState((prev) => ({ ...prev, loading: false }));
+        await fetchEmails(firstAccount.id, "inbox", true);
       }
     } catch (error) {
-      console.error("Error fetching email accounts:", error);
-      setState((prev) => ({ ...prev, loading: false }));
+      console.error("Error initializing email client:", error);
+      handleError(error, "Failed to initialize email client");
     }
-  }, [api]);
+  }, [api, fetchEmails]);
 
-  // Initialize by fetching accounts
   React.useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+    initialize();
+  }, [initialize]);
 
-  // Selected email calculation (keep as is)
-  const selectedEmail = React.useMemo(() => {
-    if (!state.selectedEmailId) return null;
-    return (
-      state.emails.find((email) => email.id === state.selectedEmailId) || null
-    );
-  }, [state.emails, state.selectedEmailId]);
-
-  // Calculate navigation state (keep as is)
+  // Search effect
   React.useEffect(() => {
-    if (state.selectedEmailId) {
-      const currentIndex = state.filteredEmails.findIndex(
-        (email) => email.id === state.selectedEmailId
-      );
-      const hasPrevious = currentIndex > 0;
-      const hasNext =
-        currentIndex < state.filteredEmails.length - 1 && currentIndex !== -1;
-
-      setState((prev) => ({
-        ...prev,
-        hasPreviousEmail: hasPrevious,
-        hasNextEmail: hasNext,
-      }));
-    }
-  }, [state.selectedEmailId, state.filteredEmails]);
-
-  // Fetch emails based on selected account and folder
-  const fetchEmails = React.useCallback(
-    async (
-      accountId: string = state.selectedAccount,
-      folder: string = state.currentFolder
-    ) => {
-      if (!accountId) return;
-
-      setState((prev) => ({ ...prev, loading: true }));
-
-      try {
-        // Make real API call to fetch emails
-        const email = state.accounts.find((a) => a.id === accountId)?.email;
-        if (!email) {
-          console.error(`Email account not found for ID: ${accountId}`);
-          setState((prev) => ({ ...prev, loading: false }));
-          return;
-        }
-
-        console.log(`Using email address: ${email} to fetch emails`);
-
-        // Updated to match backend route /api/emails/v2/list/:email
-        const response = await api.get(`/api/emails/v2/list/${email}`, {
-          params: { folder },
-        });
-
-        // Transform API data to match our format
-        const emails: EmailData[] = (response.data as any[]).map(
-          (email: any) => ({
-            id: email._id,
-            subject: email.subject || "(No Subject)",
-            from: {
-              name:
-                email.from?.name ||
-                email.from?.email.split("@")[0] ||
-                "Unknown",
-              email: email.from?.email || "",
-              avatar: email.from?.name
-                ? email.from.name.charAt(0).toUpperCase()
-                : "?",
-            },
-            to: Array.isArray(email.to)
-              ? email.to.map((t: any) => ({
-                  name: t.name || t.email.split("@")[0],
-                  email: t.email,
-                }))
-              : [],
-            cc: Array.isArray(email.cc)
-              ? email.cc.map((c: any) => ({
-                  name: c.name || c.email.split("@")[0],
-                  email: c.email,
-                }))
-              : [],
-            bcc: Array.isArray(email.bcc)
-              ? email.bcc.map((b: any) => ({
-                  name: b.name || b.email.split("@")[0],
-                  email: b.email,
-                }))
-              : [],
-            content: email.body?.html || email.body?.text || "",
-            preview: email.snippet || "",
-            date: new Date(email.date).toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            timestamp: new Date(email.date).getTime(),
-            isRead: email.read === true,
-            isStarred: email.starred === true,
-            hasAttachments:
-              Array.isArray(email.attachments) && email.attachments.length > 0,
-            attachments: Array.isArray(email.attachments)
-              ? email.attachments.map((att: any) => ({
-                  id: att.id || att._id,
-                  name: att.filename,
-                  size: att.size || 0,
-                  type: att.contentType,
-                  url: `${apiBaseUrl}/api/emails/attachments/${email._id}/${att.id}`,
-                }))
-              : [],
-            labels: Array.isArray(email.labels) ? email.labels : [],
-            folder: email.folder || folder,
-          })
-        );
-
-        // Calculate unread counts
-        const unreadCounts: Record<string, number> = {
-          inbox: emails.filter((e) => e.folder === "inbox" && !e.isRead).length,
-          drafts: emails.filter((e) => e.folder === "drafts").length,
-          sent: 0,
-          starred: emails.filter((e) => e.isStarred).length,
-          trash: 0,
-        };
-
-        setState((prev) => ({
-          ...prev,
-          emails,
-          filteredEmails: emails,
-          loading: false,
-          unreadCounts,
-          unreadCount: unreadCounts.inbox,
-        }));
-      } catch (error) {
-        console.error("Error fetching emails:", error);
-        setState((prev) => ({ ...prev, loading: false }));
-      }
-    },
-    [api, apiBaseUrl]
-  );
-
-  // Initialize with emails (only if account is selected)
-  React.useEffect(() => {
-    if (state.selectedAccount && state.accounts.length > 0) {
-      console.log("Account selected, triggering email fetch");
-      fetchEmails(state.selectedAccount, state.currentFolder);
-    } else {
-      console.log("No account selected or accounts not loaded yet");
-    }
-  }, [state.selectedAccount, state.currentFolder, state.accounts.length, fetchEmails]);
-
-  // Apply search filter (keep as is)
-  React.useEffect(() => {
-    if (state.searchTerm === "") {
-      setState((prev) => ({ ...prev, filteredEmails: prev.emails }));
+    if (!state.searchTerm) {
+      setState(prev => ({ ...prev, filteredEmails: prev.emails }));
       return;
     }
 
     const term = state.searchTerm.toLowerCase();
-    const filtered = state.emails.filter(
-      (email) =>
-        email.subject.toLowerCase().includes(term) ||
-        email.from.name.toLowerCase().includes(term) ||
-        email.from.email.toLowerCase().includes(term) ||
-        email.to.some(
-          (to) =>
-            to.name.toLowerCase().includes(term) ||
-            to.email.toLowerCase().includes(term)
-        ) ||
-        email.preview.toLowerCase().includes(term)
+    const filtered = state.emails.filter(email =>
+      [
+        email.subject,
+        email.from.name,
+        email.from.email,
+        email.preview,
+        ...(email.to.map(to => `${to.name} ${to.email}`)),
+      ].some(field => field.toLowerCase().includes(term))
     );
 
-    setState((prev) => ({ ...prev, filteredEmails: filtered }));
+    setState(prev => ({ ...prev, filteredEmails: filtered }));
   }, [state.searchTerm, state.emails]);
 
-  // Update the handlers to use real API calls
+  // Navigation state effect
+  React.useEffect(() => {
+    if (state.selectedEmailId) {
+      const currentIndex = state.filteredEmails.findIndex(
+        email => email.id === state.selectedEmailId
+      );
+      setState(prev => ({
+        ...prev,
+        hasPreviousEmail: currentIndex > 0,
+        hasNextEmail: currentIndex < state.filteredEmails.length - 1,
+      }));
+    }
+  }, [state.selectedEmailId, state.filteredEmails]);
+
   const handlers = {
     handleAccountChange: (accountId: string) => {
-      setState((prev) => ({ ...prev, selectedAccount: accountId }));
-      fetchEmails(accountId, state.currentFolder);
+      debug("Changing account", accountId);
+      setState(prev => ({
+        ...prev,
+        selectedAccount: accountId,
+        currentFolder: "inbox",
+        selectedEmailId: null,
+        detailViewOpen: false,
+        searchTerm: "",
+        emails: [],
+        filteredEmails: [],
+        loading: true,
+      }));
+      fetchEmails(accountId, "inbox", true);
     },
 
     handleFolderChange: (folder: string) => {
-      setState((prev) => ({
+      debug("Changing folder", folder);
+      setState(prev => ({
         ...prev,
         currentFolder: folder,
         selectedEmailId: null,
         detailViewOpen: false,
+        loading: true,
       }));
       fetchEmails(state.selectedAccount, folder);
     },
 
+    handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      setState(prev => ({ ...prev, searchTerm: event.target.value }));
+    },
+
+    handleClearSearch: () => {
+      setState(prev => ({ ...prev, searchTerm: "" }));
+    },
+
+    handleRefresh: () => {
+      debug("Manual refresh requested");
+      fetchEmails(state.selectedAccount, state.currentFolder, true);
+    },
+
     handleEmailSelect: async (emailId: string) => {
-      // Mark email as read when selected
-      const emailToUpdate = state.emails.find((email) => email.id === emailId);
+      debug("Selecting email", emailId);
+      const emailToUpdate = state.emails.find(email => email.id === emailId);
 
       if (emailToUpdate && !emailToUpdate.isRead) {
         try {
-          // Call API to mark as read
-          await api.post(`/api/emails/v2/mark-read/${emailId}`);
+          await api.post(`/api/emails/mark-read/${emailId}`);
+          debug("Marked email as read", emailId);
 
-          const updatedEmails = state.emails.map((email) =>
+          const updatedEmails = state.emails.map(email =>
             email.id === emailId ? { ...email, isRead: true } : email
           );
 
-          setState((prev) => ({
+          setState(prev => ({
             ...prev,
             emails: updatedEmails,
             filteredEmails: prev.searchTerm
-              ? updatedEmails.filter(
-                  (email) =>
-                    email.subject
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase()) ||
-                    email.from.name
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase()) ||
-                    email.preview
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase())
+              ? updatedEmails.filter(email =>
+                  email.subject.toLowerCase().includes(prev.searchTerm.toLowerCase())
                 )
               : updatedEmails,
             unreadCount: prev.unreadCount > 0 ? prev.unreadCount - 1 : 0,
-            unreadCounts: {
-              ...prev.unreadCounts,
-              inbox:
-                prev.unreadCounts.inbox > 0 ? prev.unreadCounts.inbox - 1 : 0,
-            },
           }));
         } catch (error) {
-          console.error("Error marking email as read:", error);
+          handleError(error, "Failed to mark email as read");
         }
       }
 
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         selectedEmailId: emailId,
         detailViewOpen: true,
@@ -384,266 +443,87 @@ export const useEmailClient = () => {
     },
 
     handleCloseDetailView: () => {
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         selectedEmailId: null,
         detailViewOpen: false,
       }));
     },
 
-    handleToggleStar: async (
-      emailId: string,
-      starredOrEvent?: boolean | React.MouseEvent
-    ) => {
-      // Get current star state
-      const email = state.emails.find((e) => e.id === emailId);
-      if (!email) return;
-
-      const newStarred =
-        typeof starredOrEvent === "boolean" ? starredOrEvent : !email.isStarred;
+    handleToggleStar: async (emailId: string) => {
+      const emailToUpdate = state.emails.find(email => email.id === emailId);
+      if (!emailToUpdate) return;
 
       try {
-        // Call API to toggle star
-        await api.post(`/api/emails/v2/star/${emailId}`, {
-          starred: newStarred,
-        });
-
-        // Update local state
-        const updatedEmails = state.emails.map((email) =>
-          email.id === emailId ? { ...email, isStarred: newStarred } : email
+        await api.post(`/api/emails/toggle-star/${emailId}`);
+        const updatedEmails = state.emails.map(email =>
+          email.id === emailId ? { ...email, isStarred: !email.isStarred } : email
         );
 
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           emails: updatedEmails,
-          filteredEmails: prev.searchTerm
-            ? updatedEmails.filter(
-                (email) =>
-                  email.subject
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase()) ||
-                  email.from.name
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase()) ||
-                  email.preview
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase())
-              )
-            : updatedEmails,
+          filteredEmails: updatedEmails,
         }));
       } catch (error) {
-        console.error("Error toggling star:", error);
+        handleError(error, "Failed to update star status");
       }
     },
 
-    handleToggleStarEmail: (emailId: string) => {
-      handlers.handleToggleStar(emailId);
-    },
-
-    handleToggleRead: async (
-      emailId: string,
-      isRead: boolean,
-      event?: React.MouseEvent
-    ) => {
-      if (event) event.stopPropagation();
+    handleToggleRead: async (emailId: string) => {
+      const emailToUpdate = state.emails.find(email => email.id === emailId);
+      if (!emailToUpdate) return;
 
       try {
-        // Call API to mark as read/unread
-        if (isRead) {
-          await api.post(`/api/emails/v2/mark-read/${emailId}`);
-        } else {
-          await api.post(`/api/emails/v2/mark-unread/${emailId}`);
-        }
-
-        const emailToUpdate = state.emails.find(
-          (email) => email.id === emailId
-        );
-        if (!emailToUpdate) return;
-
-        const wasUnread = !emailToUpdate.isRead;
-        const updatedEmails = state.emails.map((email) =>
-          email.id === emailId ? { ...email, isRead } : email
+        await api.post(`/api/emails/mark-${emailToUpdate.isRead ? 'unread' : 'read'}/${emailId}`);
+        const updatedEmails = state.emails.map(email =>
+          email.id === emailId ? { ...email, isRead: !email.isRead } : email
         );
 
-        setState((prev) => {
-          const unreadDelta =
-            wasUnread && isRead ? -1 : !wasUnread && !isRead ? 1 : 0;
-
-          return {
-            ...prev,
-            emails: updatedEmails,
-            filteredEmails: prev.searchTerm
-              ? updatedEmails.filter(
-                  (email) =>
-                    email.subject
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase()) ||
-                    email.from.name
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase()) ||
-                    email.preview
-                      .toLowerCase()
-                      .includes(prev.searchTerm.toLowerCase())
-                )
-              : updatedEmails,
-            unreadCount: Math.max(0, prev.unreadCount + unreadDelta),
-            unreadCounts: {
-              ...prev.unreadCounts,
-              inbox: Math.max(0, prev.unreadCounts.inbox + unreadDelta),
-            },
-          };
-        });
-      } catch (error) {
-        console.error("Error toggling read status:", error);
-      }
-    },
-
-    handleToggleReadEmail: (emailId: string) => {
-      const email = state.emails.find((email) => email.id === emailId);
-      if (email) {
-        handlers.handleToggleRead(emailId, !email.isRead);
-      }
-    },
-
-    handleDelete: async (emailId: string, event?: React.MouseEvent) => {
-      if (event) event.stopPropagation();
-
-      try {
-        // Call API to delete email (or move to trash)
-        await api.delete(`/api/emails/v2/delete/${emailId}`);
-
-        const emailToDelete = state.emails.find(
-          (email) => email.id === emailId
-        );
-        if (!emailToDelete) return;
-
-        const wasUnread = !emailToDelete.isRead;
-
-        const updatedEmails = state.emails.filter(
-          (email) => email.id !== emailId
-        );
-
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           emails: updatedEmails,
-          filteredEmails: prev.filteredEmails.filter(
-            (email) => email.id !== emailId
-          ),
-          unreadCount:
-            wasUnread && emailToDelete.folder === "inbox"
-              ? Math.max(0, prev.unreadCount - 1)
-              : prev.unreadCount,
-          unreadCounts: {
-            ...prev.unreadCounts,
-            inbox:
-              wasUnread && emailToDelete.folder === "inbox"
-                ? Math.max(0, prev.unreadCounts.inbox - 1)
-                : prev.unreadCounts.inbox,
-          },
+          filteredEmails: updatedEmails,
+          unreadCount: prev.unreadCount + (emailToUpdate.isRead ? 1 : -1),
         }));
-
-        // If the deleted email was selected, close the detail view
-        if (state.selectedEmailId === emailId) {
-          handlers.handleCloseDetailView();
-        }
       } catch (error) {
-        console.error("Error deleting email:", error);
+        handleError(error, "Failed to update read status");
       }
-    },
-
-    handleDeleteEmail: (emailId: string) => {
-      handlers.handleDelete(emailId);
-    },
-
-    handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-      const term = event.target.value;
-      setState((prev) => ({ ...prev, searchTerm: term }));
-    },
-
-    handleClearSearch: () => {
-      setState((prev) => ({ ...prev, searchTerm: "" }));
-    },
-
-    handleRefresh: () => {
-      fetchEmails(state.selectedAccount, state.currentFolder);
     },
 
     handleMarkAllRead: async () => {
+      const email = state.accounts.find(a => a.id === state.selectedAccount)?.email;
+      if (!email) return;
+
       try {
-        const email = state.accounts.find(
-          (a) => a.id === state.selectedAccount
-        )?.email;
-        if (!email) return;
-        // Call API to mark all as read
-        await api.post(`/api/emails/v2/mark-all-read/${email}`, {
+        await api.post(`/api/emails/mark-all-read/${email}`, {
           folder: state.currentFolder,
         });
 
-        const updatedEmails = state.emails.map((email) =>
-          email.folder === state.currentFolder && !email.isRead
-            ? { ...email, isRead: true }
-            : email
+        const updatedEmails = state.emails.map(email =>
+          email.folder === state.currentFolder ? { ...email, isRead: true } : email
         );
 
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           emails: updatedEmails,
-          filteredEmails: prev.searchTerm
-            ? updatedEmails.filter(
-                (email) =>
-                  email.subject
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase()) ||
-                  email.from.name
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase()) ||
-                  email.preview
-                    .toLowerCase()
-                    .includes(prev.searchTerm.toLowerCase())
-              )
-            : updatedEmails,
-          unreadCount: state.currentFolder === "inbox" ? 0 : prev.unreadCount,
-          unreadCounts: {
-            ...prev.unreadCounts,
-            inbox:
-              state.currentFolder === "inbox" ? 0 : prev.unreadCounts.inbox,
-          },
+          filteredEmails: updatedEmails,
+          unreadCount: 0,
         }));
       } catch (error) {
-        console.error("Error marking all as read:", error);
+        handleError(error, "Failed to mark all as read");
       }
     },
 
-    // Navigation methods remain the same
-    handlePreviousEmail: () => {
-      if (!state.hasPreviousEmail) return;
-
-      const currentIndex = state.filteredEmails.findIndex(
-        (email) => email.id === state.selectedEmailId
-      );
-      if (currentIndex > 0) {
-        const previousEmail = state.filteredEmails[currentIndex - 1];
-        handlers.handleEmailSelect(previousEmail.id);
-      }
-    },
-
-    handleNextEmail: () => {
-      if (!state.hasNextEmail) return;
-
-      const currentIndex = state.filteredEmails.findIndex(
-        (email) => email.id === state.selectedEmailId
-      );
-      if (
-        currentIndex !== -1 &&
-        currentIndex < state.filteredEmails.length - 1
-      ) {
-        const nextEmail = state.filteredEmails[currentIndex + 1];
-        handlers.handleEmailSelect(nextEmail.id);
-      }
+    toggleMobileSidebar: () => {
+      setState(prev => ({
+        ...prev,
+        mobileSidebarOpen: !prev.mobileSidebarOpen,
+      }));
     },
 
     handleCompose: () => {
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         composeOpen: true,
         replyTo: null,
@@ -651,8 +531,17 @@ export const useEmailClient = () => {
       }));
     },
 
+    handleCloseCompose: () => {
+      setState(prev => ({
+        ...prev,
+        composeOpen: false,
+        replyTo: null,
+        forwardEmail: null,
+      }));
+    },
+
     handleReplyEmail: (email: EmailData) => {
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         composeOpen: true,
         replyTo: email,
@@ -661,7 +550,7 @@ export const useEmailClient = () => {
     },
 
     handleForwardEmail: (email: EmailData) => {
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         composeOpen: true,
         replyTo: null,
@@ -669,63 +558,73 @@ export const useEmailClient = () => {
       }));
     },
 
-    handleCloseCompose: () => {
-      setState((prev) => ({
-        ...prev,
-        composeOpen: false,
-        replyTo: null,
-        forwardEmail: null,
-      }));
+    handleDeleteEmail: async (emailId: string) => {
+      try {
+        await api.delete(`/api/emails/delete/${emailId}`);
+        const updatedEmails = state.emails.filter(email => email.id !== emailId);
+        
+        setState(prev => ({
+          ...prev,
+          emails: updatedEmails,
+          filteredEmails: updatedEmails,
+          selectedEmailId: null,
+          detailViewOpen: false,
+        }));
+      } catch (error) {
+        handleError(error, "Failed to delete email");
+      }
     },
 
-    toggleMobileSidebar: () => {
-      setState((prev) => ({
-        ...prev,
-        mobileSidebarOpen: !prev.mobileSidebarOpen,
-      }));
+    handlePreviousEmail: () => {
+      if (!state.selectedEmailId || !state.hasPreviousEmail) return;
+      
+      const currentIndex = state.filteredEmails.findIndex(
+        email => email.id === state.selectedEmailId
+      );
+      
+      if (currentIndex > 0) {
+        const previousEmail = state.filteredEmails[currentIndex - 1];
+        handlers.handleEmailSelect(previousEmail.id);
+      }
     },
 
-    closeMobileSidebar: () => {
-      setState((prev) => ({
-        ...prev,
-        mobileSidebarOpen: false,
-      }));
+    handleNextEmail: () => {
+      if (!state.selectedEmailId || !state.hasNextEmail) return;
+      
+      const currentIndex = state.filteredEmails.findIndex(
+        email => email.id === state.selectedEmailId
+      );
+      
+      if (currentIndex < state.filteredEmails.length - 1) {
+        const nextEmail = state.filteredEmails[currentIndex + 1];
+        handlers.handleEmailSelect(nextEmail.id);
+      }
     },
 
     handleSendEmail: async (data: any) => {
       try {
-        const email = state.accounts.find(
-          (a) => a.id === state.selectedAccount
-        )?.email;
+        const email = state.accounts.find(a => a.id === state.selectedAccount)?.email;
         if (!email) return;
 
-        // Update to use the correct send endpoint
-        await api.post(`/api/emails/v2/send/${email}`, {
-          to: data.to,
-          cc: data.cc,
-          bcc: data.bcc,
-          subject: data.subject,
-          body: data.body,
-          attachments: data.attachments,
-        });
-
-        setState((prev) => ({
-          ...prev,
-          composeOpen: false,
-          replyTo: null,
-          forwardEmail: null,
-        }));
-
-        // Refresh the sent folder if we're in it
+        await api.post(`/api/emails/send/${email}`, data);
+        handlers.handleCloseCompose();
+        
         if (state.currentFolder === "sent") {
-          fetchEmails(state.selectedAccount, "sent");
+          handlers.handleRefresh();
         }
       } catch (error) {
-        console.error("Error sending email:", error);
-        alert("Failed to send email. Please try again.");
+        handleError(error, "Failed to send email");
       }
     },
   };
 
-  return { state, handlers, selectedEmail };
+  const selectedEmail = state.selectedEmailId 
+    ? state.emails.find(email => email.id === state.selectedEmailId) || null
+    : null;
+
+  return {
+    state,
+    handlers,
+    selectedEmail,
+  };
 };

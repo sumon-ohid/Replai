@@ -4,21 +4,18 @@ import {
   useTheme,
   useMediaQuery,
   Drawer,
-  IconButton,
-  Tooltip,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import MenuIcon from "@mui/icons-material/Menu";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import EmailSidebar from "./EmailSidebar";
 import EmailHeader from "./EmailHeader";
 import EmailList from "./EmailList";
 import EmailDetailView from "./EmailDetailView";
 import EmailMobileNav from "./EmailMobileNav";
-import { useEmailClient } from "./useEmailClient";
 import ComposeEmail from "./ComposeEmail";
+import { useEmailClient, EmailAccount } from "./useEmailClient";
 
 export default function EmailClient() {
   const theme = useTheme();
@@ -26,13 +23,9 @@ export default function EmailClient() {
   const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
   const { state, handlers, selectedEmail } = useEmailClient();
 
-  // Add state for collapsible sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  
-  // Add state for fullscreen mode
   const [isFullScreen, setIsFullScreen] = React.useState(false);
-
-  // Add pagination state
+  const [error, setError] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(20);
 
@@ -45,20 +38,30 @@ export default function EmailClient() {
     }
   }, [isTablet, isMobile]);
 
-  // Toggle sidebar collapse
-  const handleToggleSidebar = () => {
-    setSidebarCollapsed((prev) => !prev);
-  };
-  
-  // Toggle fullscreen mode
-  const handleToggleFullScreen = () => {
-    setIsFullScreen((prev) => !prev);
-  };
-
   // Reset pagination when folder or search term changes
   React.useEffect(() => {
     setPage(0);
   }, [state.currentFolder, state.searchTerm]);
+
+  // Show loading state for longer operations
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (state.loading) {
+        console.log("Long running operation detected");
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [state.loading]);
+
+  // Handle errors
+  React.useEffect(() => {
+    if (state.error) {
+      setError(state.error);
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.error]);
 
   // Calculate paginated emails
   const paginatedEmails = React.useMemo(() => {
@@ -66,14 +69,11 @@ export default function EmailClient() {
     return state.filteredEmails.slice(startIndex, startIndex + rowsPerPage);
   }, [state.filteredEmails, page, rowsPerPage]);
 
-  // Handle pagination changes
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  // Handlers
+  const handleToggleSidebar = () => setSidebarCollapsed(prev => !prev);
+  const handleToggleFullScreen = () => setIsFullScreen(prev => !prev);
+  const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -91,7 +91,7 @@ export default function EmailClient() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: isFullScreen ? "100vh" : "calc(100vh - 64px)", // Adjust the height based on fullscreen state
+        height: isFullScreen ? "100vh" : "calc(100vh - 64px)",
         maxHeight: "100vh",
         width: "100%",
         overflow: "hidden",
@@ -101,20 +101,32 @@ export default function EmailClient() {
         left: isFullScreen ? 0 : "auto",
         right: isFullScreen ? 0 : "auto",
         bottom: isFullScreen ? 0 : "auto",
-        zIndex: isFullScreen ? 1300 : "auto", // Use a high z-index when in fullscreen
+        zIndex: isFullScreen ? 1300 : "auto",
         m: isFullScreen ? 0 : undefined,
         p: isFullScreen ? 0 : undefined,
       }}
     >
-      {/* Mobile navigation - only visible on mobile */}
+      {/* Mobile navigation */}
       {isMobile && (
         <EmailMobileNav
           currentFolder={state.currentFolder}
           onOpenSidebar={handlers.toggleMobileSidebar}
           unreadCount={state.unreadCount}
-          onCompose={handlers.handleCompose} 
+          onCompose={handlers.handleCompose}
         />
       )}
+
+      {/* Error Snackbar */}
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={5000} 
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      </Snackbar>
 
       <Box
         sx={{
@@ -122,9 +134,31 @@ export default function EmailClient() {
           flexGrow: 1,
           overflow: "hidden",
           width: "100%",
+          position: "relative",
         }}
       >
-        {/* Sidebar - hidden on mobile, shown in drawer instead */}
+        {/* Loading Overlay */}
+        {state.loading && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: "rgba(0, 0, 0, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1400,
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        )}
+
+        {/* Sidebar */}
         {!isMobile ? (
           <Box
             sx={{
@@ -132,10 +166,7 @@ export default function EmailClient() {
               flexShrink: 0,
               borderColor: "divider",
               display: { xs: "none", md: "block" },
-              transition: theme.transitions.create("width", {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
+              transition: theme.transitions.create("width"),
               position: "relative",
             }}
           >
@@ -157,9 +188,7 @@ export default function EmailClient() {
             anchor="left"
             open={state.mobileSidebarOpen}
             onClose={handlers.toggleMobileSidebar}
-            ModalProps={{
-              keepMounted: true, // Better performance on mobile
-            }}
+            ModalProps={{ keepMounted: true }}
             sx={{
               "& .MuiDrawer-paper": {
                 width: 280,
@@ -179,7 +208,7 @@ export default function EmailClient() {
               onAccountChange={handlers.handleAccountChange}
               onFolderChange={(folder) => {
                 handlers.handleFolderChange(folder);
-                handlers.toggleMobileSidebar(); // Close sidebar after selection on mobile
+                handlers.toggleMobileSidebar();
               }}
               onCompose={handlers.handleCompose}
               onCloseMobileSidebar={handlers.toggleMobileSidebar}
@@ -208,13 +237,10 @@ export default function EmailClient() {
             border: isFullScreen ? 0 : 1,
             borderColor: "divider",
             mt: isFullScreen ? 0 : { xs: 1, md: 0 },
-            transition: theme.transitions.create(["width", "margin", "border-radius"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
+            transition: theme.transitions.create(["width", "margin", "border-radius"]),
           }}
         >
-          {/* Header with search and actions */}
+          {/* Header */}
           <EmailHeader
             searchTerm={state.searchTerm}
             onSearchChange={handlers.handleSearchChange}
@@ -222,14 +248,14 @@ export default function EmailClient() {
             onRefresh={handlers.handleRefresh}
             isLoading={state.loading}
             currentFolder={state.currentFolder}
-            onMarkAllRead={() => handlers.handleMarkAllRead()}
+            onMarkAllRead={handlers.handleMarkAllRead}
             onToggleSidebar={!isMobile ? handleToggleSidebar : undefined}
             isSidebarCollapsed={!isMobile ? sidebarCollapsed : false}
             isFullScreen={isFullScreen}
             onToggleFullScreen={handleToggleFullScreen}
           />
 
-          {/* Content: Either email list or email detail */}
+          {/* Content */}
           <Box
             sx={{
               flexGrow: 1,
@@ -238,7 +264,7 @@ export default function EmailClient() {
               display: "flex",
             }}
           >
-            {/* Email List - hidden when viewing email on mobile */}
+            {/* Email List */}
             <Box
               sx={{
                 flexGrow: 1,
@@ -252,7 +278,7 @@ export default function EmailClient() {
                 emails={paginatedEmails}
                 loading={state.loading}
                 onEmailClick={handlers.handleEmailSelect}
-                onToggleStar={handlers.handleToggleStarEmail}
+                onToggleStar={handlers.handleToggleStar}
                 onToggleRead={handlers.handleToggleRead}
                 onDelete={handlers.handleDeleteEmail}
                 selectedEmailId={state.selectedEmailId}
@@ -267,7 +293,7 @@ export default function EmailClient() {
               />
             </Box>
 
-            {/* Email Detail View - shown when email selected */}
+            {/* Email Detail View */}
             {state.detailViewOpen && selectedEmail && (
               <Box
                 sx={{
@@ -295,7 +321,7 @@ export default function EmailClient() {
                   onReply={handlers.handleReplyEmail}
                   onForward={handlers.handleForwardEmail}
                   onDelete={handlers.handleDeleteEmail}
-                  onToggleStar={handlers.handleToggleStar as any}
+                  onToggleStar={handlers.handleToggleStar}
                   onToggleRead={handlers.handleToggleRead}
                 />
               </Box>
@@ -310,9 +336,9 @@ export default function EmailClient() {
         onClose={handlers.handleCloseCompose}
         replyTo={state.replyTo}
         forwardEmail={state.forwardEmail}
-        onSend={handlers.handleSendEmail as any}
+        onSend={handlers.handleSendEmail}
         selectedAccount={state.accounts.find(
-          (acc) => acc.id === state.selectedAccount
+          (acc: EmailAccount) => acc.id === state.selectedAccount
         )}
       />
     </Box>

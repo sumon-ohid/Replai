@@ -429,7 +429,7 @@ export default function EmailSidebar({
           <List disablePadding>
             {labels.map((label) => (
               <ListItemButton
-                key={label.id}
+                key={`expanded-${label.id}`}
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
@@ -456,8 +456,13 @@ export default function EmailSidebar({
       {collapsed && (
         <List disablePadding sx={{ mt: 1 }}>
           {labels.map((label) => (
-            <Tooltip key={label.id} title={label.name} placement="right">
+            <Tooltip
+              key={`collapsed-${label.id}`}
+              title={label.name}
+              placement="right"
+            >
               <ListItemButton
+                key={`button-${label.id}`}
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
@@ -501,7 +506,7 @@ export default function EmailSidebar({
 
         {accounts.map((account) => (
           <MenuItem
-            key={account.id}
+            key={`menu-${account.id}`}
             selected={account.id === selectedAccount}
             onClick={() => handleAccountSelect(account.id)}
             sx={{

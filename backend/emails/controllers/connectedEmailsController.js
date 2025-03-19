@@ -11,12 +11,14 @@ import {
 export const getConnectedEmails = async (req, res) => {
   try {
     const userId = req.user._id;
+    console.log("Fetching connected emails for user:", userId);
 
     const user = await User.findById(userId).select(
       "connectedEmails emailPreferences"
     );
 
     if (!user || !user.connectedEmails) {
+      console.log("No connected emails found for user:", userId);
       return res.json([]);
     }
 
@@ -26,24 +28,31 @@ export const getConnectedEmails = async (req, res) => {
       const preferences = user.emailPreferences?.[emailAddress] || {};
 
       // Get connection status
-      const connectionKey = `${userId}:${emailAddress}`;
       const connection = getConnection(userId, emailAddress);
-
-      return {
+      
+      const mappedEmail = {
+        _id: email._id.toString(), // Convert ObjectId to string
         email: emailAddress,
         provider: email.provider || "google",
         connected: email.connected || true,
         connectedAt: email.connectedAt || new Date(),
-        syncEnabled: preferences.syncEnabled !== false, // Default to true
-        autoReplyEnabled: preferences.mode === "auto-reply", // Check mode
-        mode: preferences.mode || "auto-reply", // Default mode
+        syncEnabled: preferences.syncEnabled !== false,
+        autoReplyEnabled: preferences.mode === "auto-reply",
+        mode: preferences.mode || "auto-reply",
         lastSync: connection?.lastSync || email.lastSync || null,
         status: connection ? (connection.error ? "error" : "active") : "paused",
-        name: email.name || "",
+        name: email.name || emailAddress.split("@")[0],
         picture: email.picture || null,
       };
+
+      console.log("Mapped email account:", emailAddress, "with ID:", mappedEmail._id);
+      return mappedEmail;
     });
 
+    console.log(`Returning ${connectedEmails.length} connected email(s)`, 
+      connectedEmails.map(e => ({ id: e._id, email: e.email }))
+    );
+    
     res.json(connectedEmails);
   } catch (error) {
     console.error("Error getting connected emails:", error);
@@ -132,16 +141,13 @@ export const toggleSync = async (req, res) => {
     let lastSync = null;
 
     if (connection) {
-      // Update connection config
       await updateConnectionConfig(userId, email, { syncEnabled: enabled });
 
-      // If enabling sync, trigger an immediate check
       if (enabled && connection.checkForNewEmails) {
         try {
           await connection.checkForNewEmails();
           lastSync = new Date();
 
-          // Update last sync time in database
           await User.findByIdAndUpdate(
             userId,
             {
@@ -190,7 +196,6 @@ export const updateEmailMode = async (req, res) => {
         .json({ error: "Invalid mode. Must be draft, normal, or auto-reply" });
     }
 
-    // Check if user has this email connected
     const user = await User.findById(userId);
     const connectedEmail = user.connectedEmails.find((e) => e.email === email);
 
@@ -200,12 +205,10 @@ export const updateEmailMode = async (req, res) => {
         .json({ error: "Email not found in connected accounts" });
     }
 
-    // Update the email preferences
     await User.findByIdAndUpdate(userId, {
       $set: { [`emailPreferences.${email}.mode`]: mode },
     });
 
-    // Update live connection if it exists
     const connectionUpdated = await updateConnectionConfig(userId, email, {
       mode,
     });
@@ -215,6 +218,7 @@ export const updateEmailMode = async (req, res) => {
       email,
       mode,
       connectionUpdated,
+      emailId: connectedEmail._id,
     });
   } catch (error) {
     console.error("Error updating email mode:", error);
@@ -236,7 +240,6 @@ export const refreshEmailSync = async (req, res) => {
       return res.status(400).json({ error: "Email address is required" });
     }
 
-    // Check if user has this email connected
     const user = await User.findById(userId);
     const connectedEmail = user.connectedEmails.find((e) => e.email === email);
 
@@ -246,21 +249,16 @@ export const refreshEmailSync = async (req, res) => {
         .json({ error: "Email not found in connected accounts" });
     }
 
-    // Get the connection
     const connection = getConnection(userId, email);
-    // console.log(" Connection:", connection, "for", email, "user", userId);
+    console.log("Got connection for refresh:", connection ? "yes" : "no");
 
-    // Handle case when we have a connection
     if (connection && connection.checkForNewEmails) {
       try {
-        // Use the existing connection to check for emails
         await connection.checkForNewEmails();
         lastSync = new Date();
 
-        // Enable sync if it was disabled
         await updateConnectionConfig(userId, email, { syncEnabled: true });
 
-        // Update last sync time in database
         await User.findByIdAndUpdate(
           userId,
           {
@@ -277,12 +275,9 @@ export const refreshEmailSync = async (req, res) => {
         console.error("Error during email sync:", error);
         syncError = error.message;
       }
-    } 
-    // Handle case when we don't have a connection
-    else {
-      console.log(`No active connection found for ${email}, using temporary connection`);
+    } else {
+      console.log(`Using temporary connection for ${email}`);
       
-      // Create a simple connection just for this request
       const tempConnection = {
         checkForNewEmails: async () => {
           console.log(`[Temporary Connection] Checking emails for ${email}`);
@@ -294,11 +289,9 @@ export const refreshEmailSync = async (req, res) => {
       };
 
       try {
-        // Use the temporary connection
         await tempConnection.checkForNewEmails();
         lastSync = new Date();
         
-        // Update last sync time in database
         await User.findByIdAndUpdate(
           userId,
           {
@@ -320,6 +313,7 @@ export const refreshEmailSync = async (req, res) => {
     res.json({
       success: !syncError,
       email,
+      emailId: connectedEmail._id,
       lastSync: syncError ? null : lastSync,
       error: syncError,
       temporary: !connection || !connection.checkForNewEmails
@@ -328,4 +322,12 @@ export const refreshEmailSync = async (req, res) => {
     console.error("Error refreshing email sync:", error);
     res.status(500).json({ error: "Failed to refresh email sync" });
   }
+};
+
+export default {
+  getConnectedEmails,
+  toggleAutoReply,
+  toggleSync,
+  updateEmailMode,
+  refreshEmailSync,
 };
