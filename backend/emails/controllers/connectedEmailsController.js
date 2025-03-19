@@ -248,7 +248,7 @@ export const refreshEmailSync = async (req, res) => {
 
     // Get the connection
     const connection = getConnection(userId, email);
-    console.log(" Connection:", connection);
+    // console.log(" Connection:", connection, "for", email, "user", userId);
 
     // Handle case when we have a connection
     if (connection && connection.checkForNewEmails) {

@@ -20,87 +20,87 @@ import authConfig from '../config/authConfig.js';
  * @returns {String} Connection key
  */
 
-// export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
-//   try {
-//     // Set default config values
-//     const connectionConfig = {
-//       syncEnabled: true,
-//       mode: 'auto-reply',
-//       markAsRead: true,
-//       folders: ['INBOX'],
-//       ...config
-//     };
+export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
+  try {
+    // Set default config values
+    const connectionConfig = {
+      syncEnabled: true,
+      mode: 'auto-reply',
+      markAsRead: true,
+      folders: ['INBOX'],
+      ...config
+    };
     
-//     // Configure OAuth client
-//     const oauth2Client = new OAuth2Client(
-//       process.env.GOOGLE_CLIENT_ID,
-//       process.env.GOOGLE_CLIENT_SECRET,
-//       process.env.GOOGLE_REDIRECT_URI
-//     );
+    // Configure OAuth client
+    const oauth2Client = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
     
-//     // Set credentials
-//     oauth2Client.setCredentials({
-//       refresh_token: refreshToken,
-//       access_token: accessToken,
-//     });
+    // Set credentials
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken,
+      access_token: accessToken,
+    });
     
-//     // Create Gmail API client
-//     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    // Create Gmail API client
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     
-//     // Test connection
-//     try {
-//       await gmail.users.getProfile({ userId: 'me' });
-//       console.log(`Google connection for ${email} verified`);
-//     } catch (apiError) {
-//       console.error(`Failed to verify Google connection for ${email}:`, apiError);
-//       throw new Error(`Gmail API connection failed: ${apiError.message}`);
-//     }
+    // Test connection
+    try {
+      await gmail.users.getProfile({ userId: 'me' });
+      console.log(`Google connection for ${email} verified`);
+    } catch (apiError) {
+      console.error(`Failed to verify Google connection for ${email}:`, apiError);
+      throw new Error(`Gmail API connection failed: ${apiError.message}`);
+    }
     
-//     // Set up email checking interval
-//     const interval = connectionConfig.syncEnabled
-//       ? setInterval(() => checkForNewGoogleEmails(gmail, userId, email, connectionConfig), 60000)
-//       : null;
+    // Set up email checking interval
+    const interval = connectionConfig.syncEnabled
+      ? setInterval(() => checkForNewGoogleEmails(gmail, userId, email, connectionConfig), 60000)
+      : null;
     
-//     // Check immediately
-//     if (connectionConfig.syncEnabled) {
-//       try {
-//         await checkForNewGoogleEmails(gmail, userId, email, connectionConfig);
-//       } catch (initialCheckError) {
-//         console.error(`Initial email check failed for ${email}:`, initialCheckError);
-//         // Continue anyway, as this isn't fatal
-//       }
-//     }
+    // Check immediately
+    if (connectionConfig.syncEnabled) {
+      try {
+        await checkForNewGoogleEmails(gmail, userId, email, connectionConfig);
+      } catch (initialCheckError) {
+        console.error(`Initial email check failed for ${email}:`, initialCheckError);
+        // Continue anyway, as this isn't fatal
+      }
+    }
     
-//     const connection = {
-//       gmail,
-//       oauth2Client,
-//       interval,
-//       config: connectionConfig,
-//       updateConfig: async (newConfig) => {
-//         // Handle config changes
-//         if (newConfig.syncEnabled !== connectionConfig.syncEnabled) {
-//           if (newConfig.syncEnabled && !interval) {
-//             connection.interval = setInterval(
-//               () => checkForNewGoogleEmails(gmail, userId, email, newConfig), 
-//               60000
-//             );
-//           } else if (!newConfig.syncEnabled && interval) {
-//             clearInterval(interval);
-//             connection.interval = null;
-//           }
-//         }
+    const connection = {
+      gmail,
+      oauth2Client,
+      interval,
+      config: connectionConfig,
+      updateConfig: async (newConfig) => {
+        // Handle config changes
+        if (newConfig.syncEnabled !== connectionConfig.syncEnabled) {
+          if (newConfig.syncEnabled && !interval) {
+            connection.interval = setInterval(
+              () => checkForNewGoogleEmails(gmail, userId, email, newConfig), 
+              60000
+            );
+          } else if (!newConfig.syncEnabled && interval) {
+            clearInterval(interval);
+            connection.interval = null;
+          }
+        }
         
-//         // Update local config
-//         Object.assign(connectionConfig, newConfig);
-//       }
-//     };
+        // Update local config
+        Object.assign(connectionConfig, newConfig);
+      }
+    };
     
-//     return addConnection(userId, email, 'google', connection);
-//   } catch (error) {
-//     console.error(`Failed to initialize Google connection for ${email}:`, error);
-//     throw error;
-//   }
-// };
+    return addConnection(userId, email, 'google', connection);
+  } catch (error) {
+    console.error(`Failed to initialize Google connection for ${email}:`, error);
+    throw error;
+  }
+};
 
 // Check for valid categories
 function getValidCategories(userId) {
@@ -165,6 +165,9 @@ async function processGoogleMessage(gmail, userId, userEmail, messageId, config 
 
     const fromEmail = parsedFrom?.email || userEmail || 'unknown@example.com';
     const fromName = parsedFrom?.name || '';
+
+    console.log(`Processing email ${message.id} from ${fromEmail}`);
+    console.log("name", fromName);
     
     
     // Create the email document
@@ -320,58 +323,58 @@ async function checkForNewGoogleEmails(gmail, userId, userEmail, config) {
 //   }
 // };
 
-export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
-  try {
-    console.log('Initializing Google connection with:', {
-      userId,
-      email,
-      hasRefreshToken: !!refreshToken,
-      hasAccessToken: !!accessToken,
-      config
-    });
+// export const initializeGoogleConnection = async (userId, email, refreshToken, accessToken = null, config = {}) => {
+//   try {
+//     console.log('Initializing Google connection with:', {
+//       userId,
+//       email,
+//       hasRefreshToken: !!refreshToken,
+//       hasAccessToken: !!accessToken,
+//       config
+//     });
 
-    // Use imported authConfig instead of undefined variable
-    const oauth2Client = new google.auth.OAuth2(
-      authConfig.google.clientId,
-      authConfig.google.clientSecret,
-      authConfig.google.redirectUri
-    );
+//     // Use imported authConfig instead of undefined variable
+//     const oauth2Client = new google.auth.OAuth2(
+//       authConfig.google.clientId,
+//       authConfig.google.clientSecret,
+//       authConfig.google.redirectUri
+//     );
 
-    // Set credentials
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-      access_token: accessToken
-    });
+//     // Set credentials
+//     oauth2Client.setCredentials({
+//       refresh_token: refreshToken,
+//       access_token: accessToken
+//     });
 
-    // Create Gmail API client
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+//     // Create Gmail API client
+//     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     
-    try {
-      // Verify the connection works
-      const profile = await gmail.users.getProfile({
-        userId: 'me'
-      });
+//     try {
+//       // Verify the connection works
+//       const profile = await gmail.users.getProfile({
+//         userId: 'me'
+//       });
       
-      console.log(`Verified Google connection for ${email}`);
+//       console.log(`Verified Google connection for ${email}`);
       
-      // Start sync process in the background without waiting
-      setTimeout(() => {
-        checkForNewGoogleEmails(gmail, userId, email, config)
-          .catch(error => {
-            console.error('Error checking Google emails:', error);
-          });
-      }, 100);
+//       // Start sync process in the background without waiting
+//       setTimeout(() => {
+//         checkForNewGoogleEmails(gmail, userId, email, config)
+//           .catch(error => {
+//             console.error('Error checking Google emails:', error);
+//           });
+//       }, 100);
       
-      return true;
-    } catch (error) {
-      console.error('Error verifying Google connection:', error);
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error initializing Google connection:', error);
-    throw error;
-  }
-};
+//       return true;
+//     } catch (error) {
+//       console.error('Error verifying Google connection:', error);
+//       throw error;
+//     }
+//   } catch (error) {
+//     console.error('Error initializing Google connection:', error);
+//     throw error;
+//   }
+// };
 
 /**
  * Create a new Google email service

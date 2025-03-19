@@ -130,6 +130,9 @@ export const addConnection = (userId, email, provider, connection) => {
     connection,
     startTime: new Date()
   });
+
+  console.log(`👍 Added ${provider} connection for ${email}`);
+
   return key;
 };
 
