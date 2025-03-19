@@ -70,16 +70,15 @@ router.get('/google/callback', async (req, res) => {
     }
   }
   
-  console.log('Google callback:', code, userId);
 
   if (!code || !userId) {
     return res.redirect(`${dashboardUrl}?error=missing_params`);
   }
 
-  console.log('✈ Google callback:', dashboardUrl);
+  // console.log('✈ Google callback:', dashboardUrl);
 
   try {
-    // Create OAuth client first - THIS WAS MISSING
+    // Create OAuth client
     const oauth2Client = new google.auth.OAuth2(
       authConfig.google.clientId,
       authConfig.google.clientSecret,
@@ -98,12 +97,12 @@ router.get('/google/callback', async (req, res) => {
     });
 
     // Check if refresh token is missing
-  if (!tokens.refresh_token) {
-    console.warn('No refresh token returned by Google. User may need to revoke access and reconnect.');
-    
-    // Option 1: Redirect to an error page instructing the user to disconnect from Google first
-    return res.redirect(`${dashboardUrl}?error=no_refresh_token&message=${encodeURIComponent('Please disconnect your Google account from Google security settings and try again.')}`);
-  }
+    if (!tokens.refresh_token) {
+      console.warn('No refresh token returned by Google. User may need to revoke access and reconnect.');
+      
+      // Option 1: Redirect to an error page instructing the user to disconnect from Google first
+      return res.redirect(`${dashboardUrl}?error=no_refresh_token&message=${encodeURIComponent('Please disconnect your Google account from Google security settings and try again.')}`);
+    }
     
     // Get user info from Google
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
@@ -124,7 +123,7 @@ router.get('/google/callback', async (req, res) => {
           tokens: {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token,
-            expiryDate: new Date(Date.now() + tokens.expires_in * 1000)
+            expiryDate: new Date(Date.now() + (tokens.expires_in || 3600) * 1000)
           },
           connected: true,
           connectedAt: new Date()
@@ -132,28 +131,27 @@ router.get('/google/callback', async (req, res) => {
       }
     });
     
-    // Setup email sync for this account - directly call the Google service
-    try {
-      await googleEmailService.initializeGoogleConnection(
-        userId,
-        googleUserEmail,
-        tokens.refresh_token,
-        tokens.access_token,
-        {
-          syncEnabled: true,
-          mode: 'auto-reply',
-          markAsRead: true
-        }
-      );
-      console.log(`Google email successfully connected for ${googleUserEmail}`);
-    } catch (syncError) {
-      console.error(`Failed to set up email sync for ${googleUserEmail}:`, syncError);
-    }
+    // Initialize the Google connection in the background
+    setTimeout(async () => {
+      try {
+        await googleEmailService.initializeGoogleConnection(
+          userId,
+          googleUserEmail,
+          tokens.refresh_token,
+          tokens.access_token,
+          {
+            syncEnabled: true,
+            mode: 'auto-reply',
+            markAsRead: true
+          }
+        );
+        console.log(`Google email successfully connected for ${googleUserEmail}`);
+      } catch (syncError) {
+        console.error(`Failed to set up email sync for ${googleUserEmail}:`, syncError);
+      }
+    }, 100); // Small delay to not block response
 
-    // save connected email in user database
-    
-
-    // Send a success message back to the dashboard and close the window
+    // Send a success message back to the dashboard
     res.redirect(`${dashboardUrl}?success=true`);
   } catch (error) {
     console.error('Error in Google callback:', error);

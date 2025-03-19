@@ -17,19 +17,32 @@ const getEmailModel = async (userId) => {
     
     // Email metadata
     from: {
-      name: { type: String, default: '' },
-      email: { type: String, required: true }
+      email: String,
+      name: String
     },
-    to: { type: String },
-    cc: { type: String },
-    bcc: { type: String },
+    to: [{
+      email: String,
+      name: String
+    }],
+    cc: [{
+      email: String,
+      name: String
+    }],
+    bcc: [{
+      email: String,
+      name: String
+    }],
+    
     subject: { type: String, default: '(No Subject)' },
     date: { type: Date, required: true },
     receivedAt: { type: Date },
     read: { type: Boolean, default: false },
     
-    // Content
-    body: { type: String, default: '' },
+    // Content - IMPORTANT: Changed body from Object to String
+    body: {
+      text: String,
+      html: String
+    },
     htmlBody: { type: String },
     snippet: { type: String },
     attachments: [{ 
@@ -44,8 +57,12 @@ const getEmailModel = async (userId) => {
     processedAt: { type: Date },
     processingError: { type: String },
     
-    // Analysis
-    category: { type: String, default: 'uncategorized' },
+    // Analysis - IMPORTANT: Include 'uncategorized' in the enum
+    category: {
+      type: String,
+      enum: ['inbox', 'sent', 'draft', 'trash', 'spam', 'important', 'uncategorized'],
+      default: 'inbox'
+    },
     confidence: { type: Number, default: 0 },
     keywords: [String],
     actionItems: [String],
@@ -74,6 +91,8 @@ const getEmailModel = async (userId) => {
   
   // Dynamically create a model specific to this user
   const modelName = `Email_${userId}`;
+
+  console.log(`Creating Email model for ${userId}`);
   
   // Check if model already exists to avoid recompilation warning
   return mongoose.models[modelName] || mongoose.model(modelName, emailSchema);

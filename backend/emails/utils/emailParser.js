@@ -7,55 +7,128 @@
  * @param {string} fullAddress - Email address in "Name <email@example.com>" or "email@example.com" format
  * @returns {Object} - Object with name and email properties
  */
-export const parseEmailAddress = (fullAddress) => {
-  if (!fullAddress) return { name: '', email: '' };
+
+/**
+ * Parse email address from string format
+ * Handles formats like "Name <email@example.com>" or just "email@example.com"
+ */
+
+export function parseEmailAddress(addressStr) {
+  if (!addressStr) {
+    return [];
+  }
   
-  const matches = fullAddress.match(/<([^<>]+)>/) || [];
-  if (matches.length > 1) {
-    const email = matches[1];
-    const name = fullAddress.replace(`<${email}>`, '').trim();
-    return { name, email };
-  } else {
-    // If no angle brackets, assume the entire string is an email
-    return { name: '', email: fullAddress.trim() };
+  try {
+    // Simple regex to extract email and name
+    // Format could be "Name <email>" or just "email"
+    const addresses = addressStr.split(',').map(addr => addr.trim());
+    
+    return addresses.map(address => {
+      const match = address.match(/<(.+?)>|(.+)/);
+      const email = match ? (match[1] || match[2]).trim() : '';
+      
+      // Extract name if present
+      let name = '';
+      if (address.includes('<')) {
+        name = address.split('<')[0].trim();
+        // Remove quotes if present
+        if (name.startsWith('"') && name.endsWith('"')) {
+          name = name.substring(1, name.length - 1);
+        }
+      }
+      
+      return { email, name };
+    });
+  } catch (error) {
+    console.error('Error parsing email address:', error);
+    // Return empty array on error
+    return [];
   }
+}
+
+/**
+ * Extract email addresses from To/Cc/Bcc fields
+ */
+export const extractEmailAddresses = (addressesStr) => {
+  if (!addressesStr || typeof addressesStr !== 'string') {
+    return [];
+  }
+  
+  // Split by commas, handle both "Name <email>" and "email" formats
+  const addresses = addressesStr.split(',');
+  return addresses.map(addr => parseEmailAddress(addr.trim()));
 };
 
 /**
- * Extract plain text body from Gmail message payload
- * @param {Object} payload - Gmail message payload
- * @returns {string} - Plain text email content
+ * Format email address object to string
  */
-export const extractPlainTextBody = (payload) => {
-  if (payload.parts) {
-    const textPart = payload.parts.find(part => part.mimeType === 'text/plain');
-    if (textPart && textPart.body.data) {
-      return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
-    }
+export const formatEmailAddress = (addressObj) => {
+  if (!addressObj || !addressObj.email) {
+    return '';
   }
-  if (payload.body?.data) {
-    return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+  
+  if (addressObj.name) {
+    return `${addressObj.name} <${addressObj.email}>`;
   }
-  return '(No content found)';
+  
+  return addressObj.email;
 };
 
-/**
- * Extract HTML body from Gmail message payload
- * @param {Object} payload - Gmail message payload
- * @returns {string|null} - HTML email content or null if not found
- */
-export const extractHtmlBody = (payload) => {
-  if (payload.parts) {
-    const htmlPart = payload.parts.find(part => part.mimeType === 'text/html');
-    if (htmlPart && htmlPart.body.data) {
-      return Buffer.from(htmlPart.body.data, 'base64').toString('utf-8');
+// Make sure these functions handle plain text email bodies correctly
+
+export const extractPlainTextBody = (message) => {
+  if (!message.payload) return '';
+  
+  // If the message payload has a body with data
+  if (message.payload.body && message.payload.body.data) {
+    return Buffer.from(message.payload.body.data, 'base64').toString('utf-8');
+  }
+  
+  // If the message has parts
+  if (message.payload.parts) {
+    for (const part of message.payload.parts) {
+      // Find the plain text part
+      if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+        return Buffer.from(part.body.data, 'base64').toString('utf-8');
+      }
+      
+      // Check for multipart with nested parts
+      if (part.parts) {
+        for (const nestedPart of part.parts) {
+          if (nestedPart.mimeType === 'text/plain' && nestedPart.body && nestedPart.body.data) {
+            return Buffer.from(nestedPart.body.data, 'base64').toString('utf-8');
+          }
+        }
+      }
     }
   }
-  // Check for HTML in main body if parts don't have it
-  if (payload.mimeType === 'text/html' && payload.body?.data) {
-    return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+  
+  return '';
+};
+
+export const extractHtmlBody = (message) => {
+  if (!message.payload) return '';
+  
+  // If the message has parts
+  if (message.payload.parts) {
+    for (const part of message.payload.parts) {
+      // Find the HTML part
+      if (part.mimeType === 'text/html' && part.body && part.body.data) {
+        return Buffer.from(part.body.data, 'base64').toString('utf-8');
+      }
+      
+      // Check for multipart with nested parts
+      if (part.parts) {
+        for (const nestedPart of part.parts) {
+          if (nestedPart.mimeType === 'text/html' && nestedPart.body && nestedPart.body.data) {
+            return Buffer.from(nestedPart.body.data, 'base64').toString('utf-8');
+          }
+        }
+      }
+    }
   }
-  return null;
+  
+  return '';
 };
 
 /**
@@ -175,5 +248,8 @@ export default {
   extractHeaders,
   extractEmailContent,
   extractAttachments,
-  formatEmailAddresses
+  formatEmailAddresses,
+  parseEmailAddress,
+  extractEmailAddresses,
+  formatEmailAddress
 };
