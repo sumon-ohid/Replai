@@ -171,6 +171,7 @@ export default function EmailClient() {
             }}
           >
             <EmailSidebar
+              key={state.selectedAccount}
               accounts={state.accounts}
               selectedAccount={state.selectedAccount}
               currentFolder={state.currentFolder}

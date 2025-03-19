@@ -68,6 +68,8 @@ class ConnectionController {
     });
     
     await account.save();
+
+    console.log('New email account added:', account.email);
     
     // Initialize the connection
     try {
