@@ -379,9 +379,318 @@ export const searchEmails = async (userId, filters = {}, options = { page: 1, li
   }
 };
 
+export const listEmails = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+    const { folder } = req.query; // Folder to filter emails (e.g., inbox, draft, sent)
+    const options = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 20
+    };
+
+    let EmailModel;
+    switch (folder) {
+      case 'inbox':
+        EmailModel = getEmailModel(userId);
+        break;
+      case 'draft':
+        EmailModel = getSentEmailModel(userId); // Assuming drafts are stored in the sent email model
+        break;
+      case 'sent':
+        EmailModel = getSentEmailModel(userId);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid folder specified' });
+    }
+
+    // Build query for the folder
+    const query = { userId };
+    if (folder === 'inbox') {
+      query.folder = 'inbox';
+    } else if (folder === 'draft') {
+      query.isDraft = true;
+    } else if (folder === 'sent') {
+      query.isSent = true;
+    }
+
+    // Pagination
+    const skip = (options.page - 1) * options.limit;
+
+    // Fetch emails with pagination
+    const emails = await EmailModel.find(query)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(options.limit);
+
+    // Get total count for pagination
+    const totalCount = await EmailModel.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: {
+        emails,
+        pagination: {
+          page: options.page,
+          limit: options.limit,
+          totalItems: totalCount,
+          totalPages: Math.ceil(totalCount / options.limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error listing emails:', error);
+    res.status(500).json({ error: 'Failed to list emails' });
+  }
+};
+
+export const getFolders = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+    const Email = getEmailModel(userId);
+
+    const folders = await Email.distinct('folder', { userId });
+    res.json({ folders });
+  } catch (error) {
+    console.error('Error getting folders:', error);
+    res.status(500).json({ error: 'Failed to get folders' });
+  }
+};
+
+export const getCategories = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+    const Email = getEmailModel(userId);
+
+    const categories = await Email.distinct('category', { userId });
+    res.json({ categories });
+  } catch (error) {
+    console.error('Error getting categories:', error);
+    res.status(500).json({ error: 'Failed to get categories' });
+  }
+};
+
+export const getEmailById = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+    const Email = getEmailModel(userId);
+
+    const email = await Email.findOne({ messageId: emailId, userId });
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    res.json(email);
+  } catch (error) {
+    console.error('Error getting email by ID:', error);
+    res.status(500).json({ error: 'Failed to get email' });
+  }
+};
+
+export const markAsRead = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+
+    const result = await processEmail(emailId, userId, { markAsRead: true });
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error marking email as read:', error);
+    res.status(500).json({ error: 'Failed to mark email as read' });
+  }
+};
+
+export const markAsUnread = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+
+    const Email = getEmailModel(userId);
+    const email = await Email.findOne({ messageId: emailId, userId });
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    email.isRead = false;
+    await email.save();
+
+    res.json({ success: true, message: 'Email marked as unread' });
+  } catch (error) {
+    console.error('Error marking email as unread:', error);
+    res.status(500).json({ error: 'Failed to mark email as unread' });
+  }
+};
+
+export const moveEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const { folder } = req.body;
+    const userId = req.user._id;
+
+    const result = await processEmail(emailId, userId, { moveToFolder: folder });
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error moving email:', error);
+    res.status(500).json({ error: 'Failed to move email' });
+  }
+};
+
+export const archiveEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+
+    const result = await processEmail(emailId, userId, { moveToFolder: 'archive' });
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error archiving email:', error);
+    res.status(500).json({ error: 'Failed to archive email' });
+  }
+};
+
+export const deleteEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+    const Email = getEmailModel(userId);
+
+    const email = await Email.findOneAndDelete({ messageId: emailId, userId });
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    res.json({ success: true, message: 'Email deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting email:', error);
+    res.status(500).json({ error: 'Failed to delete email' });
+  }
+};
+
+export const sendEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+    const emailData = req.body;
+
+    const emailService = await connectionManager.getEmailService(userId, emailData.provider);
+    const result = await emailService.sendEmail(emailData);
+
+    res.json({ success: true, messageId: result.messageId });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+};
+
+export const replyToEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+    const replyData = req.body;
+
+    const emailService = await connectionManager.getEmailService(userId, replyData.provider);
+    const result = await emailService.replyToEmail(emailId, replyData);
+
+    res.json({ success: true, messageId: result.messageId });
+  } catch (error) {
+    console.error('Error replying to email:', error);
+    res.status(500).json({ error: 'Failed to reply to email' });
+  }
+};
+
+export const forwardEmail = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+    const forwardData = req.body;
+
+    const emailService = await connectionManager.getEmailService(userId, forwardData.provider);
+    const result = await emailService.forwardEmail(emailId, forwardData);
+
+    res.json({ success: true, messageId: result.messageId });
+  } catch (error) {
+    console.error('Error forwarding email:', error);
+    res.status(500).json({ error: 'Failed to forward email' });
+  }
+};
+
+export const generateAIReply = async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const userId = req.user._id;
+
+    const email = await getEmailModel(userId).findOne({ messageId: emailId, userId });
+    if (!email) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    const aiReply = await connectionManager.getAIReply(email);
+    res.json({ success: true, reply: aiReply });
+  } catch (error) {
+    console.error('Error generating AI reply:', error);
+    res.status(500).json({ error: 'Failed to generate AI reply' });
+  }
+};
+
+export const forceSync = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+
+    const result = await connectionManager.forceSync(userId, email);
+    res.json({ success: true, message: 'Sync initiated', result });
+  } catch (error) {
+    console.error('Error forcing sync:', error);
+    res.status(500).json({ error: 'Failed to force sync' });
+  }
+};
+
+export const getSyncStatus = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userId = req.user._id;
+
+    const status = await connectionManager.getSyncStatus(userId, email);
+    res.json({ success: true, status });
+  } catch (error) {
+    console.error('Error getting sync status:', error);
+    res.status(500).json({ error: 'Failed to get sync status' });
+  }
+};
+
 export default {
   saveReceivedEmail,
   handleIncomingEmail,
   processEmail,
-  searchEmails
+  searchEmails,
+  listEmails,
+  getFolders,
+  getCategories,
+  getEmailById,
+  markAsRead,
+  markAsUnread,
+  moveEmail,
+  archiveEmail,
+  deleteEmail,
+  sendEmail,
+  replyToEmail,
+  forwardEmail,
+  generateAIReply,
+  forceSync,
+  getSyncStatus
 };

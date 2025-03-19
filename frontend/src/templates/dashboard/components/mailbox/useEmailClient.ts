@@ -201,7 +201,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         }
 
         debug(`Fetching emails for ${account.email}`, { folder });
-        const { data } = await api.get<EmailResponse[]>(`/api/emails/list/${account.email}`, {
+        const { data } = await api.get<EmailResponse[]>(`/api/emails/list/${accountId}`, {
           params: { folder }
         });
 
