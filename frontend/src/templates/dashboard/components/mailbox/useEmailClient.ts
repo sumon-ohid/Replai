@@ -112,6 +112,7 @@ export const useEmailClient = () => {
   const fetchAccounts = React.useCallback(async () => {
     try {
       const response = await api.get("/api/emails/auth/connected");
+
       const accounts = (response.data as any[]).map((account: any) => ({
         id: account._id,
         name: account.name || account.email.split("@")[0],
@@ -184,11 +185,12 @@ export const useEmailClient = () => {
         // Make real API call to fetch emails
         const email = state.accounts.find((a) => a.id === accountId)?.email;
         if (!email) {
-          throw new Error("Email account not found");
-          // Don't forget to set loading to false on error
+          console.error(`Email account not found for ID: ${accountId}`);
           setState((prev) => ({ ...prev, loading: false }));
           return;
         }
+
+        console.log(`Using email address: ${email} to fetch emails`);
 
         // Updated to match backend route /api/emails/v2/list/:email
         const response = await api.get(`/api/emails/v2/list/${email}`, {
@@ -278,13 +280,16 @@ export const useEmailClient = () => {
         setState((prev) => ({ ...prev, loading: false }));
       }
     },
-    [api, apiBaseUrl, state.accounts]
+    [api, apiBaseUrl]
   );
 
   // Initialize with emails (only if account is selected)
   React.useEffect(() => {
     if (state.selectedAccount && state.accounts.length > 0) {
+      console.log("Account selected, triggering email fetch");
       fetchEmails(state.selectedAccount, state.currentFolder);
+    } else {
+      console.log("No account selected or accounts not loaded yet");
     }
   }, [state.selectedAccount, state.currentFolder, state.accounts.length, fetchEmails]);
 
