@@ -299,19 +299,35 @@ export const useEmailClient = (): UseEmailClientReturn => {
                 name: t.name || t.email.split("@")[0],
                 email: t.email,
               })) : [],
-              content: email.body ? (
-                // If we have both HTML and text, prioritize HTML
-                email.body.html ? email.body.html : 
-                  // If we only have text, convert it to HTML with proper line breaks
-                  email.body.text ? email.body.text
-                    .replace(/\r\n/g, '<br>')
-                    .replace(/\n/g, '<br>')
-                    .replace(/\r/g, '<br>') : ""
-              ) : (
-                // Fallback if body is completely missing
-                typeof email.body === 'string' ? email.body : 
-                  email.snippet ? `<p>${email.snippet}</p>` : ""
-              ),
+              content: (() => {
+                // First check if body is a string (direct content case)
+                if (typeof email.body === 'string') {
+                  return email.body;
+                }
+                
+                // Then check if body is an object with html/text properties
+                if (email.body && typeof email.body === 'object') {
+                  // Prioritize HTML content if available
+                  if (email.body.html && typeof email.body.html === 'string') {
+                    return email.body.html;
+                  }
+                  // Fall back to text content if available, converting newlines to HTML breaks
+                  if (email.body.text && typeof email.body.text === 'string') {
+                    return email.body.text
+                      .replace(/\r\n/g, '<br>')
+                      .replace(/\n/g, '<br>')
+                      .replace(/\r/g, '<br>');
+                  }
+                }
+                
+                // Use snippet as last resort
+                if (email.snippet) {
+                  return `<p>${email.snippet}</p>`;
+                }
+                
+                // Final fallback
+                return "";
+              })(),
               preview: email.snippet || "",
               date: new Date(email.date).toLocaleString(),
               timestamp: new Date(email.date).getTime(),
@@ -556,53 +572,100 @@ export const useEmailClient = (): UseEmailClientReturn => {
 
     handleEmailSelect: async (messageId: string) => {
       debug("Selecting email", messageId);
-      const emailToUpdate = state.emails.find(email => email.id === messageId);
-
-      if (emailToUpdate && !emailToUpdate.isRead) {
-        try {
-          if (!state.selectedAccountEmail) {
-            throw new Error("No account email selected");
-          }
-          
-          // Silently mark as read in UI even if API fails
-          const updatedEmails = state.emails.map(email =>
-            email.id === messageId ? { ...email, isRead: true } : email
-          );
-
-          setState(prev => ({
-            ...prev,
-            emails: updatedEmails,
-            filteredEmails: prev.searchTerm
-              ? updatedEmails.filter(email =>
-                  [
-                    email.subject,
-                    email.from.name,
-                    email.from.email,
-                    email.preview,
-                    ...(email.to.map(to => `${to.name} ${to.email}`)),
-                  ].some(field => field.toLowerCase().includes(prev.searchTerm.toLowerCase()))
-                )
-              : updatedEmails,
-            unreadCount: prev.unreadCount > 0 ? prev.unreadCount - 1 : 0,
-          }));
-          
-          // Try the API call - but don't await it to prevent blocking UI
-          api.patch(`/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}/read`)
-            .catch(error => {
-              console.warn("Failed to mark email as read on server, but UI was updated", error);
-            });
-
-        } catch (error) {
-          console.warn("Error updating read status locally:", error);
-          // Don't display error to user - just continue with the UI flow
-        }
+      
+      if (!state.selectedAccountEmail) {
+        throw new Error("No account email selected");
       }
 
-      setState(prev => ({
-        ...prev,
-        selectedEmailId: messageId,
-        detailViewOpen: true,
-      }));
+      try {
+        // Fetch the complete email data
+        const response = await api.get<EmailResponse>(`/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}`);
+        const fullEmailData = response.data as EmailResponse;
+
+        // Convert API response to EmailData format
+        const fullEmail: EmailData = {
+          id: fullEmailData._id,
+          messageId: fullEmailData.messageId || fullEmailData._id,
+          subject: fullEmailData.subject || "(No Subject)",
+          from: {
+            name: fullEmailData.from?.name || fullEmailData.from?.email?.split("@")[0] || "Unknown",
+            email: fullEmailData.from?.email || "",
+            avatar: fullEmailData.from?.name ? fullEmailData.from.name.charAt(0).toUpperCase() : "?",
+          },
+          to: Array.isArray(fullEmailData.to) ? fullEmailData.to.map(t => ({
+            name: t.name || t.email.split("@")[0],
+            email: t.email,
+          })) : [],
+          content: (() => {
+            // First check if body is a string
+            if (typeof fullEmailData.body === 'string') {
+              return fullEmailData.body;
+            }
+            
+            // Then check if body is an object with html/text
+            if (fullEmailData.body && typeof fullEmailData.body === 'object') {
+              if (fullEmailData.body.html && typeof fullEmailData.body.html === 'string') {
+                return fullEmailData.body.html;
+              }
+              if (fullEmailData.body.text && typeof fullEmailData.body.text === 'string') {
+                return fullEmailData.body.text
+                  .replace(/\r\n/g, '<br>')
+                  .replace(/\n/g, '<br>')
+                  .replace(/\r/g, '<br>');
+              }
+            }
+            
+            return fullEmailData.snippet ? `<p>${fullEmailData.snippet}</p>` : "";
+          })(),
+          preview: fullEmailData.snippet || "",
+          date: new Date(fullEmailData.date).toLocaleString(),
+          timestamp: new Date(fullEmailData.date).getTime(),
+          isRead: fullEmailData.read === true,
+          isStarred: fullEmailData.starred === true,
+          hasAttachments: Array.isArray(fullEmailData.attachments) && fullEmailData.attachments.length > 0,
+          attachments: fullEmailData.attachments?.map(att => ({
+            id: att.id || att._id || "",
+            name: att.filename,
+            size: att.size || 0,
+            type: att.contentType,
+            url: `${apiBaseUrl}/api/emails/v2/${state.selectedAccountEmail}/emails/${fullEmailData._id}/attachments/${att.id || att._id}`,
+          })),
+          labels: fullEmailData.labels || [],
+          folder: fullEmailData.folder || state.currentFolder,
+        };
+
+        // Update the email in the list with full content
+        const updatedEmails = state.emails.map(email =>
+          email.id === messageId ? { ...email, ...fullEmail } : email
+        );
+
+        setState(prev => ({
+          ...prev,
+          emails: updatedEmails,
+          filteredEmails: prev.searchTerm
+            ? updatedEmails.filter(email =>
+                [
+                  email.subject,
+                  email.from.name,
+                  email.from.email,
+                  email.preview,
+                  ...(email.to.map(to => `${to.name} ${to.email}`)),
+                ].some(field => field.toLowerCase().includes(prev.searchTerm.toLowerCase()))
+              )
+            : updatedEmails,
+          selectedEmailId: messageId,
+          detailViewOpen: true,
+          unreadCount: prev.unreadCount + (fullEmail.isRead ? 0 : -1),
+        }));
+      } catch (error) {
+        console.error("Error fetching full email content:", error);
+        // If we fail to fetch full content, fall back to list view data
+        setState(prev => ({
+          ...prev,
+          selectedEmailId: messageId,
+          detailViewOpen: true,
+        }));
+      }
     },
 
     handleCloseDetailView: () => {
