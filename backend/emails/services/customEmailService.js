@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
 import { addConnection } from '../managers/connectionManager.js';
 import { processEmailContent } from './emailProcessingService.js';
-import getEmailModel from '../../models/Email.js';
+import getEmailModel from '../../models/ConnectedEmailModels.js';
 
 /**
  * Initialize a custom IMAP/SMTP email connection

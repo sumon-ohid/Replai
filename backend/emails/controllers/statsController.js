@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import getEmailModel from '../../models/Email.js';
+import getEmailModel from '../../models/ConnectedEmailModels.js';
 import getSentEmailModel from '../../models/SentEmail.js';
 import getDraftModel from '../../models/Draft.js';
 import User from '../../models/User.js';

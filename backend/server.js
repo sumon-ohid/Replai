@@ -1,17 +1,13 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { google } from "googleapis";
 import authRoutes from "./routes/auth.js";
 import dotenv from "dotenv";
 import emailRoutes from "./emails/routes/emailRoutes.js";
 import emailAuthRoutes from "./emails/routes/authRoutes.js";
 import emailStatsRoutes from "./emails/routes/statsRoutes.js";
 import connectionManager from "./emails/managers/connectionManager.js";
-import SentEmail from "./models/SentEmail.js";
-import emailsRouter from "./routes/emails.js";
 import user from "./user/user.js";
-import stats from "./emails/stats.js";
 import blocklist from "./routes/blocklist.js";
 import bodyParser from "body-parser";
 import path from "path";
@@ -19,8 +15,6 @@ import { fileURLToPath } from "url";
 import data from "./routes/data.js";
 import googleAuth from "./routes/googleAuth.js";
 import feedback from "./routes/feedback.js";
-import userController from "./routes/userController.js";
-import deleteUser from "./routes/deleteUser.js";
 import googleCalendar from "./calendar/googleCalendar.js";
 import { SitemapStream } from 'sitemap';
 import { createGzip } from 'zlib';
@@ -33,7 +27,6 @@ import authConfig from './emails/config/authConfig.js';
 import { requireAuth } from './emails/middleware/emailAuthMiddleware.js';
 import connectedEmailsRoutes from './emails/routes/connectedEmailsRoutes.js';
 import emailExtraRoutes from './emails/routes/index.js';
-import { initializeAllConnections } from './emails/managers/connectionManager.js';
 import { errorMiddleware } from './emails/utils/errorHandler.js';
 
 

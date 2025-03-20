@@ -3,7 +3,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
 import { addConnection } from '../managers/connectionManager.js';
 import { processEmailContent } from './emailProcessingService.js';
-import getEmailModel from '../../models/Email.js';
+import getEmailModel from '../../models/ConnectedEmailModels.js';
 
 export const initializeOutlookConnection = async (userId, email, refreshToken, accessToken, config) => {
   try {
