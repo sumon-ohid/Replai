@@ -15,7 +15,8 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     const connectedEmail = await ConnectedEmail.findOne({
       userId,
       email: userEmail,
-      provider: 'google'
+      provider: 'google',
+      status: 'active'
     });
 
     if (!connectedEmail) {
@@ -182,8 +183,13 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
     // Test connection
     await gmail.users.getProfile({ userId: 'me' });
 
-    // Get or create ConnectedEmail record
-    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    // Get ConnectedEmail record
+    const connectedEmail = await ConnectedEmail.findOne({ 
+      userId, 
+      email,
+      provider: 'google',
+      status: 'active'
+    });
     if (!connectedEmail) {
       throw new Error('Connected email record not found. Please reconnect the account.');
     }
@@ -223,7 +229,12 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
 export async function checkForNewGoogleEmails(gmail, userId, email, config = {}) {
   try {
     // Get ConnectedEmail record for collections
-    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    const connectedEmail = await ConnectedEmail.findOne({ 
+      userId, 
+      email,
+      provider: 'google',
+      status: 'active'
+    });
     if (!connectedEmail) {
       throw new Error('Connected email not found');
     }

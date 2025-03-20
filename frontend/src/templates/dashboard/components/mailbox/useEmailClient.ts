@@ -1,5 +1,6 @@
 import * as React from "react";
 import axios from "axios";
+import { dA } from "@fullcalendar/core/internal-common";
 
 // Debug utility
 const debug = (message: string, ...args: any[]) => {
@@ -88,7 +89,8 @@ export interface EmailData {
 
 interface EmailClientState {
   accounts: EmailAccount[];
-  selectedAccount: string;
+  selectedAccount: string; // Still using ID as identifier for account selection
+  selectedAccountEmail: string; // New field to track the selected account email
   emails: EmailData[];
   filteredEmails: EmailData[];
   loading: boolean;
@@ -138,6 +140,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
   const [state, setState] = React.useState<EmailClientState>({
     accounts: [],
     selectedAccount: "",
+    selectedAccountEmail: "", // Initialize the new field
     emails: [],
     filteredEmails: [],
     loading: true,
@@ -178,36 +181,65 @@ export const useEmailClient = (): UseEmailClientReturn => {
   };
 
   const fetchEmails = React.useCallback(
-    async (accountId: string, folder: string, force = false) => {
+    async (accountEmail: string, folder: string, force = false) => {
       const now = Date.now();
       const lastFetch = lastFetchRef.current;
       
+      if (!accountEmail) {
+        debug("Error: No account email provided");
+        setState(prev => ({ 
+          ...prev, 
+          loading: false,
+          error: "No email account email provided" 
+        }));
+        return;
+      }
+      
       if (!force && 
-          lastFetch.accountId === accountId && 
+          lastFetch.accountId === accountEmail && 
           lastFetch.folder === folder && 
           now - lastFetch.timestamp < 5000) {
-        debug("Skipping fetch - too soon", { accountId, folder });
+        debug("Skipping fetch - too soon", { accountEmail, folder });
         return;
       }
 
-      debug("Fetching emails", { accountId, folder });
-      setState(prev => ({ ...prev, loading: true }));
+      setState(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        const account = state.accounts.find(a => a.id === accountId);
-        if (!account || !account.email) {
-          debug("Error: No matching account found for ID", accountId);
-          throw new Error(`Email account not found for ID: ${accountId}`);
-        }
+        debug(`Fetching emails for ${accountEmail}`, { folder });
+        console.log(`API URL: ${apiBaseUrl}/api/emails/${accountEmail}/emails?folder=${folder}`);
 
-        debug(`Fetching emails for ${account.email}`, { folder });
-        const { data } = await api.get<EmailResponse[]>(`/api/emails/${account.email}/emails`, {
-          params: { folder }
+        const response = await api.get(`/api/emails/${accountEmail}/emails`, {
+          params: { folder, timestamp: now }
         });
 
-        debug(`Received ${data.length} emails`);
+        // Handle the new response format where emails are wrapped in an object
+        const responseData = response.data;
+        let emailsData: EmailResponse[] = [];
+        
+        if (responseData && typeof responseData === 'object') {
+          // Check if response has emails array property
+          if (Array.isArray(responseData.emails)) {
+            emailsData = responseData.emails;
+            debug(`Received ${emailsData.length} emails in pagination format`);
+          } 
+          // Fallback to check if response itself is an array
+          else if (Array.isArray(responseData)) {
+            emailsData = responseData;
+            debug(`Received ${emailsData.length} emails directly as array`);
+          }
+          // If we have pagination data, log it
+          if (responseData.pagination) {
+            debug('Pagination info:', responseData.pagination);
+          }
+        } else {
+          debug("Unexpected response format", responseData);
+          throw new Error("Unexpected response format from email API");
+        }
 
-        const emails: EmailData[] = data.map(email => ({
+        debug(`Processing ${emailsData.length} emails for ${accountEmail} in ${folder}`);
+
+        const emails: EmailData[] = emailsData.map(email => ({
           id: email._id,
           subject: email.subject || "(No Subject)",
           from: {
@@ -237,17 +269,20 @@ export const useEmailClient = (): UseEmailClientReturn => {
           folder: email.folder || folder,
         }));
 
+        // Calculate unread counts for all folders
         const unreadCounts = {
           inbox: emails.filter(e => e.folder === "inbox" && !e.isRead).length,
           drafts: emails.filter(e => e.folder === "drafts").length,
-          sent: 0,
+          sent: emails.filter(e => e.folder === "sent").length,
           starred: emails.filter(e => e.isStarred).length,
-          trash: 0,
+          trash: emails.filter(e => e.folder === "trash").length,
         };
 
-        lastFetchRef.current = { accountId, folder, timestamp: now };
+        lastFetchRef.current = { accountId: accountEmail, folder, timestamp: now };
 
         debug("Setting state with fetched emails", { 
+          account: accountEmail,
+          folder,
           total: emails.length,
           unread: unreadCounts.inbox 
         });
@@ -256,8 +291,14 @@ export const useEmailClient = (): UseEmailClientReturn => {
           ...prev,
           emails,
           filteredEmails: prev.searchTerm 
-            ? emails.filter(email =>
-                email.subject.toLowerCase().includes(prev.searchTerm.toLowerCase())
+            ? emails.filter(email => 
+                [
+                  email.subject,
+                  email.from.name,
+                  email.from.email,
+                  email.preview,
+                  ...(email.to.map(to => `${to.name} ${to.email}`)),
+                ].some(field => field.toLowerCase().includes(prev.searchTerm.toLowerCase()))
               )
             : emails,
           loading: false,
@@ -271,11 +312,13 @@ export const useEmailClient = (): UseEmailClientReturn => {
         setState(prev => ({ 
           ...prev, 
           loading: false,
+          emails: [],
+          filteredEmails: [],
           error: error instanceof Error ? error.message : "Failed to fetch emails"
         }));
       }
     },
-    [api, apiBaseUrl, state.accounts]
+    [api, apiBaseUrl]
   );
 
   const initialize = React.useCallback(async () => {
@@ -311,14 +354,28 @@ export const useEmailClient = (): UseEmailClientReturn => {
         const firstAccount = accounts[0];
         debug("Setting first account as active", firstAccount);
 
+        // Always check for email instead of ID
+        if (!firstAccount.email) {
+          debug("First account has no email address", firstAccount);
+          setState(prev => ({ 
+            ...prev, 
+            accounts,
+            loading: false,
+            error: "Account has no email address"
+          }));
+          return;
+        }
+
         setState(prev => ({
           ...prev,
           accounts,
-          selectedAccount: firstAccount.id,
+          selectedAccount: firstAccount.id || "default-id",
+          selectedAccountEmail: firstAccount.email,
           loading: true,
         }));
 
-        await fetchEmails(firstAccount.id, "inbox", true);
+        // Use firstAccount.id for consistency in the app, but it will look up the email when needed
+        await fetchEmails(firstAccount.email, "inbox", true);
       }
     } catch (error) {
       console.error("Error initializing email client:", error);
@@ -368,9 +425,31 @@ export const useEmailClient = (): UseEmailClientReturn => {
   const handlers = {
     handleAccountChange: (accountId: string) => {
       debug("Changing account", accountId);
+      
+      const account = state.accounts.find(a => a.id === accountId);
+      
+      if (!account) {
+        debug("Error: No matching account found for ID", accountId);
+        setState(prev => ({ ...prev, error: "Invalid account ID" }));
+        return;
+      }
+      
+      if (!account.email) {
+        debug("Error: Account has no email address", account);
+        setState(prev => ({ ...prev, error: "Selected account has no email address" }));
+        return;
+      }
+      
+      if (accountId === state.selectedAccount && !state.loading) {
+        debug("Account already selected, refreshing emails");
+        fetchEmails(account.email, state.currentFolder, true);
+        return;
+      }
+      
       setState(prev => ({
         ...prev,
         selectedAccount: accountId,
+        selectedAccountEmail: account.email,
         currentFolder: "inbox",
         selectedEmailId: null,
         detailViewOpen: false,
@@ -378,8 +457,10 @@ export const useEmailClient = (): UseEmailClientReturn => {
         emails: [],
         filteredEmails: [],
         loading: true,
+        error: null,
       }));
-      fetchEmails(accountId, "inbox", true);
+      
+      fetchEmails(account.email, "inbox", true);
     },
 
     handleFolderChange: (folder: string) => {
@@ -391,7 +472,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         detailViewOpen: false,
         loading: true,
       }));
-      fetchEmails(state.selectedAccount, folder);
+      fetchEmails(state.selectedAccountEmail, folder);
     },
 
     handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -404,7 +485,12 @@ export const useEmailClient = (): UseEmailClientReturn => {
 
     handleRefresh: () => {
       debug("Manual refresh requested");
-      fetchEmails(state.selectedAccount, state.currentFolder, true);
+      if (!state.selectedAccountEmail) {
+        debug("No account selected, cannot refresh");
+        setState(prev => ({ ...prev, error: "No email account selected" }));
+        return;
+      }
+      fetchEmails(state.selectedAccountEmail, state.currentFolder, true);
     },
 
     handleEmailSelect: async (emailId: string) => {
@@ -492,11 +578,14 @@ export const useEmailClient = (): UseEmailClientReturn => {
     },
 
     handleMarkAllRead: async () => {
-      const email = state.accounts.find(a => a.id === state.selectedAccount)?.email;
-      if (!email) return;
+      if (!state.selectedAccountEmail) {
+        debug("No account email selected");
+        setState(prev => ({ ...prev, error: "No email account selected" }));
+        return;
+      }
 
       try {
-        await api.post(`/api/emails/mark-all-read/${email}`, {
+        await api.post(`/api/emails/mark-all-read/${state.selectedAccountEmail}`, {
           folder: state.currentFolder,
         });
 
@@ -603,10 +692,13 @@ export const useEmailClient = (): UseEmailClientReturn => {
 
     handleSendEmail: async (data: any) => {
       try {
-        const email = state.accounts.find(a => a.id === state.selectedAccount)?.email;
-        if (!email) return;
+        if (!state.selectedAccountEmail) {
+          debug("No account email selected");
+          setState(prev => ({ ...prev, error: "No email account selected" }));
+          return;
+        }
 
-        await api.post(`/api/emails/send/${email}`, data);
+        await api.post(`/api/emails/send/${state.selectedAccountEmail}`, data);
         handlers.handleCloseCompose();
         
         if (state.currentFolder === "sent") {
