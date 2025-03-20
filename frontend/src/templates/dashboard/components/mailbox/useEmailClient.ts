@@ -19,6 +19,7 @@ interface EmailAccountResponse {
 
 interface EmailResponse {
   _id: string;
+  messageId?: string;
   subject: string;
   from?: {
     name?: string;
@@ -277,6 +278,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         const emails: EmailData[] = Array.isArray(emailsData) && emailsData.length > 0 
           ? emailsData.map(email => ({
               id: email._id,
+              messageId: email.messageId || email._id,
               subject: email.subject || "(No Subject)",
               from: {
                 name: email.from?.name || email.from?.email?.split("@")[0] || "Unknown",

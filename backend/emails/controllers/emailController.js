@@ -150,36 +150,67 @@ class EmailController {
   /**
    * Mark email as read
    */
+  // In backend/emails/controllers/emailController.js
   static markAsRead = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const { email, messageId } = req.params;
-
-    console.log('🚀🚀 Get email read', email, messageId);
-    
-    // Get the connected email account
-    const account = await ConnectedEmail.findOne({ userId, email });
-    if (!account) {
-      return res.status(404).json({ error: 'Connected email not found' });
-    }
-    
-    // Get models for this email account
-    const emailModels = getConnectedEmailModels(account._id.toString());
-    
-    // Update the email
-    const result = await emailModels.Email.findOneAndUpdate(
-      { messageId },
-      { 
-        $set: { read: true },
-        $currentDate: { readAt: true }
-      },
-      { new: true }
-    ).lean();
-    
-    if (!result) {
-      return res.status(404).json({ error: 'Email not found' });
-    }
-    
-    res.json(result);
+      const userId = req.user._id;
+      const { email, messageId } = req.params;
+  
+      console.log('🚀🚀 Marking email as read', email, messageId);
+      
+      // Get the connected email account
+      const account = await ConnectedEmail.findOne({ userId, email });
+      if (!account) {
+        return res.status(404).json({ error: 'Connected email not found' });
+      }
+      
+      // Get models for this email account
+      const emailModels = getConnectedEmailModels(account._id.toString());
+      
+      // Try to find the email by all possible ID fields
+      const email_doc = await emailModels.Email.findOne({
+        $or: [
+          { messageId: messageId },
+          { _id: messageId },
+          { id: messageId }
+        ]
+      });
+      
+      if (!email_doc) {
+        console.log('🚀🚀 Email not found when trying to mark as read', { 
+          email, messageId, 
+          availableIds: 'Trying messageId, _id, and id fields'
+        });
+        
+        // For debugging: Let's log a sample email to see what fields exist
+        const sampleEmail = await emailModels.Email.findOne({}).lean();
+        console.log('Sample email document structure:', {
+          idFields: {
+            _id: sampleEmail?._id,
+            messageId: sampleEmail?.messageId,
+            id: sampleEmail?.id
+          }
+        });
+        
+        return res.status(404).json({ error: 'Email not found' });
+      }
+      
+      // Update the found email
+      const result = await emailModels.Email.findByIdAndUpdate(
+        email_doc._id,
+        { 
+          $set: { read: true },
+          $currentDate: { readAt: true }
+        },
+        { new: true }
+      ).lean();
+      
+      if (!result) {
+        console.log('🚀🚀 Failed to update email', email, messageId);
+        return res.status(500).json({ error: 'Failed to update email' });
+      }
+      
+      console.log('🚀🚀 Email marked as read successfully', email, messageId);
+      res.json(result);
   });
 
   /**
