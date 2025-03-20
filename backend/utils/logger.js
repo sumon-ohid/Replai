@@ -4,6 +4,9 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import config from '../config/index.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Calculate dirname for ESM modules
 const __filename = fileURLToPath(import.meta.url);
@@ -23,7 +26,7 @@ const logFormat = winston.format.combine(
   winston.format.json()
 );
 
-// Console format for development
+// Console format for development (will be used only if ENABLE_CONSOLE_LOGS is true)
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -45,21 +48,29 @@ const fileRotateTransport = new winston.transports.DailyRotateFile({
   format: logFormat
 });
 
+// Determine if console logs should be enabled
+const enableConsoleLogs = process.env.ENABLE_CONSOLE_LOGS === 'true';
+
+// Create transports array
+const transports = [fileRotateTransport];
+
+// Only add console transport if explicitly enabled
+if (enableConsoleLogs) {
+  transports.push(
+    new winston.transports.Console({
+      format: consoleFormat,
+      level: config.nodeEnv === 'production' ? 'info' : 'debug'
+    })
+  );
+}
+
 // Create base logger instance
 const baseLogger = winston.createLogger({
   level: config.logging.level,
   levels: winston.config.npm.levels,
   format: logFormat,
   defaultMeta: { service: 'replai-api' },
-  transports: [
-    fileRotateTransport,
-    
-    // Log to console in development mode with more readable format
-    new winston.transports.Console({
-      format: consoleFormat,
-      level: config.nodeEnv === 'production' ? 'info' : 'debug'
-    })
-  ],
+  transports,
   // Don't exit on uncaught exceptions
   exitOnError: false
 });
@@ -67,6 +78,14 @@ const baseLogger = winston.createLogger({
 // Helper methods for standardized logging
 const logWithMeta = (logger, level, message, meta = {}) => {
   logger[level](message, meta);
+};
+
+// Silent console logging for Morgan HTTP logger
+const morganStream = {
+  write: (message) => {
+    // Always log HTTP requests to file but skip console
+    baseLogger.http(message.trim(), { skipConsole: true });
+  }
 };
 
 // Simplified API for the main logger
@@ -79,12 +98,8 @@ const enhancedLogger = {
   debug: (message, meta) => logWithMeta(baseLogger, 'debug', message, meta),
   silly: (message, meta) => logWithMeta(baseLogger, 'silly', message, meta),
   
-  // Stream for Morgan HTTP logger
-  stream: {
-    write: (message) => {
-      baseLogger.http(message.trim());
-    }
-  }
+  // Stream for Morgan HTTP logger (silent version)
+  stream: morganStream
 };
 
 /**
@@ -108,8 +123,14 @@ export const createLogger = (moduleName) => {
   };
 };
 
-// Add unhandled error listeners
+// Add unhandled error listeners - these still need to be logged to console
+// for critical errors, but can be disabled if really needed
 process.on('uncaughtException', (error) => {
+  // For critical errors, we may still want console output
+  if (enableConsoleLogs) {
+    console.error('UNCAUGHT EXCEPTION:', error);
+  }
+  
   baseLogger.error('Uncaught exception', { error });
   
   // Only exit in production to allow for debugging in development
@@ -119,6 +140,11 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason) => {
+  // For critical errors, we may still want console output
+  if (enableConsoleLogs) {
+    console.error('UNHANDLED REJECTION:', reason);
+  }
+  
   baseLogger.error('Unhandled promise rejection', { reason });
 });
 

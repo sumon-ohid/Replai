@@ -1,9 +1,12 @@
 import ConnectedEmail from '../../models/ConnectedEmail.js';
 import getConnectedEmailModels from '../../models/ConnectedEmailModels.js';
 import { asyncHandler } from '../utils/errorHandler.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('emailController');
 
 class EmailController {
-   /**
+  /**
    * Get emails for a specific connected email account with optimized body handling
    */
   static getEmails = asyncHandler(async (req, res) => {
@@ -11,7 +14,7 @@ class EmailController {
     const { email } = req.params;
     const { folder = 'inbox', page = 1, limit = 50 } = req.query;
     
-    console.log('🚀🚀 Getting emails for', { email, folder, page, limit });
+    logger.info('Getting emails for', { email, folder, page, limit });
     
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
@@ -55,7 +58,7 @@ class EmailController {
           snippet: 1,
           attachments: 1,
           
-          // For list view, include a truncated body or summary
+          // For list view, include truncated body and preview
           'body.text': { $substr: ['$body.text', 0, 150] },
           html_preview: 1
         })
@@ -66,11 +69,11 @@ class EmailController {
       emailModels.Email.countDocuments(query)
     ]);
     
-    console.log(`📧 Found ${emails.length} emails (total: ${total})`);
+    logger.info(`Found ${emails.length} emails (total: ${total})`);
     
     // Process emails to ensure consistent format
     const processedEmails = emails.map(email => {
-      // Ensure body exists
+      // Initialize body properly if missing
       if (!email.body) {
         email.body = {
           text: email.snippet || '',
@@ -92,14 +95,14 @@ class EmailController {
     });
   });
 
-    /**
+  /**
    * Get a single email by ID with proper body handling
    */
   static getEmail = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email, messageId } = req.params;
     
-    console.log('🚀🚀 Getting email details', { email, messageId });
+    logger.info('Getting email details', { email, messageId });
   
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
@@ -120,63 +123,136 @@ class EmailController {
     }).lean();
   
     if (!emailDoc) {
-      console.log('⚠️ Email not found', { email, messageId });
+      logger.warn('Email not found', { email, messageId });
       return res.status(404).json({ error: 'Email not found' });
     }
     
-    // Log email body status to debug
-    console.log('📧 Email body check:', {
-      hasBody: !!emailDoc.body,
-      bodyType: typeof emailDoc.body,
-      textLength: emailDoc.body?.text?.length || 0,
-      htmlLength: emailDoc.body?.html?.length || 0
-    });
-    
-    // If body is missing, try to create it from available data
-    if (!emailDoc.body) {
-      console.log('⚠️ Email body missing, creating from available data');
-      emailDoc.body = {
-        text: emailDoc.snippet || '',
-        html: emailDoc.html_preview || ''
-      };
-    }
-    
-    // If body exists but is a string, convert to object format
-    if (typeof emailDoc.body === 'string') {
-      console.log('⚠️ Email body is a string, converting to object format');
-      const bodyText = emailDoc.body;
-      emailDoc.body = {
-        text: bodyText,
-        html: bodyText.replace(/\r\n/g, '<br>').replace(/\n/g, '<br>').replace(/\r/g, '<br>')
-      };
-    }
-  
-    // Ensure HTML content exists if text content is available
-    if (emailDoc.body?.text && !emailDoc.body?.html) {
-      console.log('⚠️ Email has text but no HTML, converting text to HTML');
-      emailDoc.body.html = emailDoc.body.text
-        .replace(/\r\n/g, '<br>')
-        .replace(/\n/g, '<br>')
-        .replace(/\r/g, '<br>');
-    }
+    // Enhanced email processing for accurate body handling
+    const processedEmail =  processEmailBody(emailDoc);
     
     // Mark as read if not already read
-    if (!emailDoc.read) {
-      console.log('📧 Marking email as read');
+    if (!processedEmail.read) {
+      logger.info('Marking email as read', { messageId });
       await emailModels.Email.findByIdAndUpdate(
-        emailDoc._id,
+        processedEmail._id,
         { 
           $set: { read: true },
           $currentDate: { readAt: true }
         }
       );
-      emailDoc.read = true;
-      emailDoc.readAt = new Date();
+      processedEmail.read = true;
+      processedEmail.readAt = new Date();
     }
     
-    console.log('📧 Email retrieved successfully');
-    res.json(emailDoc);
+    logger.info('Email retrieved successfully', { messageId });
+    res.json(processedEmail);
   });
+
+  /**
+   * Handle email body processing 
+   * This helper function ensures consistent email body format
+   */
+  static processEmailBody(emailDoc) {
+    if (!emailDoc) return null;
+    
+    // Make a copy to avoid modifying the original
+    const processedEmail = { ...emailDoc };
+    
+    // Process body field
+    // Case 1: Body is completely missing
+    if (!processedEmail.body) {
+      logger.debug('Email body missing, creating from available data', { 
+        messageId: processedEmail.messageId 
+      });
+      
+      processedEmail.body = {
+        text: processedEmail.snippet || '',
+        html: processedEmail.html_preview || ''
+      };
+    }
+    
+    // Case 2: Body is a string (older format)
+    if (typeof processedEmail.body === 'string') {
+      logger.debug('Email body is a string, converting to object format', { 
+        messageId: processedEmail.messageId 
+      });
+      
+      const bodyText = processedEmail.body;
+      processedEmail.body = {
+        text: bodyText,
+        html: convertPlainTextToHtml(bodyText)
+      };
+    }
+  
+    // Case 3: Body is an object but missing text or html
+    if (typeof processedEmail.body === 'object') {
+      // If no text but html exists, extract text from HTML
+      if (!processedEmail.body.text && processedEmail.body.html) {
+        processedEmail.body.text = extractTextFromHtml(processedEmail.body.html);
+      }
+      
+      // If no html but text exists, convert text to HTML
+      if (!processedEmail.body.html && processedEmail.body.text) {
+        processedEmail.body.html = convertPlainTextToHtml(processedEmail.body.text);
+      }
+    }
+    
+    // Generate snippet if missing
+    if (!processedEmail.snippet && processedEmail.body.text) {
+      processedEmail.snippet = processedEmail.body.text.substring(0, 150).replace(/\s+/g, ' ').trim();
+    }
+    
+    // Generate html_preview if missing
+    if (!processedEmail.html_preview && processedEmail.body.html) {
+      processedEmail.html_preview = processedEmail.body.html.substring(0, 1000);
+    }
+    
+    return processedEmail;
+  }
+
+  /**
+   * Convert plain text to HTML with proper line breaks and formatting
+   */
+  static convertPlainTextToHtml(text) {
+    if (!text) return '';
+    
+    // Replace newlines with HTML line breaks
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\r\n/g, '<br>')
+      .replace(/\n/g, '<br>')
+      .replace(/\r/g, '<br>');
+    
+    // Auto-link URLs
+    html = html.replace(
+      /(https?:\/\/[^\s<]+)/g, 
+      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+    
+    // Wrap in a div for better styling
+    return `<div style="font-family: Arial, sans-serif; line-height: 1.5;">${html}</div>`;
+  }
+
+  /**
+   * Extract plain text from HTML content
+   */
+  static extractTextFromHtml(html) {
+    if (!html) return '';
+    
+    // Simple HTML tag stripper for basic cases
+    return html
+      .replace(/<[^>]*>/g, ' ')  // Replace tags with spaces
+      .replace(/&nbsp;/g, ' ')   // Replace non-breaking spaces
+      .replace(/&amp;/g, '&')    // Replace entities
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')      // Normalize whitespace
+      .trim();
+  }
 
   /**
    * Get drafts for a specific email account
@@ -206,8 +282,35 @@ class EmailController {
       emailModels.Draft.countDocuments({ status: 'draft' })
     ]);
     
+    // Process drafts to ensure body is properly formatted
+    const processedDrafts = drafts.map(draft => {
+      // Ensure body exists and has both text and html
+      if (!draft.body) {
+        draft.body = { text: '', html: '' };
+      }
+      
+      if (typeof draft.body === 'string') {
+        const text = draft.body;
+        draft.body = {
+          text,
+          html: EmailController.convertPlainTextToHtml(text)
+        };
+      }
+      
+      // Ensure both formats exist
+      if (!draft.body.html && draft.body.text) {
+        draft.body.html = EmailController.convertPlainTextToHtml(draft.body.text);
+      }
+      
+      if (!draft.body.text && draft.body.html) {
+        draft.body.text = EmailController.extractTextFromHtml(draft.body.html);
+      }
+      
+      return draft;
+    });
+    
     res.json({
-      drafts,
+      drafts: processedDrafts,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -217,13 +320,54 @@ class EmailController {
     });
   });
 
-  /**
+ /**
    * Get sent emails for a specific email account
    */
-  static getSentEmails = asyncHandler(async (req, res) => {
+ static getSentEmails = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { email } = req.params;
+  const { page = 1, limit = 50 } = req.query;
+  
+  // Get the connected email account
+  const account = await ConnectedEmail.findOne({ userId, email });
+  if (!account) {
+    return res.status(404).json({ error: 'Connected email not found' });
+  }
+  
+  // Get models for this email account
+  const emailModels = getConnectedEmailModels(account._id.toString());
+  
+  // Fetch sent emails with pagination
+  const skip = (page - 1) * limit;
+  const [sentEmails, total] = await Promise.all([
+    emailModels.Sent.find()
+      .sort({ dateSent: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    emailModels.Sent.countDocuments()
+  ]);
+  
+  res.json({
+    sentEmails,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  });
+});
+
+  /**
+   * Mark email as read
+   */
+  // In backend/emails/controllers/emailController.js
+  static markAsRead = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const { email } = req.params;
-    const { page = 1, limit = 50 } = req.query;
+    const { email, messageId } = req.params;
+
+    console.log('🚀🚀 Marking email as read', email, messageId);
     
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
@@ -234,94 +378,55 @@ class EmailController {
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
     
-    // Fetch sent emails with pagination
-    const skip = (page - 1) * limit;
-    const [sentEmails, total] = await Promise.all([
-      emailModels.Sent.find()
-        .sort({ dateSent: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      emailModels.Sent.countDocuments()
-    ]);
-    
-    res.json({
-      sentEmails,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
+    // Try to find the email by all possible ID fields
+    const email_doc = await emailModels.Email.findOne({
+      $or: [
+        { messageId: messageId },
+        { _id: messageId },
+        { id: messageId }
+      ]
     });
-  });
-
-  /**
-   * Mark email as read
-   */
-  // In backend/emails/controllers/emailController.js
-  static markAsRead = asyncHandler(async (req, res) => {
-      const userId = req.user._id;
-      const { email, messageId } = req.params;
-  
-      console.log('🚀🚀 Marking email as read', email, messageId);
-      
-      // Get the connected email account
-      const account = await ConnectedEmail.findOne({ userId, email });
-      if (!account) {
-        return res.status(404).json({ error: 'Connected email not found' });
-      }
-      
-      // Get models for this email account
-      const emailModels = getConnectedEmailModels(account._id.toString());
-      
-      // Try to find the email by all possible ID fields
-      const email_doc = await emailModels.Email.findOne({
-        $or: [
-          { messageId: messageId },
-          { _id: messageId },
-          { id: messageId }
-        ]
+    
+    if (!email_doc) {
+      console.log('🚀🚀 Email not found when trying to mark as read', { 
+        email, messageId, 
+        availableIds: 'Trying messageId, _id, and id fields'
       });
       
-      if (!email_doc) {
-        console.log('🚀🚀 Email not found when trying to mark as read', { 
-          email, messageId, 
-          availableIds: 'Trying messageId, _id, and id fields'
-        });
-        
-        // For debugging: Let's log a sample email to see what fields exist
-        const sampleEmail = await emailModels.Email.findOne({}).lean();
-        console.log('Sample email document structure:', {
-          idFields: {
-            _id: sampleEmail?._id,
-            messageId: sampleEmail?.messageId,
-            id: sampleEmail?.id
-          }
-        });
-        
-        return res.status(404).json({ error: 'Email not found' });
-      }
+      // For debugging: Let's log a sample email to see what fields exist
+      const sampleEmail = await emailModels.Email.findOne({}).lean();
+      console.log('Sample email document structure:', {
+        idFields: {
+          _id: sampleEmail?._id,
+          messageId: sampleEmail?.messageId,
+          id: sampleEmail?.id
+        }
+      });
       
-      // Update the found email
-      const result = await emailModels.Email.findByIdAndUpdate(
-        email_doc._id,
-        { 
-          $set: { read: true },
-          $currentDate: { readAt: true }
-        },
-        { new: true }
-      ).lean();
-      
-      if (!result) {
-        console.log('🚀🚀 Failed to update email', email, messageId);
-        return res.status(500).json({ error: 'Failed to update email' });
-      }
-      
-      console.log('🚀🚀 Email marked as read successfully', email, messageId);
-      res.json(result);
-  });
+      return res.status(404).json({ error: 'Email not found' });
+    }
+    
+    // Update the found email
+    const result = await emailModels.Email.findByIdAndUpdate(
+      email_doc._id,
+      { 
+        $set: { read: true },
+        $currentDate: { readAt: true }
+      },
+      { new: true }
+    ).lean();
+    
+    if (!result) {
+      console.log('🚀🚀 Failed to update email', email, messageId);
+      return res.status(500).json({ error: 'Failed to update email' });
+    }
+    
+    console.log('🚀🚀 Email marked as read successfully', email, messageId);
+    res.json(result);
+});
 
+
+  
   /**
    * Search emails
    */
@@ -366,7 +471,6 @@ class EmailController {
       }
     });
   });
-  
   
   /**
    * Debug helper to analyze email structure
@@ -430,7 +534,176 @@ class EmailController {
       otherFields: Object.keys(rawDoc)
     });
   });
+
+  /**
+   * Fix broken emails - utility to repair missing body content
+   */
+  static fixBrokenEmails = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { email } = req.params;
+    
+    logger.info('Fixing broken emails', { email });
+    
+    // Get the connected email account
+    const account = await ConnectedEmail.findOne({ userId, email });
+    if (!account) {
+      return res.status(404).json({ error: 'Connected email not found' });
+    }
+    
+    // Get models for this email account
+    const emailModels = getConnectedEmailModels(account._id.toString());
+    
+    // Find emails with missing or malformed body
+    const brokenEmails = await emailModels.Email.find({
+      $or: [
+        { body: { $exists: false } },
+        { body: null },
+        { body: "" },
+        { "body.text": { $exists: false } },
+        { "body.html": { $exists: false } }
+      ]
+    }).lean();
+    
+    logger.info(`Found ${brokenEmails.length} emails with missing or malformed body`);
+    
+    // Fix each broken email
+    const results = {
+      totalFixed: 0,
+      details: []
+    };
+    
+    for (const brokenEmail of brokenEmails) {
+      try {
+        // Create a fixed version of the email
+        const fixedEmail = EmailController.processEmailBody(brokenEmail);
+        
+        // Update the database with the fixed email
+        await emailModels.Email.findByIdAndUpdate(
+          brokenEmail._id,
+          { 
+            $set: { 
+              body: fixedEmail.body,
+              snippet: fixedEmail.snippet || brokenEmail.snippet,
+              html_preview: fixedEmail.html_preview || brokenEmail.html_preview
+            } 
+          }
+        );
+        
+        results.totalFixed++;
+        results.details.push({
+          messageId: brokenEmail.messageId,
+          status: 'fixed'
+        });
+      } catch (error) {
+        logger.error('Error fixing email', { 
+          messageId: brokenEmail.messageId,
+          error: error.message
+        });
+        
+        results.details.push({
+          messageId: brokenEmail.messageId,
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Fixed ${results.totalFixed} out of ${brokenEmails.length} broken emails`,
+      results
+    });
+  });
 }
 
+// Convert class methods to regular functions for proper binding
+EmailController.processEmailBody = function(emailDoc) {
+  if (!emailDoc) return null;
+  
+  // Make a copy to avoid modifying the original
+  const processedEmail = { ...emailDoc };
+  
+  // Process body field
+  // Case 1: Body is completely missing
+  if (!processedEmail.body) {
+    // Create body from snippet or other available data
+    processedEmail.body = {
+      text: processedEmail.snippet || '',
+      html: processedEmail.html_preview || ''
+    };
+  }
+  
+  // Case 2: Body is a string (older format)
+  if (typeof processedEmail.body === 'string') {
+    const bodyText = processedEmail.body;
+    processedEmail.body = {
+      text: bodyText,
+      html: EmailController.convertPlainTextToHtml(bodyText)
+    };
+  }
+
+  // Case 3: Body is an object but missing text or html
+  if (typeof processedEmail.body === 'object') {
+    // Ensure text property exists
+    if (!processedEmail.body.text && processedEmail.body.html) {
+      processedEmail.body.text = EmailController.extractTextFromHtml(processedEmail.body.html);
+    }
+    
+    // Ensure html property exists
+    if (!processedEmail.body.html && processedEmail.body.text) {
+      processedEmail.body.html = EmailController.convertPlainTextToHtml(processedEmail.body.text);
+    }
+  }
+  
+  // Generate snippet if missing
+  if (!processedEmail.snippet && processedEmail.body.text) {
+    processedEmail.snippet = processedEmail.body.text.substring(0, 150).replace(/\s+/g, ' ').trim();
+  }
+  
+  // Generate html_preview if missing
+  if (!processedEmail.html_preview && processedEmail.body.html) {
+    processedEmail.html_preview = processedEmail.body.html.substring(0, 1000);
+  }
+  
+  return processedEmail;
+};
+
+EmailController.convertPlainTextToHtml = function(text) {
+  if (!text) return '';
+  
+  // Replace newlines with HTML line breaks
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r\n/g, '<br>')
+    .replace(/\n/g, '<br>')
+    .replace(/\r/g, '<br>');
+  
+  // Auto-link URLs
+  html = html.replace(
+    /(https?:\/\/[^\s<]+)/g, 
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  
+  // Wrap in a div for better styling
+  return `<div style="font-family: Arial, sans-serif; line-height: 1.5;">${html}</div>`;
+};
+
+EmailController.extractTextFromHtml = function(html) {
+  if (!html) return '';
+  
+  // Simple HTML tag stripper for basic cases
+  return html
+    .replace(/<[^>]*>/g, ' ')   // Replace tags with spaces
+    .replace(/&nbsp;/g, ' ')    // Replace non-breaking spaces
+    .replace(/&amp;/g, '&')     // Replace entities
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')       // Normalize whitespace
+    .trim();
+};
 
 export default EmailController;

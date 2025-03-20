@@ -98,12 +98,7 @@ const emailSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Store email body in separate object to better handle large content
   body: {
-    type: Object,  // Define as an object first
-    required: true, // Make it required
-    default: () => ({ text: '', html: '' }), // Default value
-    _id: false,
     text: { type: String, default: '' },
     html: { type: String, default: '' }
   },

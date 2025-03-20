@@ -1,4 +1,4 @@
-import EmailAccount from '../../models/emailSchema.js';
+import EmailAccount from '../../models/ConnectedEmailModels.js';
 import ConnectionManager from '../managers/connectionManager.js';
 import MonitoringManager from '../managers/monitoringManager.js';
 import { asyncHandler } from '../utils/errorHandler.js';

@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
-import getEmailModel from '../../models/ConnectedEmailModels.js';
-import getSentEmailModel from '../../models/SentEmail.js';
-import getDraftModel from '../../models/Draft.js';
-import User from '../../models/User.js';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
+import getConnectedEmailModels from '../../models/ConnectedEmailModels.js';
+import { createLogger } from '../../utils/logger.js';
+import { asyncHandler } from '../utils/errorHandler.js';
+
+const logger = createLogger('statsController');
 
 /**
  * Helper function to get date range based on timeRange parameter
  */
 const getDateRange = (timeRange) => {
+  // Existing date range logic unchanged
   const now = new Date();
   const startDate = new Date();
   const previousStartDate = new Date();
@@ -114,180 +117,249 @@ const calculateAvgResponseTime = (responseTimes) => {
 /**
  * Get basic stats (total counts)
  */
-export const getBasicStats = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    
-    const SentEmail = getSentEmailModel(userId);
-    const Email = getEmailModel(userId);
-    
-    // Get total counts
-    const totalEmails = await Email.countDocuments({ userId });
-    const processedEmails = await Email.countDocuments({ userId, processed: true });
-    const automatedResponses = await SentEmail.countDocuments({ userId, autoResponded: true });
-    
-    res.json({
-      totalEmails,
-      processedEmails,
-      automatedResponses
+export const getBasicStats = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  
+  // Get connected email accounts for this user
+  const connectedEmails = await ConnectedEmail.find({ userId });
+  
+  if (connectedEmails.length === 0) {
+    return res.json({
+      totalEmails: 0,
+      processedEmails: 0,
+      automatedResponses: 0
     });
-  } catch (error) {
-    console.error('Error fetching basic stats:', error);
-    res.status(500).send('Error fetching stats');
   }
-};
+  
+  let totalEmails = 0;
+  let processedEmails = 0;
+  let automatedResponses = 0;
+  
+  // Process each connected email account
+  for (const account of connectedEmails) {
+    // Get email models for this account
+    const emailModels = getConnectedEmailModels(account._id.toString());
+    
+    // Sum up the counts
+    totalEmails += await emailModels.Email.countDocuments() || 0;
+    processedEmails += await emailModels.Email.countDocuments({ processed: true }) || 0;
+    automatedResponses += await emailModels.Sent.countDocuments({ autoResponded: true }) || 0;
+  }
+  
+  res.json({
+    totalEmails,
+    processedEmails,
+    automatedResponses
+  });
+});
 
 /**
  * Get comprehensive stats for dashboard
  */
-export const getDashboardStats = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).send('Invalid user ID');
-    }
-    
-    const timeRange = req.query.range || 'week';
-    
-    const SentEmail = getSentEmailModel(userId);
-    const Email = getEmailModel(userId);
-    const Draft = getDraftModel(userId);
-    
-    // Get date ranges for current and previous periods
-    const { currentPeriod, previousPeriod } = getDateRange(timeRange);
-    
-    // Optional debugging
-    // if (process.env.NODE_ENV !== 'production') {
-    //   console.log('Current period:', {
-    //     start: currentPeriod.startDate.toISOString(),
-    //     end: currentPeriod.endDate.toISOString()
-    //   });
-    //   console.log('Previous period:', {
-    //     start: previousPeriod.startDate.toISOString(),
-    //     end: previousPeriod.endDate.toISOString()
-    //   });
-    // }
-    
-    // CURRENT PERIOD METRICS
-    // 1. Emails Processed (all emails received)
-    const currentEmailsProcessed = await Email.countDocuments({
-      userId,
-      createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
-    });
-    
-    // 2. Auto-Responses (sent automatically)
-    const currentAutoResponses = await SentEmail.countDocuments({
-      userId,
-      dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
-      autoResponded: true
-    });
-    
-    // 3. Drafts Saved
-    const currentDraftsSaved = await Draft.countDocuments({
-      userId,
-      createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
-    });
-    
-    // 4. Response Time Data
-    const responseTimeData = await SentEmail.find({
-      userId,
-      dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
-      responseTime: { $exists: true, $ne: null }
-    }).select('responseTime');
-    
-    const currentResponseTimes = responseTimeData
-      .map(email => email.responseTime || 0)
-      .filter(time => time > 0);
-    
-    const currentAvgResponseTime = calculateAvgResponseTime(currentResponseTimes);
-    
-    // PREVIOUS PERIOD METRICS
-    // 1. Emails Processed
-    const previousEmailsProcessed = await Email.countDocuments({
-      userId,
-      createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
-    });
-    
-    // 2. Auto-Responses
-    const previousAutoResponses = await SentEmail.countDocuments({
-      userId,
-      dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
-      autoResponded: true
-    });
-    
-    // 3. Drafts Saved
-    const previousDraftsSaved = await Draft.countDocuments({
-      userId,
-      createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
-    });
-    
-    // 4. Response Time Data
-    const prevResponseTimeData = await SentEmail.find({
-      userId,
-      dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
-      responseTime: { $exists: true, $ne: null }
-    }).select('responseTime');
-    
-    const previousResponseTimes = prevResponseTimeData
-      .map(email => email.responseTime || 0)
-      .filter(time => time > 0);
-    
-    const previousAvgResponseTime = calculateAvgResponseTime(previousResponseTimes);
-    
-    // Calculate percentage changes
-    const processedChange = calculatePercentChange(previousEmailsProcessed, currentEmailsProcessed);
-    const autoResponsesChange = calculatePercentChange(previousAutoResponses, currentAutoResponses);
-    const draftsSavedChange = calculatePercentChange(previousDraftsSaved, currentDraftsSaved);
-    
-    // For response time, a decrease is actually positive (faster is better)
-    let responseTimeChange = 0;
-    if (previousAvgResponseTime.value > 0 && currentAvgResponseTime.value > 0) {
-      responseTimeChange = -calculatePercentChange(previousAvgResponseTime.value, currentAvgResponseTime.value);
-    }
-    
-    // Format the stats data for the dashboard
-    const dashboardStats = [
+export const getDashboardStats = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID' });
+  }
+  
+  const timeRange = req.query.range || 'week';
+  
+  // Get connected email accounts for this user
+  const connectedEmails = await ConnectedEmail.find({ userId });
+  
+  if (connectedEmails.length === 0) {
+    return res.json([
       {
         id: 'emails-processed',
         title: 'Emails Processed',
-        value: currentEmailsProcessed,
-        change: processedChange,
+        value: 0,
+        change: 0,
         icon: 'MailOutlineIcon',
         color: 'primary'
       },
       {
         id: 'auto-responses',
         title: 'Auto-Responses',
-        value: currentAutoResponses,
-        change: autoResponsesChange,
+        value: 0,
+        change: 0,
         icon: 'AutorenewIcon',
         color: 'success'
       },
       {
         id: 'drafts-saved',
         title: 'Drafts Saved',
-        value: currentDraftsSaved,
-        change: draftsSavedChange,
+        value: 0,
+        change: 0,
         icon: 'NotesRoundedIcon',
         color: 'warning'
       },
       {
         id: 'avg-response-time',
         title: 'Avg Response Time',
-        value: currentAvgResponseTime.formatted,
-        change: responseTimeChange,
+        value: '0s',
+        change: 0,
         icon: 'TimerIcon',
         color: 'info',
-        isInverted: true // Indicates that a decrease is positive
+        isInverted: true
       }
-    ];
-    
-    res.json(dashboardStats);
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).send('Error fetching dashboard statistics');
+    ]);
+  }
+  
+  // Get date ranges for current and previous periods
+  const { currentPeriod, previousPeriod } = getDateRange(timeRange);
+  
+  // Initialize counters
+  let currentEmailsProcessed = 0;
+  let currentAutoResponses = 0;
+  let currentDraftsSaved = 0;
+  let currentResponseTimes = [];
+  
+  let previousEmailsProcessed = 0;
+  let previousAutoResponses = 0;
+  let previousDraftsSaved = 0;
+  let previousResponseTimes = [];
+  
+  // Process each connected email account
+  for (const account of connectedEmails) {
+    try {
+      // Get email models for this account
+      const emailModels = getConnectedEmailModels(account._id.toString());
+      
+      // Verify models exist
+      if (!emailModels || !emailModels.Email) {
+        logger.warn(`Email model not found for account: ${account.email}`);
+        continue;
+      }
+      
+      // CURRENT PERIOD METRICS
+      // 1. Emails Processed (all emails received)
+      const currEmails = await emailModels.Email.countDocuments({
+        date: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
+      });
+      currentEmailsProcessed += currEmails;
+      
+      // 2. Auto-Responses (sent automatically)
+      if (emailModels.Sent) {
+        const currAutoResp = await emailModels.Sent.countDocuments({
+          dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
+          autoResponded: true
+        });
+        currentAutoResponses += currAutoResp;
+        
+        // 4. Response Time Data
+        const responseTimeData = await emailModels.Sent.find({
+          dateSent: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate },
+          responseTime: { $exists: true, $ne: null }
+        }).select('responseTime').lean();
+        
+        const respTimes = responseTimeData
+          .map(email => email.responseTime || 0)
+          .filter(time => time > 0);
+          
+        currentResponseTimes = [...currentResponseTimes, ...respTimes];
+      }
+      
+      // 3. Drafts Saved
+      if (emailModels.Draft) {
+        const currDrafts = await emailModels.Draft.countDocuments({
+          createdAt: { $gte: currentPeriod.startDate, $lte: currentPeriod.endDate }
+        });
+        currentDraftsSaved += currDrafts;
+      }
+      
+      // PREVIOUS PERIOD METRICS
+      // 1. Emails Processed
+      const prevEmails = await emailModels.Email.countDocuments({
+        date: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
+      });
+      previousEmailsProcessed += prevEmails;
+      
+      // 2. Auto-Responses
+      if (emailModels.Sent) {
+        const prevAutoResp = await emailModels.Sent.countDocuments({
+          dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
+          autoResponded: true
+        });
+        previousAutoResponses += prevAutoResp;
+        
+        // 4. Response Time Data
+        const prevResponseTimeData = await emailModels.Sent.find({
+          dateSent: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate },
+          responseTime: { $exists: true, $ne: null }
+        }).select('responseTime').lean();
+        
+        const prevRespTimes = prevResponseTimeData
+          .map(email => email.responseTime || 0)
+          .filter(time => time > 0);
+          
+        previousResponseTimes = [...previousResponseTimes, ...prevRespTimes];
+      }
+      
+      // 3. Drafts Saved
+      if (emailModels.Draft) {
+        const prevDrafts = await emailModels.Draft.countDocuments({
+          createdAt: { $gte: previousPeriod.startDate, $lte: previousPeriod.endDate }
+        });
+        previousDraftsSaved += prevDrafts;
+      }
+    } catch (error) {
+      logger.error(`Error processing stats for account ${account.email}:`, { error: error.message });
     }
-}
+  }
+  
+  const currentAvgResponseTime = calculateAvgResponseTime(currentResponseTimes);
+  const previousAvgResponseTime = calculateAvgResponseTime(previousResponseTimes);
+  
+  // Calculate percentage changes
+  const processedChange = calculatePercentChange(previousEmailsProcessed, currentEmailsProcessed);
+  const autoResponsesChange = calculatePercentChange(previousAutoResponses, currentAutoResponses);
+  const draftsSavedChange = calculatePercentChange(previousDraftsSaved, currentDraftsSaved);
+  
+  // For response time, a decrease is actually positive (faster is better)
+  let responseTimeChange = 0;
+  if (previousAvgResponseTime.value > 0 && currentAvgResponseTime.value > 0) {
+    responseTimeChange = -calculatePercentChange(previousAvgResponseTime.value, currentAvgResponseTime.value);
+  }
+  
+  // Format the stats data for the dashboard
+  const dashboardStats = [
+    {
+      id: 'emails-processed',
+      title: 'Emails Processed',
+      value: currentEmailsProcessed,
+      change: processedChange,
+      icon: 'MailOutlineIcon',
+      color: 'primary'
+    },
+    {
+      id: 'auto-responses',
+      title: 'Auto-Responses',
+      value: currentAutoResponses,
+      change: autoResponsesChange,
+      icon: 'AutorenewIcon',
+      color: 'success'
+    },
+    {
+      id: 'drafts-saved',
+      title: 'Drafts Saved',
+      value: currentDraftsSaved,
+      change: draftsSavedChange,
+      icon: 'NotesRoundedIcon',
+      color: 'warning'
+    },
+    {
+      id: 'avg-response-time',
+      title: 'Avg Response Time',
+      value: currentAvgResponseTime.formatted,
+      change: responseTimeChange,
+      icon: 'TimerIcon',
+      color: 'info',
+      isInverted: true // Indicates that a decrease is positive
+    }
+  ];
+  
+  res.json(dashboardStats);
+});
 
 export default {
   getBasicStats,
