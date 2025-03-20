@@ -45,8 +45,8 @@ const fileRotateTransport = new winston.transports.DailyRotateFile({
   format: logFormat
 });
 
-// Create logger instance
-const logger = winston.createLogger({
+// Create base logger instance
+const baseLogger = winston.createLogger({
   level: config.logging.level,
   levels: winston.config.npm.levels,
   format: logFormat,
@@ -65,31 +65,52 @@ const logger = winston.createLogger({
 });
 
 // Helper methods for standardized logging
-const logWithMeta = (level, message, meta = {}) => {
+const logWithMeta = (logger, level, message, meta = {}) => {
   logger[level](message, meta);
 };
 
-// Simplified API
+// Simplified API for the main logger
 const enhancedLogger = {
-  error: (message, meta) => logWithMeta('error', message, meta),
-  warn: (message, meta) => logWithMeta('warn', message, meta),
-  info: (message, meta) => logWithMeta('info', message, meta),
-  http: (message, meta) => logWithMeta('http', message, meta),
-  verbose: (message, meta) => logWithMeta('verbose', message, meta),
-  debug: (message, meta) => logWithMeta('debug', message, meta),
-  silly: (message, meta) => logWithMeta('silly', message, meta),
+  error: (message, meta) => logWithMeta(baseLogger, 'error', message, meta),
+  warn: (message, meta) => logWithMeta(baseLogger, 'warn', message, meta),
+  info: (message, meta) => logWithMeta(baseLogger, 'info', message, meta),
+  http: (message, meta) => logWithMeta(baseLogger, 'http', message, meta),
+  verbose: (message, meta) => logWithMeta(baseLogger, 'verbose', message, meta),
+  debug: (message, meta) => logWithMeta(baseLogger, 'debug', message, meta),
+  silly: (message, meta) => logWithMeta(baseLogger, 'silly', message, meta),
   
   // Stream for Morgan HTTP logger
   stream: {
     write: (message) => {
-      logger.http(message.trim());
+      baseLogger.http(message.trim());
     }
   }
 };
 
+/**
+ * Create a named logger for a specific module
+ * @param {string} moduleName - The name of the module for this logger
+ * @returns {Object} - The logger instance with enhanced methods
+ */
+export const createLogger = (moduleName) => {
+  // Create a child logger with module name added to metadata
+  const childLogger = baseLogger.child({ module: moduleName });
+  
+  // Return a simplified API for this logger
+  return {
+    error: (message, meta = {}) => childLogger.error(message, meta),
+    warn: (message, meta = {}) => childLogger.warn(message, meta),
+    info: (message, meta = {}) => childLogger.info(message, meta),
+    http: (message, meta = {}) => childLogger.http(message, meta),
+    verbose: (message, meta = {}) => childLogger.verbose(message, meta),
+    debug: (message, meta = {}) => childLogger.debug(message, meta),
+    silly: (message, meta = {}) => childLogger.silly(message, meta)
+  };
+};
+
 // Add unhandled error listeners
 process.on('uncaughtException', (error) => {
-  logger.error('Uncaught exception', { error });
+  baseLogger.error('Uncaught exception', { error });
   
   // Only exit in production to allow for debugging in development
   if (config.nodeEnv === 'production') {
@@ -98,7 +119,8 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection', { reason });
+  baseLogger.error('Unhandled promise rejection', { reason });
 });
 
+// Export both the default logger and the createLogger function
 export default enhancedLogger;

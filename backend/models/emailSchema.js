@@ -40,11 +40,11 @@ const getEmailModel = async (userId) => {
     
     // Content - IMPORTANT: Changed body from Object to String
     body: {
-      text: String,
-      html: String
+      text: { type: String, default: '' },
+      html: { type: String, default: '' }
     },
-    htmlBody: { type: String },
-    snippet: { type: String },
+    htmlBody: { type: String, default: '' },
+    snippet: { type: String, default: '' },
     attachments: [{ 
       name: String, 
       type: String, 
@@ -77,7 +77,8 @@ const getEmailModel = async (userId) => {
     responseDraft: { type: Boolean, default: false },
     responseAt: { type: Date },
   }, {
-    timestamps: true
+    timestamps: true,
+    minimize: false
   });
   
   // Compound index for finding emails by provider and providerId

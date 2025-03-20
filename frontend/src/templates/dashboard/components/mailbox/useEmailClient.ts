@@ -289,7 +289,19 @@ export const useEmailClient = (): UseEmailClientReturn => {
                 name: t.name || t.email.split("@")[0],
                 email: t.email,
               })) : [],
-              content: email.body?.html || email.body?.text || "",
+              content: email.body ? (
+                // If we have both HTML and text, prioritize HTML
+                email.body.html ? email.body.html : 
+                  // If we only have text, convert it to HTML with proper line breaks
+                  email.body.text ? email.body.text
+                    .replace(/\r\n/g, '<br>')
+                    .replace(/\n/g, '<br>')
+                    .replace(/\r/g, '<br>') : ""
+              ) : (
+                // Fallback if body is completely missing
+                typeof email.body === 'string' ? email.body : 
+                  email.snippet ? `<p>${email.snippet}</p>` : ""
+              ),
               preview: email.snippet || "",
               date: new Date(email.date).toLocaleString(),
               timestamp: new Date(email.date).getTime(),

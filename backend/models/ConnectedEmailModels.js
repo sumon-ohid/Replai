@@ -1,276 +1,680 @@
 import mongoose from 'mongoose';
+import { createLogger } from '../utils/logger.js';
 
-// Define schemas here to ensure they exist
+const logger = createLogger('EmailModels');
+
+/**
+ * Enhanced email schema with better field definitions and validation
+ */
 const emailSchema = new mongoose.Schema({
-  messageId: { type: String, required: true },
-  threadId: String,
-  provider: { type: String, required: true },
-  providerId: String,
-  
-  from: {
-    email: { type: String, required: true },
-    name: String
+  // Core message identification
+  messageId: { 
+    type: String, 
+    required: true,
+    trim: true,
+    index: true 
+  },
+  threadId: { 
+    type: String, 
+    trim: true,
+    index: true 
+  },
+  provider: { 
+    type: String, 
+    required: true,
+    enum: ['google', 'outlook', 'smtp', 'imap'],
+    index: true
+  },
+  providerId: { 
+    type: String, 
+    trim: true 
   },
   
+  // Sender information
+  from: {
+    email: { 
+      type: String, 
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    }
+  },
+  
+  // Recipients
   to: [{
-    email: { type: String, required: true },
-    name: String
+    email: { 
+      type: String, 
+      required: true,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false // Prevent MongoDB from creating IDs for subdocuments
   }],
   
   cc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
   bcc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
-  subject: String,
-  snippet: String,
-  
-  body: {
-    text: String,
-    html: String
+  // Content
+  subject: { 
+    type: String, 
+    default: '(No Subject)',
+    trim: true
+  },
+  snippet: { 
+    type: String, 
+    default: '',
+    trim: true
   },
   
-  attachments: [{
-    name: String,
+  // Store email body in separate object to better handle large content
+  body: {
+    type: Object,  // Define as an object first
+    required: true, // Make it required
+    default: () => ({ text: '', html: '' }), // Default value
+    _id: false,
+    text: { type: String, default: '' },
+    html: { type: String, default: '' }
+  },
+  
+  // Preview for frontend display
+  html_preview: {
     type: String,
-    size: Number,
-    attachmentId: String
+    default: ''
+  },
+  
+  // Files
+  attachments: [{
+    filename: { 
+      type: String, 
+      required: true 
+    },
+    contentType: { 
+      type: String, 
+      default: 'application/octet-stream' 
+    },
+    size: { 
+      type: Number, 
+      default: 0 
+    },
+    attachmentId: String,
+    partId: String,
+    contentId: String,
+    _id: false
   }],
   
-  date: { type: Date, required: true },
-  receivedAt: { type: Date, default: Date.now },
+  // Timestamps
+  date: { 
+    type: Date, 
+    required: true,
+    index: true
+  },
+  receivedAt: { 
+    type: Date, 
+    default: Date.now 
+  },
   
-  folder: { type: String, default: 'inbox' },
-  labels: [String],
+  // Organization
+  folder: { 
+    type: String, 
+    default: 'inbox',
+    enum: ['inbox', 'sent', 'drafts', 'trash', 'spam', 'archive', 'other'],
+    index: true
+  },
+  labels: [{ 
+    type: String,
+    index: true
+  }],
   
-  read: { type: Boolean, default: false },
+  // Status flags
+  read: { 
+    type: Boolean, 
+    default: false,
+    index: true
+  },
   readAt: Date,
   
+  starred: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  
+  // Classification
   category: {
     type: String,
     enum: ['primary', 'social', 'promotions', 'updates', 'forums', 'sent', 'draft', 'trash', 'spam', 'inbox'],
-    default: 'inbox'
+    default: 'inbox',
+    index: true
   },
   
-  processed: { type: Boolean, default: false },
+  // AI processing
+  processed: { 
+    type: Boolean, 
+    default: false 
+  },
   processingData: {
     sentiment: String,
-    priority: String,
+    priority: {
+      type: String,
+      enum: ['high', 'medium', 'low', 'none'],
+      default: 'none'
+    },
     actionItems: [String],
     keywords: [String],
     requiresResponse: Boolean,
     category: String,
-    confidence: Number
+    confidence: {
+      type: Number,
+      min: 0,
+      max: 1
+    }
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  minimize: false, // Prevent MongoDB from removing empty objects
+  validateBeforeSave: true
 });
 
+/**
+ * Draft email schema with improved validation
+ */
 const draftSchema = new mongoose.Schema({
   messageId: String,
   threadId: String,
   
   to: [{
-    email: { type: String, required: true },
-    name: String
+    email: { 
+      type: String, 
+      required: true,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
   cc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
   bcc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
-  subject: String,
+  subject: { 
+    type: String, 
+    default: '',
+    trim: true
+  },
   
   body: {
-    text: String,
-    html: String
+    text: { 
+      type: String, 
+      default: '' 
+    },
+    html: { 
+      type: String, 
+      default: '' 
+    }
   },
   
   attachments: [{
-    name: String,
-    type: String,
+    filename: String,
+    contentType: String,
     size: Number,
-    attachmentId: String
+    attachmentId: String,
+    _id: false
   }],
   
   status: {
     type: String,
     enum: ['draft', 'sending', 'sent', 'error'],
-    default: 'draft'
+    default: 'draft',
+    index: true
   },
   
   lastError: {
     message: String,
     code: String,
     date: Date
+  },
+  
+  lastSaved: {
+    type: Date,
+    default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  minimize: false
 });
 
+/**
+ * Sent email schema with delivery tracking
+ */
 const sentEmailSchema = new mongoose.Schema({
-  messageId: { type: String, required: true },
+  messageId: { 
+    type: String, 
+    required: true,
+    index: true
+  },
   threadId: String,
   
   to: [{
-    email: { type: String, required: true },
-    name: String
+    email: { 
+      type: String, 
+      required: true,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
   cc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
   bcc: [{
-    email: String,
-    name: String
+    email: { 
+      type: String,
+      lowercase: true,
+      trim: true 
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    },
+    _id: false
   }],
   
-  subject: String,
+  subject: { 
+    type: String, 
+    default: '',
+    trim: true
+  },
   
   body: {
-    text: String,
-    html: String
+    text: { 
+      type: String, 
+      default: '' 
+    },
+    html: { 
+      type: String, 
+      default: '' 
+    }
   },
   
   attachments: [{
-    name: String,
-    type: String,
+    filename: String,
+    contentType: String,
     size: Number,
-    attachmentId: String
+    attachmentId: String,
+    _id: false
   }],
   
-  dateSent: { type: Date, default: Date.now },
+  dateSent: { 
+    type: Date, 
+    default: Date.now,
+    index: true
+  },
+  
   status: {
     type: String,
-    enum: ['sent', 'delivered', 'failed'],
-    default: 'sent'
+    enum: ['sent', 'delivered', 'failed', 'bounced'],
+    default: 'sent',
+    index: true
   },
   
   deliveryInfo: {
     deliveredAt: Date,
-    error: String
+    error: String,
+    bounceReason: String,
+    attempts: {
+      type: Number,
+      default: 1
+    }
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  minimize: false
 });
 
-// Create indexes
-emailSchema.index({ messageId: 1 }, { unique: true });
-emailSchema.index({ threadId: 1 });
-emailSchema.index({ 'from.email': 1 });
-emailSchema.index({ date: -1 });
-emailSchema.index({ category: 1 });
-emailSchema.index({ folder: 1 });
+// Add methods to email schema
+emailSchema.methods.markAsRead = async function() {
+  if (!this.read) {
+    this.read = true;
+    this.readAt = new Date();
+    return this.save();
+  }
+  return this;
+};
+
+emailSchema.methods.markAsUnread = async function() {
+  if (this.read) {
+    this.read = false;
+    this.readAt = undefined;
+    return this.save();
+  }
+  return this;
+};
+
+emailSchema.methods.toggleStar = async function() {
+  this.starred = !this.starred;
+  return this.save();
+};
+
+// Add bodySize virtual property to help with debugging
+emailSchema.virtual('bodySize').get(function() {
+  const textSize = this.body?.text?.length || 0;
+  const htmlSize = this.body?.html?.length || 0;
+  return { textSize, htmlSize, totalSize: textSize + htmlSize };
+});
+
+// Add sanitizing middleware
+emailSchema.pre('save', function(next) {
+  // Ensure body exists
+  if (!this.body) {
+    this.body = { text: '', html: '' };
+  }
+  
+  // Maximum size allowed for each field
+  const MAX_TEXT_SIZE = 500000; // 500KB
+  const MAX_HTML_SIZE = 1000000; // 1MB
+  
+  // Truncate body if too large
+  if (this.body.text && this.body.text.length > MAX_TEXT_SIZE) {
+    logger.warn(`Large text body (${this.body.text.length} bytes) for email ${this.messageId}, truncating`);
+    this.body.text = this.body.text.substring(0, MAX_TEXT_SIZE) + 
+      '\n\n... [Content truncated due to size limitations]';
+  }
+  
+  if (this.body.html && this.body.html.length > MAX_HTML_SIZE) {
+    logger.warn(`Large HTML body (${this.body.html.length} bytes) for email ${this.messageId}, truncating`);
+    // Find a reasonable point to truncate HTML
+    let truncatedHtml = this.body.html.substring(0, MAX_HTML_SIZE);
+    
+    // Try to close any open tags
+    const openBodyTag = truncatedHtml.indexOf('<body');
+    if (openBodyTag !== -1) {
+      truncatedHtml += '\n\n<div style="color:red;font-weight:bold;">[Content truncated due to size limitations]</div>';
+      truncatedHtml += '\n</body></html>';
+    } else {
+      truncatedHtml += '\n\n<div style="color:red;font-weight:bold;">[Content truncated due to size limitations]</div>';
+    }
+    
+    this.body.html = truncatedHtml;
+  }
+  
+  // Generate html_preview if not present
+  if (this.body.html && (!this.html_preview || this.html_preview.length === 0)) {
+    this.html_preview = this.body.html.substring(0, 1000);
+  }
+  
+  // Generate snippet if not present
+  if (!this.snippet && this.body.text) {
+    this.snippet = this.body.text.substring(0, 150).replace(/\s+/g, ' ').trim();
+  }
+  
+  next();
+});
+
+// to avoid missing body field
+emailSchema.pre('validate', function(next) {
+  if (!this.body) {
+    console.log('Body field missing, adding default body object');
+    this.body = { text: '', html: '' };
+  }
+  next();
+});
+
+/**
+ * Create optimized indexes for better query performance
+ */
+function createIndexes(model) {
+  const indexes = [
+    // Basic indexes
+    { messageId: 1 },
+    { threadId: 1 },
+    { date: -1 },
+    
+    // Compound indexes for common queries
+    { 'from.email': 1, date: -1 },
+    { folder: 1, date: -1 },
+    { read: 1, folder: 1 },
+    { starred: 1, date: -1 },
+    
+    // Full-text search index (if supported by MongoDB version)
+    {
+      subject: 'text',
+      'from.name': 'text',
+      'from.email': 'text',
+      snippet: 'text'
+    }
+  ];
+  
+  // Create each index
+  indexes.forEach(async (index) => {
+    try {
+      // Text index needs special handling
+      if (typeof index.subject === 'string' && index.subject === 'text') {
+        await model.collection.createIndex(index, {
+          background: true,
+          name: 'email_fulltext',
+          weights: {
+            subject: 10,
+            'from.name': 5,
+            'from.email': 3,
+            snippet: 1
+          }
+        });
+        logger.info(`Created text index for ${model.collection.name}`);
+      } else {
+        await model.collection.createIndex(index, { background: true });
+        logger.info(`Created index ${JSON.stringify(index)} for ${model.collection.name}`);
+      }
+    } catch (error) {
+      logger.warn(`Error creating index: ${error.message}`);
+    }
+  });
+}
 
 /**
  * Ensures indexes are properly created for a model
  */
 async function ensureIndexes(model) {
   try {
-    // Check if index exists
-    const indexes = await model.collection.indexes();
-    const hasMessageIdIndex = indexes.some(idx => 
-      idx.name === 'messageId_1'
-    );
+    // Check if model has been indexed before
+    const indexKey = `${model.collection.name}_indexed`;
     
-    if (hasMessageIdIndex) {
-      // Drop existing index first
-      await model.collection.dropIndex('messageId_1');
+    // Try to create a unique messageId index, which is critical
+    try {
+      await model.collection.createIndex(
+        { messageId: 1 }, 
+        { unique: true, background: true }
+      );
+      logger.info(`Created unique messageId index for ${model.collection.name}`);
+    } catch (error) {
+      // If index already exists with different options, try to drop and recreate
+      if (error.code === 85) { // Index options conflict
+        try {
+          await model.collection.dropIndex('messageId_1');
+          await model.collection.createIndex(
+            { messageId: 1 }, 
+            { unique: true, background: true }
+          );
+          logger.info(`Recreated unique messageId index for ${model.collection.name}`);
+        } catch (dropError) {
+          logger.error(`Failed to recreate messageId index: ${dropError.message}`);
+        }
+      } else {
+        logger.warn(`Error creating messageId index: ${error.message}`);
+      }
     }
     
-    // Create new index with desired options
-    await model.collection.createIndex(
-      { messageId: 1 }, 
-      { unique: true, background: true }
-    );
+    // Create all other indexes
+    createIndexes(model);
+    
   } catch (error) {
-    console.warn(`Index error with ${model.modelName}:`, error.message);
-    // Continue even if index creation fails
+    logger.error(`Index error with ${model.modelName}:`, error);
   }
 }
 
 /**
- * Creates a set of models for a connected email account
+ * Create a DB retention policy to automatically delete old emails
+ * This helps prevent the database from growing too large
+ */
+async function createRetentionPolicy(collectionName, days = 365) {
+  try {
+    // Only create retention policy in production
+    if (process.env.NODE_ENV === 'production') {
+      // Calculate expiration date (now - days)
+      const expirationSeconds = days * 24 * 60 * 60;
+      
+      await mongoose.connection.db.command({
+        createIndexes: collectionName,
+        indexes: [
+          {
+            key: { createdAt: 1 },
+            name: "ttl_cleanup",
+            expireAfterSeconds: expirationSeconds
+          }
+        ]
+      });
+      
+      logger.info(`Created ${days}-day retention policy for ${collectionName}`);
+    }
+  } catch (error) {
+    logger.warn(`Failed to create retention policy: ${error.message}`);
+  }
+}
+
+/**
+ * Creates a set of models for a connected email account with better error handling
  */
 const getConnectedEmailModels = (connectedEmailId) => {
   try {
-    console.log('=== Creating Email Models ===');
-    console.log(`ConnectedEmail ID: ${connectedEmailId}`);
+    if (!connectedEmailId) {
+      throw new Error('Connected email ID is required');
+    }
+    
+    logger.info(`Creating email models for ${connectedEmailId}`);
     
     // Base name for the collections
     const baseModelName = `email_${connectedEmailId}`;
-    console.log(`Base model name: ${baseModelName}`);
     
-    // Check existing models
-    const existingModels = mongoose.modelNames();
-    console.log('Existing models:', existingModels);
-
-    // Get or create email model
-    let EmailModel;
+    // Model cache to avoid recreation
+    const modelCache = {};
+    
+    // Create email model
     const emailModelName = `${baseModelName}_emails`;
     if (mongoose.models[emailModelName]) {
-      console.log(`Reusing existing email model: ${emailModelName}`);
-      EmailModel = mongoose.models[emailModelName];
+      logger.debug(`Reusing existing email model: ${emailModelName}`);
+      modelCache.Email = mongoose.models[emailModelName];
     } else {
-      console.log(`Creating new email model: ${emailModelName}`);
-      EmailModel = mongoose.model(emailModelName, emailSchema);
+      logger.debug(`Creating new email model: ${emailModelName}`);
+      modelCache.Email = mongoose.model(emailModelName, emailSchema);
     }
     
-    // Get or create draft model
-    let DraftModel;
+    // Create draft model
     const draftModelName = `${baseModelName}_drafts`;
     if (mongoose.models[draftModelName]) {
-      console.log(`Reusing existing draft model: ${draftModelName}`);
-      DraftModel = mongoose.models[draftModelName];
+      logger.debug(`Reusing existing draft model: ${draftModelName}`);
+      modelCache.Draft = mongoose.models[draftModelName];
     } else {
-      console.log(`Creating new draft model: ${draftModelName}`);
-      DraftModel = mongoose.model(draftModelName, draftSchema);
+      logger.debug(`Creating new draft model: ${draftModelName}`);
+      modelCache.Draft = mongoose.model(draftModelName, draftSchema);
     }
     
-    // Get or create sent email model
-    let SentEmailModel;
+    // Create sent email model
     const sentModelName = `${baseModelName}_sent`;
     if (mongoose.models[sentModelName]) {
-      console.log(`Reusing existing sent model: ${sentModelName}`);
-      SentEmailModel = mongoose.models[sentModelName];
+      logger.debug(`Reusing existing sent model: ${sentModelName}`);
+      modelCache.Sent = mongoose.models[sentModelName];
     } else {
-      console.log(`Creating new sent model: ${sentModelName}`);
-      SentEmailModel = mongoose.model(sentModelName, sentEmailSchema);
+      logger.debug(`Creating new sent model: ${sentModelName}`);
+      modelCache.Sent = mongoose.model(sentModelName, sentEmailSchema);
     }
 
-    // Ensure indexes are created
+    // Ensure indexes are created asynchronously
     Promise.all([
-      ensureIndexes(EmailModel),
-      ensureIndexes(DraftModel),
-      ensureIndexes(SentEmailModel)
-    ]).then(() => {
-      console.log('Indexes ensured successfully');
-    }).catch(error => {
-      console.error('Error ensuring indexes:', error);
+      ensureIndexes(modelCache.Email),
+      ensureIndexes(modelCache.Draft),
+      ensureIndexes(modelCache.Sent),
+      createRetentionPolicy(`${emailModelName}`, 730)  // 2-year retention by default
+    ]).catch(error => {
+      logger.error('Error setting up indexes or retention policy:', error);
     });
     
-    console.log('Models created successfully');
+    logger.info('Email models created successfully');
     
-    return {
-      Email: EmailModel,
-      Draft: DraftModel,
-      Sent: SentEmailModel
-    };
+    return modelCache;
   } catch (error) {
-    console.error('Error in getConnectedEmailModels:', error);
+    logger.error('Error in getConnectedEmailModels:', error);
     throw error;
   }
 };
@@ -280,8 +684,7 @@ const getConnectedEmailModels = (connectedEmailId) => {
  */
 export const validateEmailCollections = async (connectedEmailId) => {
   try {
-    console.log('=== Validating Email Collections ===');
-    console.log(`ConnectedEmail ID: ${connectedEmailId}`);
+    logger.info(`Validating email collections for ${connectedEmailId}`);
     
     const baseModelName = `email_${connectedEmailId}`;
     const requiredCollections = [
@@ -290,39 +693,68 @@ export const validateEmailCollections = async (connectedEmailId) => {
       `${baseModelName}_sent`
     ];
 
-    console.log('Required collections:', requiredCollections);
-
     // Get list of all collections
     const collections = await mongoose.connection.db.listCollections().toArray();
     const collectionNames = collections.map(c => c.name);
-    console.log('Existing collections:', collectionNames);
-
+    
     // Check if all required collections exist
     const missingCollections = requiredCollections.filter(
       name => !collectionNames.includes(name)
     );
 
     if (missingCollections.length > 0) {
-      console.log('Missing collections:', missingCollections);
-      console.log('Creating missing collections...');
+      logger.info(`Creating ${missingCollections.length} missing collections`);
       
       // Get models to ensure collections are created
       const models = getConnectedEmailModels(connectedEmailId);
       
-      // Verify collections were created
+      // Force creation of missing collections
       await Promise.all(missingCollections.map(async (name) => {
         await mongoose.connection.db.createCollection(name);
-        console.log(`Created collection: ${name}`);
+        logger.info(`Created collection: ${name}`);
       }));
+      
+      return true;
     } else {
-      console.log('All required collections exist');
+      logger.info('All required collections exist');
+      return true;
     }
-
-    return true;
   } catch (error) {
-    console.error('Error in validateEmailCollections:', error);
+    logger.error('Error in validateEmailCollections:', error);
     return false;
   }
 };
 
+/**
+ * Helper to get statistics for email collections
+ */
+export const getEmailCollectionStats = async (connectedEmailId) => {
+  try {
+    const baseModelName = `email_${connectedEmailId}`;
+    const collections = [
+      `${baseModelName}_emails`,
+      `${baseModelName}_drafts`,
+      `${baseModelName}_sent`
+    ];
+    
+    const stats = {};
+    
+    await Promise.all(collections.map(async (collection) => {
+      const result = await mongoose.connection.db.collection(collection).stats();
+      stats[collection] = {
+        count: result.count,
+        size: result.size,
+        avgDocSize: result.avgObjSize
+      };
+    }));
+    
+    return stats;
+  } catch (error) {
+    logger.error('Error getting collection stats:', error);
+    return null;
+  }
+};
+
+// Export default and named functions
+export { emailSchema, draftSchema, sentEmailSchema };
 export default getConnectedEmailModels;

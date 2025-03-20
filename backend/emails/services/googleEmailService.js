@@ -83,49 +83,108 @@ function parseEmailList(addressesString) {
  * @param {Object} message - The Gmail message object
  * @returns {{text: string, html: string}} The extracted email bodies
  */
+
+// Enhanced email body extraction function
 function extractEmailBodies(message) {
-  let textBody = '';
-  let htmlBody = '';
-  
-  // Helper function to recursively process parts
-  function processParts(parts) {
-    if (!parts) return;
+  try {
+    let textBody = '';
+    let htmlBody = '';
     
-    for (const part of parts) {
-      // Get the mime type
-      const mimeType = part.mimeType || '';
+    // Helper function to recursively process parts
+    function processParts(parts) {
+      if (!parts) return;
       
-      // Handle the part based on mime type
-      if (mimeType === 'text/plain' && part.body.data) {
-        textBody = Buffer.from(part.body.data, 'base64').toString('utf-8');
-      } else if (mimeType === 'text/html' && part.body.data) {
-        htmlBody = Buffer.from(part.body.data, 'base64').toString('utf-8');
-      } else if (mimeType.startsWith('multipart/') && part.parts) {
-        // Recursively process nested parts
-        processParts(part.parts);
+      for (const part of parts) {
+        // Get the mime type
+        const mimeType = part.mimeType || '';
+        
+        // Handle the part based on mime type
+        if (mimeType === 'text/plain' && part.body?.data) {
+          try {
+            const decodedText = Buffer.from(part.body.data, 'base64').toString('utf-8');
+            textBody = decodedText;
+            console.log(`Found text part, size: ${decodedText.length} bytes`);
+          } catch (err) {
+            console.warn('Error decoding text body:', err);
+          }
+        } else if (mimeType === 'text/html' && part.body?.data) {
+          try {
+            const decodedHtml = Buffer.from(part.body.data, 'base64').toString('utf-8');
+            htmlBody = decodedHtml;
+            console.log(`Found HTML part, size: ${decodedHtml.length} bytes`);
+          } catch (err) {
+            console.warn('Error decoding HTML body:', err);
+          }
+        } else if (mimeType.startsWith('multipart/') && part.parts) {
+          // Recursively process nested parts
+          console.log(`Processing multipart section with ${part.parts.length} parts`);
+          processParts(part.parts);
+        }
       }
     }
-  }
-  
-  // Check if we have a payload with data directly
-  if (message.payload.body?.data) {
-    const bodyData = Buffer.from(message.payload.body.data, 'base64').toString('utf-8');
     
-    // Try to detect if it's HTML
-    if (bodyData.includes('<html') || bodyData.includes('<body') || bodyData.includes('<div')) {
-      htmlBody = bodyData;
-    } else {
-      textBody = bodyData;
+    // Check if we have a payload with data directly
+    if (message.payload.body?.data) {
+      try {
+        const bodyData = Buffer.from(message.payload.body.data, 'base64').toString('utf-8');
+        console.log(`Found direct body data, size: ${bodyData.length} bytes`);
+        
+        // Try to detect if it's HTML
+        if (bodyData.includes('<html') || bodyData.includes('<body') || bodyData.includes('<div')) {
+          htmlBody = bodyData;
+          console.log('Detected as HTML content');
+        } else {
+          textBody = bodyData;
+          console.log('Detected as plain text content');
+        }
+      } catch (err) {
+        console.warn('Error decoding direct body data:', err);
+      }
     }
+    
+    // Process parts if available
+    if (message.payload.parts) {
+      console.log(`Processing message with ${message.payload.parts.length} parts`);
+      processParts(message.payload.parts);
+    }
+    
+    if (!textBody && !htmlBody) {
+      console.warn('No body content found in message');
+    }
+    
+    // Return at least an empty object
+    return { 
+      text: textBody || '',
+      html: htmlBody || ''
+    };
+  } catch (error) {
+    console.error('Error extracting email bodies:', error);
+    // Return empty body to prevent null errors
+    return { text: '', html: '' };
   }
-  
-  // Process parts if available
-  if (message.payload.parts) {
-    processParts(message.payload.parts);
-  }
-  
-  return { text: textBody, html: htmlBody };
 }
+
+/**
+ * Sanitize text for MongoDB storage
+ * @param {string} text - The text to sanitize
+ * @param {number} maxLength - Maximum length to keep
+ * @returns {string} - Sanitized text
+ */
+function sanitizeForMongoDB(text, maxLength = 100000) {
+  if (!text) return '';
+  
+  // Truncate if too long
+  if (text.length > maxLength) {
+    console.warn(`Truncating body content from ${text.length} to ${maxLength} characters`);
+    text = text.substring(0, maxLength) + '... [content truncated due to size]';
+  }
+  
+  // Replace null characters which MongoDB doesn't allow
+  text = text.replace(/\u0000/g, '');
+  
+  return text;
+}
+
 
 /**
  * Process a single Google message
@@ -192,10 +251,14 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     
     // Get message bodies
     const { text: bodyText, html: bodyHtml } = extractEmailBodies(message);
-    
+
+    console.log(`Body sizes - Text: ${bodyText?.length || 0} chars, HTML: ${bodyHtml?.length || 0} chars`);
+
     // Extract a snippet for preview
     const snippet = message.snippet || bodyText.substring(0, 150).replace(/\s+/g, ' ').trim();
     
+    console.log(`Extracted snippet: ${snippet}`);
+
     // Process labels and determine folder
     const gmailLabels = message.labelIds || [];
     let folder = 'inbox';
@@ -251,6 +314,9 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
         html: bodyHtml || ''
       },
       
+      // Set html_preview for frontend display
+      html_preview: bodyHtml ? bodyHtml.substring(0, 1000) : '',
+
       snippet: snippet,
       
       read: !gmailLabels.includes('UNREAD'),
@@ -274,18 +340,33 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     }
 
     // Save to the correct collection
-    const emailDoc = new emailModels.Email(emailData);
-    const savedEmail = await emailDoc.save();
-
-    console.log(`Email saved successfully with ID: ${savedEmail._id}`);
-
-    // Update sync stats
-    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-      $inc: { 'stats.totalEmails': 1 },
-      $set: { 'stats.lastSync': new Date() }
-    });
-
-    return savedEmail;
+    try {
+      // First try to save the complete document
+      const emailDoc = new emailModels.Email(emailData);
+      const savedEmail = await emailDoc.save();
+      console.log(`Email saved successfully with ID: ${savedEmail._id}`);
+      
+      // Update sync stats
+      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+        $inc: { 'stats.totalEmails': 1 },
+        $set: { 'stats.lastSync': new Date() }
+      });
+      
+      return savedEmail;
+    } catch (saveError) {
+      // If saving fails, try again with truncated content
+      console.error('Error saving email, attempting with truncated content:', saveError);
+      
+      // Try saving with moderate truncation first
+      emailData.body.text = sanitizeForMongoDB(emailData.body.text, 50000);
+      emailData.body.html = sanitizeForMongoDB(emailData.body.html, 100000);
+      
+      const fallbackDoc = new emailModels.Email(emailData);
+      const fallbackSave = await fallbackDoc.save();
+      
+      console.log(`Email saved with truncated content, ID: ${fallbackSave._id}`);
+      return fallbackSave;
+    }
   } catch (error) {
     console.error('Error processing Google message:', error);
     throw error;
