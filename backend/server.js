@@ -260,7 +260,7 @@ app.use("/api/feedback", feedback);
 app.use("/api/calendar", googleCalendar);
 
 // New organized email routes with better namespace
-app.use("/api/emails/", emailRoutes);
+app.use("/api/emails/v2", emailRoutes);
 app.use("/api/emails/auth", emailAuthRoutes);
 app.use("/api/emails/stats", emailStatsRoutes);
 app.use("/api/emails/auth/connected", connectedEmailsRoutes);

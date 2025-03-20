@@ -49,6 +49,8 @@ class EmailController {
     const userId = req.user._id;
     const { email, messageId } = req.params;
     
+    console.log('🚀🚀 Get email', email, messageId);
+
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
@@ -151,11 +153,12 @@ class EmailController {
   static markAsRead = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email, messageId } = req.params;
-    
+
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
-      return res.status(404).json({ error: 'Connected email not found' });
+      console.log('🚀🚀 Get email read', email, messageId);
+      return res.status(406).json({ error: 'Connected email not found' });
     }
     
     // Get models for this email account
