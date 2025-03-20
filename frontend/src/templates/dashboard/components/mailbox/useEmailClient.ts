@@ -117,17 +117,17 @@ interface UseEmailClientReturn {
     handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleClearSearch: () => void;
     handleRefresh: () => void;
-    handleEmailSelect: (emailId: string) => Promise<void>;
+    handleEmailSelect: (messageId: string) => Promise<void>;
     handleCloseDetailView: () => void;
-    handleToggleStar: (emailId: string) => Promise<void>;
-    handleToggleRead: (emailId: string) => Promise<void>;
+    handleToggleStar: (messageId: string) => Promise<void>;
+    handleToggleRead: (messageId: string) => Promise<void>;
     handleMarkAllRead: () => Promise<void>;
     toggleMobileSidebar: () => void;
     handleCompose: () => void;
     handleCloseCompose: () => void;
     handleReplyEmail: (email: EmailData) => void;
     handleForwardEmail: (email: EmailData) => void;
-    handleDeleteEmail: (emailId: string) => Promise<void>;
+    handleDeleteEmail: (messageId: string) => Promise<void>;
     handlePreviousEmail: () => void;
     handleNextEmail: () => void;
     handleSendEmail: (data: any) => Promise<void>;
@@ -530,9 +530,9 @@ export const useEmailClient = (): UseEmailClientReturn => {
       fetchEmails(state.selectedAccountEmail, state.currentFolder, true);
     },
 
-    handleEmailSelect: async (emailId: string) => {
-      debug("Selecting email", emailId);
-      const emailToUpdate = state.emails.find(email => email.id === emailId);
+    handleEmailSelect: async (messageId: string) => {
+      debug("Selecting email", messageId);
+      const emailToUpdate = state.emails.find(email => email.id === messageId);
 
       if (emailToUpdate && !emailToUpdate.isRead) {
         try {
@@ -542,7 +542,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
           
           // Silently mark as read in UI even if API fails
           const updatedEmails = state.emails.map(email =>
-            email.id === emailId ? { ...email, isRead: true } : email
+            email.id === messageId ? { ...email, isRead: true } : email
           );
 
           setState(prev => ({
@@ -563,7 +563,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
           }));
           
           // Try the API call - but don't await it to prevent blocking UI
-          api.patch(`/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}/read`)
+          api.patch(`/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}/read`)
             .catch(error => {
               console.warn("Failed to mark email as read on server, but UI was updated", error);
             });
@@ -576,7 +576,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
 
       setState(prev => ({
         ...prev,
-        selectedEmailId: emailId,
+        selectedEmailId: messageId,
         detailViewOpen: true,
       }));
     },
@@ -589,8 +589,8 @@ export const useEmailClient = (): UseEmailClientReturn => {
       }));
     },
 
-    handleToggleStar: async (emailId: string) => {
-      const emailToUpdate = state.emails.find(email => email.id === emailId);
+    handleToggleStar: async (messageId: string) => {
+      const emailToUpdate = state.emails.find(email => email.id === messageId);
       if (!emailToUpdate) return;
 
       try {
@@ -600,7 +600,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         
         // Update UI optimistically
         const updatedEmails = state.emails.map(email =>
-          email.id === emailId ? { ...email, isStarred: !email.isStarred } : email
+          email.id === messageId ? { ...email, isStarred: !email.isStarred } : email
         );
 
         setState(prev => ({
@@ -611,9 +611,9 @@ export const useEmailClient = (): UseEmailClientReturn => {
         
         // Try multiple endpoints - the first one that works will be used
         const endpoints = [
-          `/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}/star`,
-          `/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}`,
-          `/api/emails/${state.selectedAccountEmail}/emails/${emailId}/star`,
+          `/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}/star`,
+          `/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}`,
+          `/api/emails/${state.selectedAccountEmail}/emails/${messageId}/star`,
         ];
         
         let success = false;
@@ -643,8 +643,8 @@ export const useEmailClient = (): UseEmailClientReturn => {
       }
     },
 
-    handleToggleRead: async (emailId: string) => {
-      const emailToUpdate = state.emails.find(email => email.id === emailId);
+    handleToggleRead: async (messageId: string) => {
+      const emailToUpdate = state.emails.find(email => email.id === messageId);
       if (!emailToUpdate) return;
 
       try {
@@ -654,7 +654,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         
         // Update UI optimistically
         const updatedEmails = state.emails.map(email =>
-          email.id === emailId ? { ...email, isRead: !email.isRead } : email
+          email.id === messageId ? { ...email, isRead: !email.isRead } : email
         );
 
         setState(prev => ({
@@ -667,10 +667,10 @@ export const useEmailClient = (): UseEmailClientReturn => {
         // Try multiple endpoints - the first one that works will be used
         const endpoints = [
           emailToUpdate.isRead 
-            ? `/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}/unread` 
-            : `/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}/read`,
-          `/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}`,
-          `/api/emails/${state.selectedAccountEmail}/emails/${emailId}/read`,
+            ? `/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}/unread` 
+            : `/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}/read`,
+          `/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}`,
+          `/api/emails/${state.selectedAccountEmail}/emails/${messageId}/read`,
         ];
         
         let success = false;
@@ -772,16 +772,16 @@ export const useEmailClient = (): UseEmailClientReturn => {
       }));
     },
 
-    handleDeleteEmail: async (emailId: string) => {
+    handleDeleteEmail: async (messageId: string) => {
       try {
         if (!state.selectedAccountEmail) {
           throw new Error("No account email selected");
         }
         
         // Use the correct endpoint pattern
-        await api.delete(`/api/emails/v2/${state.selectedAccountEmail}/emails/${emailId}`);
+        await api.delete(`/api/emails/v2/${state.selectedAccountEmail}/emails/${messageId}`);
         
-        const updatedEmails = state.emails.filter(email => email.id !== emailId);
+        const updatedEmails = state.emails.filter(email => email.id !== messageId);
         
         setState(prev => ({
           ...prev,
