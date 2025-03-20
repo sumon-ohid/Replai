@@ -139,28 +139,48 @@ export const addConnection = async (userId, email, provider, connection) => {
  */
 export const stopConnection = async (connectionKey) => {
   const connection = activeConnections.get(connectionKey);
-  if (!connection) return false;
+  if (!connection) {
+    console.log(`No active connection found for key: ${connectionKey}`);
+    return true; // Return true if there's no connection to stop (already disconnected)
+  }
   
   try {
     const { userId, email, provider, connection: connObj } = connection;
+    console.log(`Stopping ${provider} connection for ${email}`);
     
+    // Clean up any intervals or listeners
     if (provider === 'google' && connObj.interval) {
       clearInterval(connObj.interval);
+      console.log(`Cleared interval for ${email}`);
     }
     
+    if (provider === 'google' && connObj.watch) {
+      try {
+        await connObj.watch.stop();
+        console.log(`Stopped Gmail watch for ${email}`);
+      } catch (watchErr) {
+        console.warn(`Error stopping Gmail watch for ${email}:`, watchErr);
+      }
+    }
+    
+    // Remove from active connections map
     activeConnections.delete(connectionKey);
     
-    // Update connection status in database
+    // Update connection status in database (belt and suspenders approach)
     await ConnectedEmail.findOneAndUpdate(
       { userId, email },
-      { status: 'disconnected' }
+      { 
+        status: 'disconnected',
+        disconnectedAt: new Date()
+      }
     );
     
-    console.log(`Stopped ${provider} connection for ${email}`);
+    console.log(`Successfully stopped ${provider} connection for ${email}`);
     return true;
   } catch (error) {
     console.error(`Error stopping connection ${connectionKey}:`, error);
-    return false;
+    // Still return true to proceed with disconnection in the UI
+    return true;
   }
 };
 
@@ -248,9 +268,37 @@ export const setupGoogleEmailSync = async (userId, email, tokens) => {
  */
 export const disconnectGoogleEmail = async (userId, email) => {
   try {
+    console.log(`Disconnecting Google email ${email} for user ${userId}`);
+    
+    // First update the database record
+    const connectedEmail = await ConnectedEmail.findOneAndUpdate(
+      { userId, email, provider: 'google' },
+      { 
+        $set: {
+          status: 'disconnected',
+          disconnectedAt: new Date(),
+          'tokens.accessToken': null,
+          'tokens.refreshToken': null
+        }
+      },
+      { new: true }
+    );
+    
+    if (!connectedEmail) {
+      console.log(`No Google email found for ${email}`);
+      return { success: false, error: 'Email account not found' };
+    }
+    
+    // Then stop the active connection if it exists
     const key = `${userId}:${email}`;
     const success = await stopConnection(key);
-    return { success };
+    
+    console.log(`Google email ${email} disconnected successfully:`, { 
+      dbUpdated: !!connectedEmail, 
+      connectionStopped: success 
+    });
+    
+    return { success: true };
   } catch (error) {
     console.error(`Failed to disconnect Google email ${email}:`, error);
     return { success: false, error: error.message };

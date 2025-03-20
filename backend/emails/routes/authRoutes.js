@@ -11,6 +11,7 @@ import outlookEmailService from '../services/outlookEmailService.js';
 import customEmailService from '../services/customEmailService.js';
 import connectionManager from '../managers/connectionManager.js';
 import dotenv from 'dotenv';
+import auth from '../../middleware/auth.js';
 
 dotenv.config();
 const dashboardUrl = process.env.DASHBOARD_URL;
@@ -179,66 +180,70 @@ router.get('/google/callback', async (req, res) => {
 /**
  * Disconnect email route
  */
-router.post('/disconnect', requireAuth, async (req, res) => {
+router.post('/disconnect', auth, async (req, res) => {
   try {
-    const { email } = req.body;
     const userId = req.user._id;
+    const { email, _id } = req.body;
+    
+    console.log(`Processing disconnect request for ${email}`);
     
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ error: 'Email address is required' });
     }
     
-    // Get connected email record
-    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    // Find the connected email account
+    const connectedEmail = await ConnectedEmail.findOne({
+      userId,
+      email,
+      ...((_id) ? { _id } : {})
+    });
+    
     if (!connectedEmail) {
-      return res.status(404).json({ message: 'Connected email not found' });
+      console.log(`Connected email not found for user ${userId}: ${email}`);
+      return res.status(404).json({ error: 'Connected email not found' });
     }
     
-    // Stop active connection
-    const provider = connectedEmail.provider;
+    console.log(`Found connected email: ${connectedEmail.provider} - ${email}`);
+    
+    // Call the appropriate disconnect function based on provider
     let disconnectResult;
     
-    switch (provider) {
+    switch (connectedEmail.provider) {
       case 'google':
         disconnectResult = await connectionManager.disconnectGoogleEmail(userId, email);
         break;
       case 'outlook':
         disconnectResult = await connectionManager.disconnectOutlookEmail(userId, email);
         break;
-      case 'custom':
-        disconnectResult = await connectionManager.disconnectCustomEmail(userId, email);
-        break;
       default:
-        return res.status(400).json({ message: `Unsupported provider: ${provider}` });
+        // For other providers, just update the database
+        await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+          status: 'disconnected',
+          disconnectedAt: new Date(),
+          'tokens.accessToken': null,
+          'tokens.refreshToken': null
+        });
+        disconnectResult = { success: true };
     }
     
     if (!disconnectResult.success) {
-      return res.status(500).json({ error: disconnectResult.error });
+      console.error(`Failed to disconnect ${email}:`, disconnectResult.error);
+      return res.status(500).json({ 
+        error: 'Failed to disconnect email', 
+        details: disconnectResult.error 
+      });
     }
     
-    // Drop email collections
-    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
-    await Promise.all([
-      emailModels.Email.collection.drop().catch(() => {}),
-      emailModels.Draft.collection.drop().catch(() => {}),
-      emailModels.Sent.collection.drop().catch(() => {})
-    ]);
+    console.log(`Successfully disconnected ${email}`);
     
-    // Delete ConnectedEmail record
-    await ConnectedEmail.deleteOne({ _id: connectedEmail._id });
-    
-    // Remove from user's connected emails
-    await User.findByIdAndUpdate(userId, {
-      $pull: { connectedEmails: { email } }
-    });
-    
+    // Return success response
     res.json({ 
       success: true, 
-      message: `Email ${email} has been disconnected and all data removed` 
+      message: `Successfully disconnected ${email}` 
     });
   } catch (error) {
-    console.error('Error disconnecting email:', error);
-    res.status(500).json({ message: 'Failed to disconnect email' });
+    console.error(`Error in disconnect route:`, error);
+    res.status(500).json({ error: 'Failed to disconnect email', details: error.message });
   }
 });
 
