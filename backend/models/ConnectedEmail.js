@@ -62,7 +62,7 @@ const connectedEmailSchema = new mongoose.Schema({
   aiSettings: {
     enabled: {
       type: Boolean,
-      default: false
+      default: true
     },
     mode: {
       type: String,

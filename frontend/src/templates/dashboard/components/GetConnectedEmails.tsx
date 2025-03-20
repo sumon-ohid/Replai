@@ -21,6 +21,8 @@ import Skeleton from "@mui/material/Skeleton";
 import Badge from "@mui/material/Badge";
 import Paper from "@mui/material/Paper";
 import { motion } from "framer-motion";
+// Notistack import
+import { SnackbarProvider, useSnackbar } from 'notistack';
 
 // Icons
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
@@ -37,9 +39,7 @@ import AlternateEmailIcon from "@mui/icons-material/AlternateEmail";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import DraftsIcon from "@mui/icons-material/Drafts";
-
-import Alert from "@mui/material/Alert";
-import Snackbar from "@mui/material/Snackbar";
+import RobotIcon from "@mui/icons-material/SmartToy";
 
 import axios from "axios";
 import { useAuth } from "../../../AuthContext";
@@ -48,16 +48,19 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 interface EmailAccount {
   id: number;
+  _id: string;
   email: string;
   provider: string;
-  status?: "active" | "error" | "syncing" | "paused";
+  status?: "active" | "error" | "syncing" | "paused" | "deactivated";
   lastSync?: string;
   type?: "personal" | "work";
   autoReplyEnabled?: boolean;
-  mode?: "draft" | "normal";
+  aiEnabled?: boolean;
+  mode?: "draft" | "normal" | "auto-reply";
   syncEnabled?: boolean;
   picture?: string | null;
   name?: string;
+  connected?: boolean;
 }
 
 const itemVariants = {
@@ -74,29 +77,22 @@ const itemVariants = {
   exit: { opacity: 0, y: 10 },
 };
 
-export default function GetConnectedEmails() {
+function ConnectedEmailsContent() {
   const { user } = useAuth();
   const theme = useTheme();
-  const [connectedEmails, setConnectedEmails] = React.useState<EmailAccount[]>(
-    []
-  );
+  const { enqueueSnackbar } = useSnackbar();
+  const [connectedEmails, setConnectedEmails] = React.useState<EmailAccount[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState<string>("");
-  const [actionEmail, setActionEmail] = React.useState<EmailAccount | null>(
-    null
-  );
+  const [actionEmail, setActionEmail] = React.useState<EmailAccount | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [snackbar, setSnackbar] = React.useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
 
   const fetchConnectedEmails = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
 
@@ -111,7 +107,6 @@ export default function GetConnectedEmails() {
       });
 
       // Extract connected emails from response
-      // The backend should return either an array directly or an object with a connectedEmails property
       let responseData = response.data as any[];
 
       // Handle case where backend returns { connectedEmails: [...] }
@@ -120,30 +115,40 @@ export default function GetConnectedEmails() {
         typeof responseData === "object" &&
         "connectedEmails" in responseData
       ) {
-        responseData = (responseData as { connectedEmails: any[] })
-          .connectedEmails;
+        responseData = (responseData as { connectedEmails: any[] }).connectedEmails;
       }
 
       // Map response data to our EmailAccount interface and assign IDs
-      const emails = responseData.map((email: any, index: number) => ({
-        id: index, // Use index as ID
-        email: email.email || "",
-        provider: email.provider || "google",
-        status:
-          email.syncEnabled === false ? "paused" : email.status || "active",
-        lastSync: formatLastSync(email.lastSync),
-        type: email.type || "personal",
-        autoReplyEnabled: email.autoReplyEnabled !== false, // Default to true if not specified
-        mode: email.mode || "normal",
-        syncEnabled: email.syncEnabled !== false, // Default to true if not specified
-        picture: email.picture || null,
-        name: email.name || "",
-      }));
+      // Filter out disconnected or deactivated accounts
+      const emails = responseData
+        .filter((email: any) => {
+          // Remove disconnected emails or ones with status "deactivated"
+          return (email.connected !== false) && (email.status !== "disconnected");
+        })
+        .map((email: any, index: number) => ({
+          id: index, // Use index as ID
+          _id: email._id || `temp-id-${index}`,
+          email: email.email || "",
+          provider: email.provider || "google",
+          status:
+            email.syncEnabled === false ? "paused" : email.status || "active",
+          lastSync: formatLastSync(email.lastSync),
+          type: email.type || "personal",
+          autoReplyEnabled: email.autoReplyEnabled !== false, // Default to true if not specified
+          aiEnabled: email.aiEnabled !== false, // Default to true if not specified
+          mode: email.mode || "auto-reply",
+          syncEnabled: email.syncEnabled !== false, // Default to true if not specified
+          picture: email.picture || null,
+          name: email.name || "",
+          connected: email.connected !== false, // Default to true if not specified
+        }));
+      
       setConnectedEmails(emails);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching connected emails:", error);
       setError("Error fetching connected emails");
+      enqueueSnackbar("Failed to load email accounts", { variant: "error" });
       setLoading(false);
     }
   };
@@ -181,142 +186,89 @@ export default function GetConnectedEmails() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
 
     try {
-      // Use POST to /disconnect with email in body
-      // (as seen in the handleEmails.js file you shared earlier)
       await axios.post(
         `${apiBaseUrl}/api/emails/auth/disconnect`,
         { email },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Immediately remove from UI
       setConnectedEmails(
         connectedEmails.filter((account) => account.email !== email)
       );
 
-      setSnackbar({
-        open: true,
-        message: `Email ${email} disconnected successfully`,
-        severity: "success",
-      });
-
+      enqueueSnackbar(`Email ${email} disconnected successfully`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
       console.error("Error disconnecting email:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to disconnect email",
-        severity: "error",
-      });
+      enqueueSnackbar("Failed to disconnect email", { variant: "error" });
     }
   };
 
-  // For Draft Mode toggle
-  const handleToggleDraftMode = async (email: EmailAccount) => {
-    if (!email) return;
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
-    // Determine the new mode (toggle between draft and normal)
-    const newMode = email.mode === "draft" ? "normal" : "draft";
-
-    try {
-      // Update the server
-      await axios.patch(
-        `${apiBaseUrl}/api/emails/auth/connected/mode/${email.email}`,
-        { mode: newMode },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Update local state
-      const updatedEmails = connectedEmails.map((acc) =>
-        acc.id === email.id
-          ? { ...acc, mode: newMode as "draft" | "normal" }
-          : acc
-      );
-
-      setConnectedEmails(updatedEmails);
-
-      // Update action email if it's the same
-      if (actionEmail && actionEmail.id === email.id) {
-        setActionEmail({ ...actionEmail, mode: newMode });
-      }
-
-      // Show notification
-      setSnackbar({
-        open: true,
-        message: `Email set to ${
-          newMode === "draft" ? "Draft" : "Normal"
-        } mode`,
-        severity: "success",
-      });
-
-      handleCloseMenu();
-    } catch (error) {
-      console.error("Error toggling draft mode:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update email mode",
-        severity: "error",
-      });
-    }
-  };
-
-  // For Auto Reply toggle
+  // For Auto Reply toggle (which also handles AI)
   const handleToggleAutoReply = async (email: EmailAccount) => {
     if (!email) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
 
     // Toggle the current value
     const newValue = !email.autoReplyEnabled;
+    
+    // Optimistic update
+    const updatedEmails = connectedEmails.map((acc) =>
+      acc.id === email.id ? { 
+        ...acc, 
+        autoReplyEnabled: newValue,
+        aiEnabled: newValue, // AI is enabled when auto-reply is on
+        mode: newValue ? "auto-reply" as "auto-reply" : "draft" as "draft" 
+      } : acc
+    );
+    setConnectedEmails(updatedEmails);
 
     try {
       // Update the server
-      await axios.patch(
+      const response = await axios.patch(
         `${apiBaseUrl}/api/emails/auth/connected/auto-reply/${email.email}`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update local state
-      const updatedEmails = connectedEmails.map((acc) =>
-        acc.id === email.id ? { ...acc, autoReplyEnabled: newValue } : acc
-      );
+      // Check for success
+      if (response.status !== 200) throw new Error("Failed to update auto-reply settings");
 
-      setConnectedEmails(updatedEmails);
-
+      // Extract aiEnabled from response if available
+      const data = response.data as { aiEnabled?: boolean, mode?: string };
+      
       // Update action email if it's the same
       if (actionEmail && actionEmail.id === email.id) {
-        setActionEmail({ ...actionEmail, autoReplyEnabled: newValue });
+        setActionEmail({ 
+          ...actionEmail, 
+          autoReplyEnabled: newValue,
+          aiEnabled: data.aiEnabled !== undefined ? data.aiEnabled : newValue,
+          mode: ["auto-reply", "draft", "normal"].includes(data.mode as string)
+            ? (data.mode as "auto-reply" | "draft" | "normal")
+            : (newValue ? "auto-reply" : "draft")
+        });
       }
 
-      // Show notification
-      setSnackbar({
-        open: true,
-        message: `${newValue ? "Draft" : "Auto reply"} mode activated`,
-        severity: "success",
-      });
-
+      enqueueSnackbar(`${newValue ? "Auto-reply" : "Draft"} mode activated`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
       console.error("Error toggling auto-reply:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update auto-reply settings",
-        severity: "error",
-      });
+      
+      // Revert optimistic update on failure
+      setConnectedEmails(connectedEmails);
+      enqueueSnackbar("Failed to update auto-reply settings", { variant: "error" });
     }
   };
 
@@ -327,32 +279,35 @@ export default function GetConnectedEmails() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
 
     // Toggle the current value
     const newValue = !email.syncEnabled;
+    
+    // Optimistic update
+    const updatedEmails = connectedEmails.map((acc) =>
+      acc.id === email.id
+        ? {
+            ...acc,
+            syncEnabled: newValue,
+            status: newValue ? "active" : ("paused" as "active" | "paused"),
+          }
+        : acc
+    );
+    setConnectedEmails(updatedEmails);
 
     try {
       // Update the server
-      await axios.patch(
+      const response = await axios.patch(
         `${apiBaseUrl}/api/emails/auth/connected/sync/${email.email}`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update local state
-      const updatedEmails = connectedEmails.map((acc) =>
-        acc.id === email.id
-          ? {
-              ...acc,
-              syncEnabled: newValue,
-              status: newValue ? "active" : ("paused" as "active" | "paused"),
-            }
-          : acc
-      );
-
-      setConnectedEmails(updatedEmails);
+      // Check for success
+      if (response.status !== 200) throw new Error("Failed to update sync settings");
 
       // Update action email if it's the same
       if (actionEmail && actionEmail.id === email.id) {
@@ -363,30 +318,22 @@ export default function GetConnectedEmails() {
         });
       }
 
-      // Show notification
-      setSnackbar({
-        open: true,
-        message: `Sync ${newValue ? "resumed" : "paused"}`,
-        severity: "success",
-      });
-
+      enqueueSnackbar(`Sync ${newValue ? "resumed" : "paused"}`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
       console.error("Error toggling sync:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update sync settings",
-        severity: "error",
-      });
+      
+      // Revert optimistic update on failure
+      setConnectedEmails(connectedEmails);
+      enqueueSnackbar("Failed to update sync settings", { variant: "error" });
     }
   };
 
-  // Update the handleRefreshAccount function:
-  
+  // Improved refresh account function
   const handleRefreshAccount = async (email: EmailAccount) => {
     if (!email) return;
   
-    // Set specific account to syncing status
+    // Set specific account to syncing status (optimistic update)
     const updatedEmails = connectedEmails.map((acc) =>
       acc.id === email.id
         ? { ...acc, status: "syncing" as "syncing", lastSync: "syncing..." }
@@ -397,19 +344,23 @@ export default function GetConnectedEmails() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
   
     try {
-      // Use POST instead of PATCH for refresh
+      // Use POST instead of PATCH for refresh with proper error handling
       const response = await axios.post(
         `${apiBaseUrl}/api/emails/auth/connected/refresh/${email.email}`,
         {}, // Empty body
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 30000 // 30 second timeout for potentially long operation
+        }
       );
   
       // Get last sync time from response
-      const data = response.data as { lastSync?: string };
+      const data = response.data as { lastSync?: string, aiEnabled?: boolean };
       const lastSync = data.lastSync
         ? formatLastSync(data.lastSync)
         : "Just now";
@@ -421,16 +372,14 @@ export default function GetConnectedEmails() {
               ...acc,
               status: "active" as "active",
               lastSync,
+              // Update aiEnabled if returned from server
+              ...(data.aiEnabled !== undefined ? { aiEnabled: data.aiEnabled } : {})
             }
           : acc
       );
       setConnectedEmails(newEmails);
   
-      setSnackbar({
-        open: true,
-        message: "Account refreshed successfully",
-        severity: "success",
-      });
+      enqueueSnackbar("Account refreshed successfully", { variant: "success" });
     } catch (error) {
       console.error("Error refreshing account:", error);
   
@@ -440,12 +389,7 @@ export default function GetConnectedEmails() {
       );
   
       setConnectedEmails(errorEmails);
-  
-      setSnackbar({
-        open: true,
-        message: "Failed to refresh account",
-        severity: "error",
-      });
+      enqueueSnackbar("Failed to refresh account", { variant: "error" });
     }
   
     handleCloseMenu();
@@ -516,18 +460,19 @@ export default function GetConnectedEmails() {
         return theme.palette.error.main;
       case "syncing":
         return theme.palette.info.main;
+      case "paused":
+        return theme.palette.warning.main;
       default:
         return theme.palette.text.secondary;
     }
   };
-
-  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const handleCreateBot = async () => {
     setLoading(true);
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
+      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       setLoading(false);
       return;
     }
@@ -543,12 +488,9 @@ export default function GetConnectedEmails() {
       window.location.href = authUrl;
     } catch (error) {
       console.error("Error creating bot:", error);
+      enqueueSnackbar("Failed to start Google authentication", { variant: "error" });
       setLoading(false);
     }
-  };
-
-  const handleRefresh = () => {
-    setRefreshTrigger((prev) => prev + 1);
   };
 
   return (
@@ -622,25 +564,6 @@ export default function GetConnectedEmails() {
             >
               Refresh All
             </Button>
-
-            {/* <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-              color="primary"
-              disableElevation
-              onClick={handleCreateBot}
-              sx={{
-                borderRadius: 2,
-                fontWeight: 600,
-                boxShadow:
-                  theme.palette.mode === "dark"
-                    ? `0 2px 8px ${alpha(theme.palette.common.black, 0.3)}`
-                    : `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
-              }}
-            >
-              Add Account
-            </Button> */}
           </Stack>
         </Box>
 
@@ -830,8 +753,9 @@ export default function GetConnectedEmails() {
                             border: "1px solid",
                             borderColor: alpha(theme.palette.primary.main, 0.2),
                           }}
+                          src={email.picture || undefined}
                         >
-                          {getProviderIcon(email.provider)}
+                          {!email.picture && getProviderIcon(email.provider)}
                         </Avatar>
                       </Badge>
 
@@ -881,6 +805,8 @@ export default function GetConnectedEmails() {
                               ? "Connection error"
                               : email.status === "syncing"
                               ? "Syncing..."
+                              : email.status === "paused"
+                              ? "Paused"
                               : ""}
                           </Typography>
                           <Typography
@@ -891,28 +817,43 @@ export default function GetConnectedEmails() {
                             Last synced: {email.lastSync || "Never"}
                           </Typography>
                         </Stack>
-                        <Chip
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          label={
-                            email.autoReplyEnabled
-                              ? " Draft mode enabled"
-                              : " Auto reply mode enabled"
-                          }
-                          icon={
-                            email.autoReplyEnabled ? (
-                              <AutoFixHighIcon fontSize="small" />
-                            ) : (
-                              <DraftsIcon fontSize="small" />
-                            )
-                          }
-                          sx={{
-                            mt: 0.5,
-                            "& .MuiChip-icon": { mr: 0 },
-                            px: 1,
-                          }}
-                        ></Chip>
+                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            color={email.autoReplyEnabled ? "success" : "info"}
+                            label={
+                              email.autoReplyEnabled
+                                ? "Auto-reply enabled"
+                                : "Draft mode enabled"
+                            }
+                            icon={
+                              email.autoReplyEnabled ? (
+                                <AutoFixHighIcon fontSize="small" />
+                              ) : (
+                                <DraftsIcon fontSize="small" />
+                              )
+                            }
+                            sx={{
+                              "& .MuiChip-icon": { mr: 0 },
+                              px: 1,
+                            }}
+                          />
+                          
+                          {email.aiEnabled && (
+                            <Chip
+                              size="small"
+                              variant="outlined"
+                              color="secondary"
+                              label="AI Enabled"
+                              icon={<RobotIcon fontSize="small" />}
+                              sx={{
+                                "& .MuiChip-icon": { mr: 0 },
+                                px: 1,
+                              }}
+                            />
+                          )}
+                        </Stack>
                       </Box>
                     </Stack>
 
@@ -928,6 +869,7 @@ export default function GetConnectedEmails() {
                         <IconButton
                           size="small"
                           onClick={() => handleRefreshAccount(email)}
+                          disabled={email.status === "syncing"}
                           sx={{
                             color: theme.palette.text.secondary,
                             backgroundColor: alpha(
@@ -943,7 +885,20 @@ export default function GetConnectedEmails() {
                             },
                           }}
                         >
-                          <SyncIcon fontSize="small" />
+                          <SyncIcon 
+                            fontSize="small" 
+                            sx={email.status === "syncing" ? {
+                              animation: "spin 1.5s linear infinite",
+                              "@keyframes spin": {
+                                "0%": {
+                                  transform: "rotate(0deg)",
+                                },
+                                "100%": {
+                                  transform: "rotate(360deg)",
+                                },
+                              },
+                            } : {}}
+                          />
                         </IconButton>
                       </Tooltip>
 
@@ -987,23 +942,6 @@ export default function GetConnectedEmails() {
                           }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* <MenuItem
-                            onClick={() =>
-                              actionEmail && handleToggleDraftMode(actionEmail)
-                            }
-                            disabled={!actionEmail}
-                          >
-                            <ListItemIcon>
-                              <EditIcon fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText>
-                              {actionEmail?.mode === "draft"
-                                ? "Disable"
-                                : "Enable"}{" "}
-                              Draft Mode
-                            </ListItemText>
-                          </MenuItem> */}
-
                           <MenuItem
                             onClick={() =>
                               actionEmail && handleToggleAutoReply(actionEmail)
@@ -1012,16 +950,15 @@ export default function GetConnectedEmails() {
                           >
                             <ListItemIcon>
                               {actionEmail?.autoReplyEnabled ? (
-                                <AutoFixHighIcon fontSize="small" />
-                              ) : (
                                 <DraftsIcon fontSize="small" />
+                              ) : (
+                                <AutoFixHighIcon fontSize="small" />
                               )}
                             </ListItemIcon>
                             <ListItemText>
-                              {actionEmail?.autoReplyEnabled
-                                ? "Auto Reply"
-                                : "Draft"}{" "}
-                              Mode
+                              Toggle to {actionEmail?.autoReplyEnabled
+                                ? "Draft"
+                                : "Auto-Reply"} Mode
                             </ListItemText>
                           </MenuItem>
                           <MenuItem
@@ -1094,21 +1031,23 @@ export default function GetConnectedEmails() {
             </Typography>
           </Box>
         )}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
-            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </CardContent>
     </Card>
+  );
+}
+
+// Wrap with SnackbarProvider
+export default function GetConnectedEmails() {
+  return (
+    <SnackbarProvider
+      maxSnack={3}
+      anchorOrigin={{
+        vertical: 'bottom',
+        horizontal: 'center',
+      }}
+      autoHideDuration={5000}
+    >
+      <ConnectedEmailsContent />
+    </SnackbarProvider>
   );
 }

@@ -38,6 +38,7 @@ export const getConnectedEmails = async (req, res) => {
         connectedAt: email.connectedAt || new Date(),
         syncEnabled: preferences.syncEnabled !== false,
         autoReplyEnabled: preferences.mode === "auto-reply",
+        aiEnabled: preferences.aiEnabled || false, // Include AI enabled status
         mode: preferences.mode || "auto-reply",
         lastSync: connection?.lastSync || email.lastSync || null,
         status: connection ? (connection.error ? "error" : "active") : "paused",
@@ -86,20 +87,25 @@ export const toggleAutoReply = async (req, res) => {
         .json({ error: "Email not found in connected accounts" });
     }
 
-    // Update the email preferences
+    // Update the email preferences with both mode and aiEnabled status
     await User.findByIdAndUpdate(userId, {
-      $set: { [`emailPreferences.${email}.mode`]: mode },
+      $set: { 
+        [`emailPreferences.${email}.mode`]: mode,
+        [`emailPreferences.${email}.aiEnabled`]: enabled // Set AI enabled based on auto-reply state
+      },
     });
 
     // Update live connection if it exists
     const connectionUpdated = await updateConnectionConfig(userId, email, {
       mode,
+      aiEnabled: enabled
     });
 
     res.json({
       success: true,
       email,
       mode,
+      aiEnabled: enabled,
       connectionUpdated,
     });
   } catch (error) {
@@ -186,6 +192,8 @@ export const updateEmailMode = async (req, res) => {
     const { mode } = req.body;
     const userId = req.user._id;
 
+    console.log("Updating email mode:", email, mode);
+
     if (!email) {
       return res.status(400).json({ error: "Email address is required" });
     }
@@ -205,18 +213,26 @@ export const updateEmailMode = async (req, res) => {
         .json({ error: "Email not found in connected accounts" });
     }
 
+    // Update mode and aiEnabled status
+    const aiEnabled = mode === "auto-reply";
+    
     await User.findByIdAndUpdate(userId, {
-      $set: { [`emailPreferences.${email}.mode`]: mode },
+      $set: { 
+        [`emailPreferences.${email}.mode`]: mode,
+        [`emailPreferences.${email}.aiEnabled`]: aiEnabled
+      },
     });
 
     const connectionUpdated = await updateConnectionConfig(userId, email, {
       mode,
+      aiEnabled
     });
 
     res.json({
       success: true,
       email,
       mode,
+      aiEnabled,
       connectionUpdated,
       emailId: connectedEmail._id,
     });
@@ -324,10 +340,62 @@ export const refreshEmailSync = async (req, res) => {
   }
 };
 
+/**
+ * Toggle AI-enabled status directly
+ */
+export const toggleAI = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { enabled } = req.body;
+    const userId = req.user._id;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email address is required" });
+    }
+
+    // Check if user has this email connected
+    const user = await User.findById(userId);
+    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
+
+    if (!connectedEmail) {
+      return res
+        .status(404)
+        .json({ error: "Email not found in connected accounts" });
+    }
+
+    // Update the email preferences for AI
+    await User.findByIdAndUpdate(userId, {
+      $set: { 
+        [`emailPreferences.${email}.aiEnabled`]: enabled,
+        // If enabling AI, also set mode to auto-reply
+        ...(enabled ? { [`emailPreferences.${email}.mode`]: "auto-reply" } : {})
+      },
+    });
+
+    // Update config with AI settings
+    const connectionUpdated = await updateConnectionConfig(userId, email, {
+      aiEnabled: enabled,
+      ...(enabled ? { mode: "auto-reply" } : {})
+    });
+
+    res.json({
+      success: true,
+      email,
+      aiEnabled: enabled,
+      mode: enabled ? "auto-reply" : user.emailPreferences?.[email]?.mode || "draft",
+      connectionUpdated,
+    });
+  } catch (error) {
+    console.error("Error toggling AI:", error);
+    res.status(500).json({ error: "Failed to update AI settings" });
+  }
+};
+
 export default {
   getConnectedEmails,
   toggleAutoReply,
   toggleSync,
   updateEmailMode,
   refreshEmailSync,
+  toggleAI,
 };

@@ -515,7 +515,9 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
       status: 'active'
     });
     if (!connectedEmail) {
-      throw new Error('Connected email not found');
+      // handle error gracefully
+      console.log('Connected email not found');
+      return [];
     }
 
     // List recent messages

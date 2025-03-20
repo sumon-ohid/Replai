@@ -130,7 +130,10 @@ router.get('/google/callback', async (req, res) => {
           refreshToken: tokens.refresh_token,
           expiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000)
         },
-        status: 'active'
+        status: 'active',
+        aiSettings: {
+          enabled: true
+        }
       },
       { upsert: true, new: true }
     );
