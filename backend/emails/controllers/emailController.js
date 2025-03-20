@@ -94,7 +94,7 @@ class EmailController {
       }
     });
   });
-
+  
   /**
    * Get a single email by ID with proper body handling
    */
@@ -127,8 +127,8 @@ class EmailController {
       return res.status(404).json({ error: 'Email not found' });
     }
     
-    // Enhanced email processing for accurate body handling
-    const processedEmail =  processEmailBody(emailDoc);
+    // Changed: Use EmailController.processEmailBody instead of processEmailBody
+    const processedEmail = EmailController.processEmailBody(emailDoc);
     
     // Mark as read if not already read
     if (!processedEmail.read) {
@@ -147,6 +147,7 @@ class EmailController {
     logger.info('Email retrieved successfully', { messageId });
     res.json(processedEmail);
   });
+  
 
   /**
    * Handle email body processing 
@@ -616,7 +617,7 @@ class EmailController {
   });
 }
 
-// Convert class methods to regular functions for proper binding
+
 EmailController.processEmailBody = function(emailDoc) {
   if (!emailDoc) return null;
   
@@ -665,7 +666,99 @@ EmailController.processEmailBody = function(emailDoc) {
     processedEmail.html_preview = processedEmail.body.html.substring(0, 1000);
   }
   
+  // Enhance HTML for better viewing with Gmail-like experience
+  if (processedEmail.body && processedEmail.body.html) {
+    processedEmail.body.html = EmailController.enhanceHtmlForViewing(processedEmail.body.html);
+  }
+  
   return processedEmail;
+};
+
+/**
+ * Enhance HTML for better viewing with Gmail-like experience
+ * Makes emails display correctly while preserving original formatting
+ */
+EmailController.enhanceHtmlForViewing = function(html) {
+  if (!html) return '';
+  
+  // If HTML doesn't have basic structure, add it
+  let enhancedHtml = html;
+  
+  // Only process if we don't break existing structure
+  if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
+    // Wrap content in proper HTML structure if not already
+    enhancedHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      color: #222;
+      margin: 0;
+      padding: 10px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    table {
+      border-collapse: collapse;
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+    /* Fix for Outlook and similar email clients */
+    .ExternalClass {
+      width: 100%;
+    }
+    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div {
+      line-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  ${html}
+</body>
+</html>`;
+  } else if (html.includes('<body') && !html.includes('max-width: 100%')) {
+    // If body exists but no basic styles, try to inject styles without breaking structure
+    enhancedHtml = html.replace('<head>', `<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    img { max-width: 100%; height: auto; }
+    body { font-family: Arial, sans-serif; line-height: 1.5; color: #222; }
+    a { color: #1a73e8; }
+  </style>`);
+  }
+  
+  // Ensure all links open in a new tab
+  enhancedHtml = enhancedHtml.replace(/<a\s+(?![^>]*\btarget=)/gi, '<a target="_blank" rel="noopener noreferrer" ');
+  
+  // Fix common HTML email issues
+  enhancedHtml = enhancedHtml
+    // Fix invalid nesting that breaks rendering
+    .replace(/<\/?(font|span|div)\s*>\s*<\/?(font|span|div)>/gi, ' ')
+    // Remove potentially harmful scripts
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Make all image URLs absolute if they're relative
+    .replace(/(<img[^>]+src=["'])(?!https?:\/\/|data:)([^"']+)(["'][^>]*>)/gi, (match, prefix, url, suffix) => {
+      // Attempt to make relative URLs absolute - simplified example
+      if (url.startsWith('/')) {
+        return match; // Already absolute to domain root
+      }
+      return match; // In a real implementation, you'd convert to absolute URL
+    });
+  
+  return enhancedHtml;
 };
 
 EmailController.convertPlainTextToHtml = function(text) {

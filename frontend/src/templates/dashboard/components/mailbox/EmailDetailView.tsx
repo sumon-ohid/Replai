@@ -160,6 +160,7 @@ export default function EmailDetailView({
             wordBreak: "break-word",
             whiteSpace: "pre-wrap",
             lineHeight: 1.8,
+            color: theme.palette.text.primary,
           }}
         >
           {email.content}
@@ -445,6 +446,8 @@ export default function EmailDetailView({
               borderRadius: 2,
               border: "1px solid",
               borderColor: theme.palette.divider,
+              color: "text.primary",
+              overflow: "auto",
             }}
           >
             {renderEmailContent()}
