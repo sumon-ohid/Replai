@@ -22,4 +22,7 @@ router.patch('/:email/emails/:messageId/read', auth, EmailController.markAsRead)
 // Search emails
 router.get('/:email/search', auth, EmailController.searchEmails);
 
+// for debugging email structure
+router.get('/debug/:email/:messageId?', auth, EmailController.debugEmailStructure);
+
 export default router;

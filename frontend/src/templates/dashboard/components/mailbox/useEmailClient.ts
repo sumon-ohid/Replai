@@ -69,6 +69,15 @@ export interface EmailData {
     name: string;
     email: string;
   }>;
+  messageId: string;
+  cc?: Array<{
+    name: string;
+    email: string;
+  }>;
+  bcc?: Array<{
+    name: string;
+    email: string;
+  }>;
   content: string;
   preview: string;
   date: string;
@@ -86,6 +95,7 @@ export interface EmailData {
   labels?: string[];
   folder: string;
 }
+
 
 interface EmailClientState {
   accounts: EmailAccount[];
