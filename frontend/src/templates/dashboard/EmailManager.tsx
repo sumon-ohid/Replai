@@ -48,7 +48,6 @@ import {
 } from './theme/customizations';
 import axios from 'axios';
 import Footer from './components/Footer';
-import LoadingButton from '@mui/lab/LoadingButton';
 import Skeleton from '@mui/material/Skeleton';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;

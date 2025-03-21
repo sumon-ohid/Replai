@@ -321,8 +321,8 @@ function ConnectedEmailsContent() {
 
     try {
       // Update the server
-      const response = await axios.patch(
-        `${apiBaseUrl}/api/emails/auth/connected/sync/${email.email}`,
+      const response = await axios.post(
+        `${apiBaseUrl}/api/emails/connection/${email.email}/toggle-connection`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -339,7 +339,7 @@ function ConnectedEmailsContent() {
         });
       }
 
-      enqueueSnackbar(`Sync ${newValue ? "resumed" : "paused"}`, { variant: "success" });
+      enqueueSnackbar(`Service ${newValue ? "resumed" : "paused"}`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
       console.error("Error toggling sync:", error);
@@ -979,7 +979,7 @@ function ConnectedEmailsContent() {
                             <ListItemText>
                               Toggle to {actionEmail?.autoReplyEnabled
                                 ? "Draft"
-                                : "auto"} Mode
+                                : "Auto"} Mode
                             </ListItemText>
                           </MenuItem>
                           <MenuItem
@@ -999,7 +999,7 @@ function ConnectedEmailsContent() {
                               {actionEmail?.syncEnabled === false
                                 ? "Resume"
                                 : "Pause"}{" "}
-                              Sync
+                              Service
                             </ListItemText>
                           </MenuItem>
 
