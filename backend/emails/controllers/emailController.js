@@ -329,16 +329,18 @@ class EmailController {
     const userId = req.user._id;
     const { email } = req.params;
     const { page = 1, limit = 50 } = req.query;
-
+  
+    logger.info("Getting sent emails for", { email, page, limit });
+  
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: "Connected email not found" });
     }
-
+  
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
-
+  
     // Fetch sent emails with pagination
     const skip = (page - 1) * limit;
     const [sentEmails, total] = await Promise.all([
@@ -349,9 +351,16 @@ class EmailController {
         .lean(),
       emailModels.Sent.countDocuments(),
     ]);
-
+  
+    // Process sent emails to ensure consistent format, just like regular emails
+    const processedSentEmails = sentEmails.map(email => {
+      return EmailController.processEmailBody(email);
+    });
+  
+    logger.info(`Found ${processedSentEmails.length} sent emails (total: ${total})`);
+  
     res.json({
-      sentEmails,
+      sent: processedSentEmails,
       pagination: {
         page: Number(page),
         limit: Number(limit),

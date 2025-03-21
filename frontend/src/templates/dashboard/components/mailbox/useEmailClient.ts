@@ -225,9 +225,11 @@ export const useEmailClient = (): UseEmailClientReturn => {
         switch(folder) {
           case 'drafts':
             endpoint = `/api/emails/v2/${accountEmail}/drafts`;
+            params = { folder, timestamp: now };
             break;
           case 'sent':
             endpoint = `/api/emails/v2/${accountEmail}/sent`;
+            params = { folder, timestamp: now };
             break;
           default:
             endpoint = `/api/emails/v2/${accountEmail}/emails`;
@@ -259,6 +261,12 @@ export const useEmailClient = (): UseEmailClientReturn => {
               if ('pagination' in responseData) {
                 debug('Pagination info:', responseData.pagination);
               }
+            }
+            // for sent folder special case
+            else if ('sent' in responseData && Array.isArray(responseData.sent)) {
+              emailsData = responseData.sent;
+              console.log(`Received ${emailsData.length} sent emails`);
+              debug(`Received ${emailsData.length} sent emails`);
             }
             // For drafts folder special case
             else if ('drafts' in responseData && Array.isArray(responseData.drafts)) {
