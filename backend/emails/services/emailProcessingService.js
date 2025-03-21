@@ -65,8 +65,9 @@ export const processEmailContent = async (emailData) => {
       requiresResponse: !!requiresResponse,
       priority,
       sentiment,
-      processed: true,
-      processedAt: new Date()
+      // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
+      // processed: true,
+      // processedAt: new Date()
     };
   } catch (error) {
     console.error('Error processing email content:', error);
@@ -75,8 +76,9 @@ export const processEmailContent = async (emailData) => {
     return {
       ...emailData,
       category: 'uncategorized',
-      processed: true,
-      processedAt: new Date(),
+      // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
+      // processed: true,
+      // processedAt: new Date(),
       processingError: error.message
     };
   }
@@ -186,8 +188,9 @@ export const processEmails = async (userId, email) => {
         // Update the email with processed data
         await emailModels.Email.findByIdAndUpdate(unprocessedEmail._id, {
           $set: {
-            processed: true,
-            processedAt: new Date(),
+            // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
+            // processed: true,
+            // processedAt: new Date(),
             category: processed.category,
             keywords: processed.keywords,
             actionItems: processed.actionItems,

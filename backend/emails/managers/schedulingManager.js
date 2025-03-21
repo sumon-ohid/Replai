@@ -1,14 +1,87 @@
-import { checkEmails } from './connectionManager.js';
-import { processEmails } from '../services/emailProcessingService.js';
-import { notifyConnectionStatus } from './notificationManager.js';
-import AutomatedResponseService from '../services/automatedResponseService.js';
-import ConnectionManager from './connectionManager.js';
+import { checkEmails } from "./connectionManager.js";
+import { processEmails } from "../services/emailProcessingService.js";
+import { notifyConnectionStatus } from "./notificationManager.js";
+import AutomatedResponseService from "../services/automatedResponseService.js";
+import ConnectionManager from "./connectionManager.js";
 import {
   addInterval,
   removeInterval,
   getInterval,
   clearAllIntervals,
-} from '../utils/activeIntervalManager.js';
+} from "../utils/activeIntervalManager.js";
+import mongoose from "mongoose";
+import ConnectedEmail from "../../models/ConnectedEmail.js";
+import getConnectedEmailModels from "../../models/ConnectedEmailModels.js";
+
+/**
+ * Mark emails as processed after handling them
+ * @param {string} userId - User ID
+ * @param {string} email - Email address
+ * @param {Array} processedEmails - Array of processed email documents
+ * @param {boolean} automationApplied - Whether automation was applied
+ * @returns {Promise<boolean>} - Success status
+ */
+export const markEmailsAsProcessed = async (
+  userId,
+  email,
+  processedEmails,
+  automationApplied = false
+) => {
+  if (!processedEmails || processedEmails.length === 0) {
+    return true; // Nothing to mark
+  }
+
+  try {
+    console.log(
+      `[${email}] Marking ${processedEmails.length} emails as processed`
+    );
+
+    // Get the connected email model
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    if (!connectedEmail) {
+      console.error(`[${email}] Connected email record not found`);
+      return false;
+    }
+
+    // Get the email models
+    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+
+    // Get the IDs of all processed emails
+    const emailIds = processedEmails.map((email) =>
+      typeof email === "string" ? email : email._id.toString()
+    );
+
+    // Update all emails at once
+    const result = await emailModels.Email.updateMany(
+      { _id: { $in: emailIds } },
+      {
+        $set: {
+          processed: true,
+          processedAt: new Date(),
+          automationApplied: automationApplied,
+        },
+      }
+    );
+
+    // Update stats in connected email
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      $inc: {
+        "stats.emailsProcessed": result.modifiedCount,
+        ...(automationApplied
+          ? { "stats.emailsAutomated": result.modifiedCount }
+          : {}),
+      },
+    });
+
+    console.log(
+      `[${email}] Marked ${result.modifiedCount} emails as processed`
+    );
+    return true;
+  } catch (error) {
+    console.error(`[${email}] Error marking emails as processed:`, error);
+    return false;
+  }
+};
 
 /**
  * Schedule email checking for a specific connection.
@@ -26,7 +99,9 @@ export const scheduleEmailChecks = async (userId, email) => {
     // First check if we have a valid connection
     const account = await ConnectionManager.getConnection(userId, email);
     if (!account) {
-      console.error(`[${email}] No active connection found, cannot schedule checks`);
+      console.error(
+        `[${email}] No active connection found, cannot schedule checks`
+      );
       return false;
     }
 
@@ -44,39 +119,91 @@ export const scheduleEmailChecks = async (userId, email) => {
           // Process new emails
           const processedEmails = await processEmails(userId, email);
           if (!processedEmails || processedEmails.length === 0) {
-            console.log(`[${email}] No new emails to process after filtering duplicates`);
+            console.log(
+              `[${email}] No new emails to process after filtering duplicates`
+            );
             return;
           }
-          
+
           // Get fresh connection data for each check
-          const currentAccount = await ConnectionManager.getConnection(userId, email);
+          const currentAccount = await ConnectionManager.getConnection(
+            userId,
+            email
+          );
           if (!currentAccount) {
             console.log(`[${email}] Connection lost, stopping checks`);
             removeInterval(key);
             return;
           }
 
+          // Ensure aiSettings is always initialized
+          if (!currentAccount.aiSettings) {
+            console.log(
+              `[${email}] Initializing missing aiSettings with defaults`
+            );
+            currentAccount.aiSettings = { enabled: false, mode: "review" };
+
+            // Also update the database to prevent this issue in the future
+            try {
+              await ConnectedEmail.findOneAndUpdate(
+                { userId, email },
+                { $set: { aiSettings: currentAccount.aiSettings } },
+                { new: true }
+              );
+              console.log(
+                `[${email}] Updated database with default aiSettings`
+              );
+            } catch (updateError) {
+              console.error(
+                `[${email}] Failed to update aiSettings in database:`,
+                updateError
+              );
+            }
+          }
+
           console.log(`[${email}] Checking AI settings:`, {
-            enabled: currentAccount?.aiSettings?.enabled,
-            mode: currentAccount?.aiSettings?.mode
+            enabled: currentAccount.aiSettings.enabled,
+            mode: currentAccount.aiSettings.mode,
           });
 
-          const aiEnabled = AutomatedResponseService.isAutomationEnabled(currentAccount);
+          const aiEnabled =
+            AutomatedResponseService.isAutomationEnabled(currentAccount);
           console.log(`[${email}] AI automation enabled: ${aiEnabled}`);
 
+          let automationApplied = false;
+
           if (aiEnabled) {
-            const mode = AutomatedResponseService.getAutomationMode(currentAccount);
+            const mode =
+              AutomatedResponseService.getAutomationMode(currentAccount);
             console.log(`[${email}] Running in ${mode} mode`);
 
             try {
-              await AutomatedResponseService.processNewEmails(userId, email, processedEmails);
+              await AutomatedResponseService.processNewEmails(
+                userId,
+                email,
+                processedEmails
+              );
               console.log(`[${email}] Successfully processed emails with AI`);
+              automationApplied = true;
             } catch (aiError) {
-              console.error(`[${email}] Error processing emails with AI:`, aiError);
+              console.error(
+                `[${email}] Error processing emails with AI:`,
+                aiError
+              );
             }
           } else {
-            console.log(`[${email}] AI is disabled, skipping automated responses`);
+            console.log(
+              `[${email}] AI is disabled, skipping automated responses`
+            );
           }
+
+          // Mark emails as processed after handling them
+          await markEmailsAsProcessed(
+            userId,
+            email,
+            processedEmails,
+            automationApplied
+          );
         } else if (result.success) {
           console.log(`[${email}] No new emails found`);
         } else {
@@ -84,7 +211,7 @@ export const scheduleEmailChecks = async (userId, email) => {
           await notifyConnectionStatus({
             userId,
             email,
-            status: 'error',
+            status: "error",
             message: result.error,
           });
         }
@@ -93,7 +220,7 @@ export const scheduleEmailChecks = async (userId, email) => {
         await notifyConnectionStatus({
           userId,
           email,
-          status: 'error',
+          status: "error",
           message: error.message,
         });
       }
@@ -137,7 +264,71 @@ export const getScheduleInfo = (userId, email) => {
  */
 export const clearAllSchedules = () => {
   clearAllIntervals();
-  console.log('Cleared all scheduled checks');
+  console.log("Cleared all scheduled checks");
+};
+
+/**
+ * Manually mark specific emails as processed
+ * @param {string} userId - User ID
+ * @param {string} email - Email address
+ * @param {Array} emailIds - Array of email IDs to mark as processed
+ * @param {string} reason - Reason for marking as processed (optional)
+ */
+export const manuallyMarkAsProcessed = async (
+  userId,
+  email,
+  emailIds,
+  reason = "manual"
+) => {
+  try {
+    console.log(
+      `[${email}] Manually marking ${emailIds.length} emails as processed: ${reason}`
+    );
+
+    // Get the connected email record
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    if (!connectedEmail) {
+      throw new Error("Connected email not found");
+    }
+
+    // Get email models for this connection
+    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+
+    // Update the emails
+    const result = await emailModels.Email.updateMany(
+      { _id: { $in: emailIds } },
+      {
+        $set: {
+          processed: true,
+          processedAt: new Date(),
+          processingReason: reason,
+        },
+      }
+    );
+
+    console.log(
+      `[${email}] Successfully marked ${result.modifiedCount}/${emailIds.length} emails as processed`
+    );
+
+    // Update stats
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      $inc: { "stats.emailsProcessed": result.modifiedCount },
+    });
+
+    return {
+      success: true,
+      count: result.modifiedCount,
+    };
+  } catch (error) {
+    console.error(
+      `[${email}] Error manually marking emails as processed:`,
+      error
+    );
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
 };
 
 export default {
@@ -145,4 +336,6 @@ export default {
   stopScheduledChecks,
   getScheduleInfo,
   clearAllSchedules,
+  markEmailsAsProcessed,
+  manuallyMarkAsProcessed,
 };
