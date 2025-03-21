@@ -257,12 +257,23 @@ class AutomatedResponseService {
               throw error;
             }
 
-            // Update email response with new IDs
+            // Update original email with provider first
+            await account.emailModels.Email.findOneAndUpdate(
+              { messageId: emailId },
+              { 
+                $set: { 
+                  provider: account.provider || 'google',
+                }
+              }
+            );
+
+            // Update email response with new IDs and provider
             emailResponse.messageId = sendResult.messageId;
             emailResponse.threadId = sendResult.threadId;
+            emailResponse.provider = account.provider || 'google';
             
-            // Save sent email to database first with proper IDs
-            const sentEmail = new account.emailModels.Email({
+            // Save sent email using the Sent model with proper defaults
+            const sentEmail = new account.emailModels.Sent({
               messageId: sendResult.messageId,
               threadId: sendResult.threadId || emailId,
               userId,
@@ -279,13 +290,33 @@ class AutomatedResponseService {
                 text: emailResponse.content,
                 html: emailResponse.content
               },
-              date: emailResponse.sentAt,
-              folder: 'sent',
-              type: 'sent',
+              dateSent: emailResponse.sentAt,
+              status: 'sent',
+              deliveryInfo: {
+                deliveredAt: new Date(),
+                attempts: 1
+              },
+              provider: account.provider || 'google', // Ensure provider is set
               autoResponse: true,
               originalMessageId: emailId
             });
-            await sentEmail.save();
+            try {
+              await sentEmail.save();
+            } catch (saveError) {
+              console.error('Error saving sent email:', saveError);
+              // Try update if save fails
+              const existingSent = await account.emailModels.Sent.findOne({ messageId: sendResult.messageId });
+              if (existingSent) {
+                await account.emailModels.Sent.findByIdAndUpdate(existingSent._id, {
+                  $set: {
+                    ...sentEmail.toObject(),
+                    updatedAt: new Date()
+                  }
+                });
+              } else {
+                throw saveError;
+              }
+            }
 
             // Try to save to Gmail sent folder
             try {
@@ -340,33 +371,33 @@ class AutomatedResponseService {
               }
             );
 
-            // Update both original and sent email statuses
-            await Promise.all([
-              // Mark original email as read and replied
-              account.emailModels.Email.findOneAndUpdate(
-                { messageId: emailId },
-                { 
-                  $set: { 
-                    replied: true,
-                    repliedAt: new Date(),
-                    read: true,
-                    replyMessageId: sendResult.messageId,
-                    lastInteraction: new Date()
-                  } 
-                }
-              ),
-              // Mark sent email as read
-              account.emailModels.Email.findOneAndUpdate(
-                { messageId: sendResult.messageId },
-                {
-                  $set: {
-                    read: true,
-                    processed: true,
-                    lastInteraction: new Date()
-                  }
-                }
-              )
-            ]);
+            // Update original email status to prevent multiple replies
+            const updateResult = await account.emailModels.Email.findOneAndUpdate(
+              { 
+                messageId: emailId,
+                $or: [
+                  { replied: { $ne: true } },
+                  { replyMessageId: { $exists: false } }
+                ]
+              },
+              { 
+                $set: { 
+                  replied: true,
+                  repliedAt: new Date(),
+                  read: true,
+                  replyMessageId: sendResult.messageId,
+                  lastInteraction: new Date(),
+                  provider: account.provider || 'google'
+                } 
+              },
+              { new: true }
+            );
+
+            // If email was already replied to, skip further processing
+            if (!updateResult) {
+              console.log(`Email ${emailId} was already replied to, skipping`);
+              continue;
+            }
 
             try {
               // Mark original message as read in Gmail
