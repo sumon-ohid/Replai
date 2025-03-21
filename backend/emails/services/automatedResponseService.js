@@ -104,13 +104,13 @@ class AutomatedResponseService {
             await emailService.createDraft(account.connection, emailResponse);
             console.log(`Created draft response for email: ${emailId}`);
           } else {
-            // Send auto and save
-            console.log(`Sending auto for email: ${emailId}`);
-            await emailService.sendEmail(account.connection, emailResponse);
-            
-            // Save to sent folder
-            console.log(`Saving response to sent folder for email: ${emailId}`);
-            await emailService.saveSentEmail(account.connection, emailResponse);
+    // Send auto and save
+    console.log(`Sending auto for email: ${emailId}`);
+    await emailService.sendEmail(account.connection, emailResponse);
+    
+    // Save to sent folder
+    console.log(`Saving response to sent folder for email: ${emailId}`);
+    await emailService.saveSentEmail(account.connection.gmail, emailResponse);
             
             console.log(`Successfully processed email ${emailId} with auto`);
           }

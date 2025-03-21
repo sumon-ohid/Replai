@@ -702,6 +702,50 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
 /**
  * Save sent email to Gmail's sent folder
  */
+/**
+ * Send an email using Gmail API
+ */
+export async function sendEmail(connection, email) {
+  try {
+    if (!connection.gmail) {
+      throw new Error('Gmail connection not properly initialized');
+    }
+
+    // Create email message in base64 format
+    const messageParts = [
+      `From: ${email.from}`,
+      `To: ${email.to}`,
+      `Subject: ${email.subject}`,
+      `Date: ${email.sentAt.toUTCString()}`,
+      'Content-Type: text/html; charset=utf-8',
+      '',
+      email.content
+    ];
+    
+    const message = messageParts.join('\r\n');
+    const encodedMessage = Buffer.from(message).toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Send the email
+    const result = await connection.gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage
+      }
+    });
+
+    return result.data;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Save sent email to Gmail's sent folder
+ */
 export async function saveSentEmail(gmail, email) {
   try {
     // Create email message in base64 format
@@ -742,5 +786,6 @@ export default {
   initializeGoogleConnection,
   processGoogleMessage,
   checkForNewGoogleEmails,
-  saveSentEmail
+  saveSentEmail,
+  sendEmail
 };
