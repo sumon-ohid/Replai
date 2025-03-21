@@ -9,6 +9,9 @@ import { getSyncConfig } from '../config/emailConfig.js';
 // Store active connections
 const activeConnections = new Map();
 
+// Cache for email service imports
+const emailServiceCache = new Map();
+
 /**
  * Initialize all email connections at server startup
  */
@@ -92,7 +95,7 @@ async function initializeEmailConnection(connectedEmail) {
     }
 
     // Start email checking schedule
-    console.log(`💫 Starting email checks for ${email}`);
+    console.log(`💫  Starting email checks for ${email}`);
     const schedulingManager = (await import('./schedulingManager.js')).default;
     await schedulingManager.scheduleEmailChecks(userId, email);
     
@@ -195,6 +198,46 @@ export const getConnection = (userId, email) => {
 };
 
 /**
+ * Get email service for a specific provider
+ * @param {string} provider - Email provider (google, outlook, etc.)
+ * @returns {Object} Email service module
+ */
+export const getEmailService = async (provider) => {
+  try {
+    // Check cache first
+    if (emailServiceCache.has(provider)) {
+      return emailServiceCache.get(provider);
+    }
+    
+    // Determine the correct service module path
+    let servicePath;
+    switch (provider.toLowerCase()) {
+      case 'google':
+      case 'gmail':
+        servicePath = '../services/googleEmailService.js';
+        break;
+      case 'outlook':
+      case 'microsoft':
+        servicePath = '../services/outlookEmailService.js';
+        break;
+      default:
+        throw new Error(`Unsupported email provider: ${provider}`);
+    }
+    
+    // Import the service module
+    const service = await import(servicePath);
+    
+    // Cache for future use
+    emailServiceCache.set(provider, service);
+    
+    return service;
+  } catch (error) {
+    console.error(`Failed to load email service for ${provider}:`, error);
+    throw new Error(`Email service unavailable for ${provider}`);
+  }
+};
+
+/**
  * Check for new emails
  */
 export const checkEmails = async (userId, email) => {
@@ -204,12 +247,23 @@ export const checkEmails = async (userId, email) => {
       throw new Error('No active connection found');
     }
 
-    const emailService = await import(`../services/googleEmailService.js`);
-    const newEmails = await emailService.checkForNewGoogleEmails(
-      connection.connection.gmail,
-      userId,
-      email
-    );
+    // Get the appropriate email service
+    const service = await getEmailService(connection.provider);
+    
+    // Dispatch to the correct check method
+    let newEmails = [];
+    if (connection.provider === 'google') {
+      newEmails = await service.checkForNewGoogleEmails(
+        connection.connection.gmail,
+        userId,
+        email
+      );
+    } else {
+      throw new Error(`Unsupported provider: ${connection.provider}`);
+    }
+    
+    // Update last sync time
+    await updateLastSync(userId, email);
 
     return {
       success: true,
@@ -218,10 +272,50 @@ export const checkEmails = async (userId, email) => {
     };
   } catch (error) {
     console.error(`Error checking emails for ${email}:`, error);
+    // Update error status in database
+    try {
+      await ConnectedEmail.findOneAndUpdate(
+        { userId, email },
+        { 
+          $set: { 
+            lastError: {
+              message: error.message,
+              date: new Date(),
+              code: 'SYNC_ERROR'
+            }
+          }
+        }
+      );
+    } catch (dbError) {
+      console.error('Failed to update error status:', dbError);
+    }
+    
     return {
       success: false,
       error: error.message
     };
+  }
+};
+
+/**
+ * Update last sync time for a connection
+ */
+export const updateLastSync = async (userId, email) => {
+  const key = `${userId}:${email}`;
+  const connectionData = activeConnections.get(key);
+  
+  if (connectionData) {
+    connectionData.lastSync = new Date();
+    activeConnections.set(key, connectionData);
+    
+    // Also update in database
+    await ConnectedEmail.findOneAndUpdate(
+      { userId, email },
+      { 
+        $set: { lastSync: new Date() },
+        $inc: { 'stats.syncCount': 1 }
+      }
+    );
   }
 };
 
@@ -261,11 +355,167 @@ export const stopConnection = async (connectionKey) => {
   }
 };
 
+/**
+ * Disconnect a Google email connection
+ * @param {string} userId - User ID
+ * @param {string} email - Email address to disconnect
+ * @returns {Object} Result of disconnect operation
+ */
+export const disconnectGoogleEmail = async (userId, email) => {
+  try {
+    console.log(`Disconnecting Google email ${email} for user ${userId}`);
+    
+    // Find the email account
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email, provider: 'google' });
+    
+    if (!connectedEmail) {
+      console.log(`No connected email found for ${email}`);
+      return { success: false, error: 'Email account not found' };
+    }
+    
+    // Stop the active connection if it exists
+    const key = `${userId}:${email}`;
+    await stopConnection(key);
+    
+    // Update the database record
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      status: 'disconnected',
+      disconnectedAt: new Date(),
+      'tokens.refreshToken': null, // Clear tokens for security
+      'tokens.accessToken': null
+    });
+    
+    // Update user preferences
+    await User.findByIdAndUpdate(userId, {
+      $set: { [`emailPreferences.${email}.syncEnabled`]: false }
+    });
+    
+    // Send notification
+    await notifyConnectionStatus({
+      userId,
+      email,
+      status: 'info',
+      message: `Email account ${email} has been disconnected`
+    });
+    
+    console.log(`Successfully disconnected Google email ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to disconnect Google email ${email}:`, error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Re-enable a previously disconnected email
+ */
+export const reconnectEmail = async (userId, email) => {
+  try {
+    // Find the email account
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    
+    if (!connectedEmail) {
+      return { success: false, error: 'Email account not found' };
+    }
+    
+    if (!connectedEmail.tokens?.refreshToken) {
+      return { success: false, error: 'No refresh token available. Please reconnect via OAuth.' };
+    }
+    
+    // Update status in database
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      status: 'active',
+      disconnectedAt: null,
+      reconnectedAt: new Date()
+    });
+    
+    // Initialize the connection
+    const success = await initializeEmailConnection(connectedEmail);
+    
+    if (!success) {
+      throw new Error('Failed to initialize connection');
+    }
+    
+    // Update user preferences
+    await User.findByIdAndUpdate(userId, {
+      $set: { 
+        [`emailPreferences.${email}.syncEnabled`]: true,
+        [`emailPreferences.${email}.mode`]: 'auto-reply',
+        [`emailPreferences.${email}.aiEnabled`]: true
+      }
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to reconnect email ${email}:`, error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get all active connections
+ */
+export const getAllConnections = () => {
+  return [...activeConnections.entries()].map(([key, value]) => {
+    const [userId, email] = key.split(':');
+    return {
+      userId,
+      email,
+      provider: value.provider,
+      startTime: value.startTime,
+      lastSync: value.lastSync
+    };
+  });
+};
+
+/**
+ * Force sync all accounts
+ */
+export const forceSyncAllAccounts = async () => {
+  try {
+    console.log('Force syncing all email accounts...');
+    
+    const connections = getAllConnections();
+    let successCount = 0;
+    let failureCount = 0;
+    
+    for (const conn of connections) {
+      try {
+        const result = await checkEmails(conn.userId, conn.email);
+        if (result.success) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      } catch (error) {
+        console.error(`Error syncing ${conn.email}:`, error);
+        failureCount++;
+      }
+    }
+    
+    console.log(`Force sync complete: ${successCount} successful, ${failureCount} failed`);
+    return { 
+      success: true, 
+      syncedCount: successCount, 
+      failedCount: failureCount 
+    };
+  } catch (error) {
+    console.error('Error during force sync:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   initializeAllConnections,
   addConnection,
   stopConnection,
   getConnection,
+  getEmailService,
   checkEmails,
-  updateConnectionConfig
+  updateConnectionConfig,
+  disconnectGoogleEmail,
+  reconnectEmail,
+  getAllConnections,
+  updateLastSync,
+  forceSyncAllAccounts
 };
