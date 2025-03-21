@@ -25,4 +25,16 @@ router.get('/:email/search', auth, EmailController.searchEmails);
 // for debugging email structure
 router.get('/debug/:email/:messageId?', auth, EmailController.debugEmailStructure);
 
+// star email
+router.patch('/:email/emails/:messageId/star', auth, EmailController.starEmail);
+
+// delete email
+router.delete('/:email/emails/:messageId', auth, EmailController.deleteEmail);
+
+// unread email
+router.patch('/:email/emails/:messageId/unread', auth, EmailController.markAsUnread);
+
+// mark all emails as read
+router.patch('/:email/emails/mark-all-read', auth, EmailController.markAllAsRead);
+
 export default router;

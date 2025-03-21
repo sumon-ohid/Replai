@@ -797,7 +797,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
       try {
         // There's no specific endpoint for marking all as read in the router
         // This endpoint may need to be adjusted based on your backend implementation
-        await api.patch(`/api/emails/v2/${state.selectedAccountEmail}/mark-all-read`, {
+        await api.patch(`/api/emails/v2/${state.selectedAccountEmail}/emails/mark-all-read`, {
           folder: state.currentFolder,
         });
 
