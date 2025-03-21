@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -63,10 +63,12 @@ export default function EmailSidebar({
   const [accountMenuAnchor, setAccountMenuAnchor] =
     React.useState<HTMLElement | null>(null);
 
-  const selectedAccountData = accounts.find(
-    (acc) => acc.id === selectedAccount
-  );
-
+    
+    const selectedAccountData = accounts.find(
+      (acc) => acc.id === selectedAccount
+    );
+    
+  
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAccountMenuAnchor(event.currentTarget);
   };

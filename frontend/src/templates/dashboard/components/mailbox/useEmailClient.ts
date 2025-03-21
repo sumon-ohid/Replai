@@ -446,7 +446,7 @@ export const useEmailClient = (): UseEmailClientReturn => {
         setState(prev => ({
           ...prev,
           accounts,
-          selectedAccount: firstAccount.id || "default-id",
+          selectedAccount: firstAccount.id,
           selectedAccountEmail: firstAccount.email,
           loading: true,
         }));
