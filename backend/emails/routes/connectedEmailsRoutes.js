@@ -1,28 +1,31 @@
 import express from 'express';
-import { requireAuth } from '../middleware/emailAuthMiddleware.js';
-import { 
-  getConnectedEmails, 
-  toggleAutoReply, 
-  toggleSync, 
-  updateEmailMode,
+import {
+  getConnectedEmails,
+  updateSettings,
+  getStatus,
+  disconnect,
   refreshEmailSync
 } from '../controllers/connectedEmailsController.js';
+import auth from '../../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all connected email accounts
-router.get('/', requireAuth, getConnectedEmails);
+// Apply auth middleware to all routes
+router.use(auth);
 
-// Toggle auto-reply for an email
-router.patch('/auto-reply/:email', requireAuth, toggleAutoReply);
+// Get all connected emails
+router.get('/', getConnectedEmails);
 
-// Toggle sync for an email
-router.patch('/sync/:email', requireAuth, toggleSync);
+// Get connection status
+router.get('/:email/status', getStatus);
 
-// Update email mode (draft/normal)
-router.patch('/mode/:email', requireAuth, updateEmailMode);
+// Update connection settings
+router.put('/:email/settings', updateSettings);
 
 // Manually refresh email sync
-router.post('/refresh/:email', requireAuth, refreshEmailSync);
+router.post('/:email/refresh', refreshEmailSync);
+
+// Disconnect email
+router.delete('/:email', disconnect);
 
 export default router;

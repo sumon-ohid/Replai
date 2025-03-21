@@ -462,16 +462,21 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
     // Test connection
     await gmail.users.getProfile({ userId: 'me' });
 
-    // Get ConnectedEmail record
+    // Get ConnectedEmail record (don't check status as it may be pending)
     const connectedEmail = await ConnectedEmail.findOne({ 
       userId, 
       email,
-      provider: 'google',
-      status: 'active'
+      provider: 'google'
     });
     if (!connectedEmail) {
       throw new Error('Connected email record not found. Please reconnect the account.');
     }
+
+    // Update status to active if connection is successful
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      status: 'active',
+      lastConnected: new Date()
+    });
 
     // Initialize models
     getConnectedEmailModels(connectedEmail._id.toString());

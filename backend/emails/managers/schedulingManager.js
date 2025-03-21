@@ -16,79 +16,103 @@ import {
  * @param {string} email
  */
 export const scheduleEmailChecks = async (userId, email) => {
+  console.log(`[${email}] Setting up email check schedule...`);
   const key = `${userId}:${email}`;
 
-  console.log(`[${email}] Scheduling checks...`);
+  try {
+    // Clear existing interval if any
+    removeInterval(key);
 
-  // Clear existing interval if any
-  removeInterval(key);
+    // First check if we have a valid connection
+    const account = await ConnectionManager.getConnection(userId, email);
+    if (!account) {
+      console.error(`[${email}] No active connection found, cannot schedule checks`);
+      return false;
+    }
 
-  // Create new checking interval (every minute)
-  const checkInterval = setInterval(async () => {
-    try {
-      console.log(`[${email}] Checking for new emails...`);
-      const result = await checkEmails(userId, email);
+    console.log(`[${email}] Found active connection, setting up interval...`);
 
-      if (result.success && result.count > 0) {
-        console.log(`[${email}] Found ${result.count} new emails`);
+    // Create new checking interval (every minute)
+    const checkInterval = setInterval(async () => {
+      try {
+        console.log(`[${email}] Checking for new emails...`);
+        const result = await checkEmails(userId, email);
 
-        // Process new emails
-        const processedEmails = await processEmails(userId, email);
-        
-        // Check AI settings
-        const account = await ConnectionManager.getConnection(userId, email);
-        
-        if (!account) {
-          console.log(`[${email}] No active connection found, skipping AI processing`);
-          return;
-        }
+        if (result.success && result.count > 0) {
+          console.log(`[${email}] Found ${result.count} new emails`);
 
-        const aiEnabled = AutomatedResponseService.isAutomationEnabled(account);
-        console.log(`[${email}] AI automation enabled: ${aiEnabled}`);
-
-        if (aiEnabled) {
-          const mode = AutomatedResponseService.getAutomationMode(account);
-          console.log(`[${email}] Running in ${mode} mode`);
-
-          try {
-            await AutomatedResponseService.processNewEmails(userId, email, processedEmails);
-            console.log(`[${email}] Successfully processed emails with AI`);
-          } catch (aiError) {
-            console.error(`[${email}] Error processing emails with AI:`, aiError);
+          // Process new emails
+          const processedEmails = await processEmails(userId, email);
+          if (!processedEmails || processedEmails.length === 0) {
+            console.log(`[${email}] No new emails to process after filtering duplicates`);
+            return;
           }
+          
+          // Get fresh connection data for each check
+          const currentAccount = await ConnectionManager.getConnection(userId, email);
+          if (!currentAccount) {
+            console.log(`[${email}] Connection lost, stopping checks`);
+            removeInterval(key);
+            return;
+          }
+
+          console.log(`[${email}] Checking AI settings:`, {
+            enabled: currentAccount?.aiSettings?.enabled,
+            mode: currentAccount?.aiSettings?.mode
+          });
+
+          const aiEnabled = AutomatedResponseService.isAutomationEnabled(currentAccount);
+          console.log(`[${email}] AI automation enabled: ${aiEnabled}`);
+
+          if (aiEnabled) {
+            const mode = AutomatedResponseService.getAutomationMode(currentAccount);
+            console.log(`[${email}] Running in ${mode} mode`);
+
+            try {
+              await AutomatedResponseService.processNewEmails(userId, email, processedEmails);
+              console.log(`[${email}] Successfully processed emails with AI`);
+            } catch (aiError) {
+              console.error(`[${email}] Error processing emails with AI:`, aiError);
+            }
+          } else {
+            console.log(`[${email}] AI is disabled, skipping automated responses`);
+          }
+        } else if (result.success) {
+          console.log(`[${email}] No new emails found`);
         } else {
-          console.log(`[${email}] AI is disabled, skipping automated responses`);
+          console.error(`[${email}] Error checking emails:`, result.error);
+          await notifyConnectionStatus({
+            userId,
+            email,
+            status: 'error',
+            message: result.error,
+          });
         }
-      } else if (result.success) {
-        console.log(`[${email}] No new emails found`);
-      } else {
-        console.error(`[${email}] Error checking emails:`, result.error);
+      } catch (error) {
+        console.error(`[${email}] Error in scheduled check:`, error);
         await notifyConnectionStatus({
           userId,
           email,
           status: 'error',
-          message: result.error,
+          message: error.message,
         });
       }
-    } catch (error) {
-      console.error(`[${email}] Error in scheduled check:`, error);
-      await notifyConnectionStatus({
-        userId,
-        email,
-        status: 'error',
-        message: error.message,
-      });
-    }
-  }, 60000); // Check every minute
+    }, 60000); // Check every minute
 
-  addInterval(key, {
-    checkInterval,
-    lastCheck: new Date(),
-    email,
-    userId,
-  });
+    // Store the interval
+    addInterval(key, {
+      checkInterval,
+      lastCheck: new Date(),
+      email,
+      userId,
+    });
 
-  console.log(`[${email}] Scheduled checks every minute`);
+    console.log(`[${email}] Successfully started email checking schedule`);
+    return true;
+  } catch (error) {
+    console.error(`[${email}] Failed to set up email check schedule:`, error);
+    return false;
+  }
 };
 
 /**

@@ -83,157 +83,6 @@ export const processEmailContent = async (emailData) => {
 };
 
 /**
- * Extract keywords from email content
- */
-function extractKeywords(emailData) {
-  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
-  const words = text.split(/\W+/);
-  const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']);
-  
-  return Array.from(new Set(
-    words.filter(word => 
-      word.length > 2 && 
-      !commonWords.has(word)
-    )
-  )).slice(0, 5);
-}
-
-/**
- * Determine email category based on content and metadata
- * Valid categories: ['inbox', 'sent', 'draft', 'trash', 'spam', 'important', 'uncategorized']
- */
-function determineCategory(emailData) {
-  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
-  
-  // Check for specific patterns
-  if (/(urgent|asap|attention|priority)/i.test(text)) return 'important';
-  
-  // Default to inbox for other cases
-  return 'inbox';
-}
-
-/**
- * Extract possible action items from email body
- */
-export const extractActionItems = (body) => {
-  if (!body || typeof body !== 'string') return [];
-  
-  const actionItems = [];
-  const actionKeywords = [
-    'please', 'kindly', 'could you', 'can you', 'need to', 'action required',
-    'let me know', 'confirm', 'review', 'approve', 'send', 'provide', 'update'
-  ];
-  
-  const sentences = body.split(/[.?!]\s+/);
-  
-  for (const sentence of sentences) {
-    if (actionKeywords.some(keyword => 
-      sentence.toLowerCase().includes(keyword.toLowerCase()))) {
-      const cleanSentence = sentence.trim()
-        .replace(/^(>|\s)+/, '')
-        .replace(/\s+/g, ' ');
-      
-      if (cleanSentence.length > 5 && cleanSentence.length < 200) {
-        actionItems.push(cleanSentence);
-      }
-    }
-  }
-  
-  return actionItems.slice(0, 3);
-};
-
-/**
- * Determine if an email requires a response
- */
-export const determineIfResponseNeeded = (email) => {
-  if (!email) return false;
-  
-  // Categories that generally don't need responses
-  const noResponseCategories = ['promotions', 'newsletter', 'updates', 'social'];
-  
-  if (noResponseCategories.includes(determineCategory(email))) {
-    return false;
-  }
-  
-  // Check for question marks
-  if (email.subject?.includes('?') || email.body?.includes('?')) {
-    return true;
-  }
-  
-  // Check for common phrases that indicate a response is expected
-  const responsePatterns = [
-    'please let me know', 'looking forward to', 'your response', 'get back to me',
-    'what do you think', 'confirm receipt', 'thoughts on', 'please respond',
-    'can you help', 'would you be able', 'get your input', 'need your feedback'
-  ];
-  
-  const text = `${email.subject} ${email.body}`.toLowerCase();
-  return responsePatterns.some(pattern => text.includes(pattern));
-};
-
-/**
- * Calculate email priority
- * Valid priorities: ['low', 'medium', 'high', 'urgent']
- */
-export const calculatePriority = (email, category, requiresResponse) => {
-  let priority = 'medium';
-  const text = `${email.subject} ${email.body}`.toLowerCase();
-  
-  // Check for urgent keywords
-  const urgentKeywords = ['urgent', 'asap', 'emergency', 'critical'];
-  if (urgentKeywords.some(kw => text.includes(kw))) {
-    return 'urgent';
-  }
-  
-  // Check for high priority keywords
-  const highPriorityKeywords = ['important', 'attention', 'priority'];
-  if (highPriorityKeywords.some(kw => text.includes(kw))) {
-    return 'high';
-  }
-  
-  // Adjust based on category and response requirement
-  if (category === 'important' || requiresResponse) {
-    priority = 'high';
-  } else if (category === 'uncategorized') {
-    priority = 'low';
-  }
-  
-  return priority;
-};
-
-/**
- * Analyze email sentiment
- */
-async function analyzeEmailSentiment(text) {
-  try {
-    // Simple rule-based sentiment analysis
-    const positiveWords = ['thank', 'thanks', 'appreciate', 'good', 'great', 'excellent'];
-    const negativeWords = ['issue', 'problem', 'error', 'wrong', 'bad', 'sorry'];
-    
-    const lowerText = text.toLowerCase();
-    let positiveCount = 0;
-    let negativeCount = 0;
-    
-    positiveWords.forEach(word => {
-      const matches = lowerText.match(new RegExp(word, 'g'));
-      if (matches) positiveCount += matches.length;
-    });
-    
-    negativeWords.forEach(word => {
-      const matches = lowerText.match(new RegExp(word, 'g'));
-      if (matches) negativeCount += matches.length;
-    });
-    
-    if (positiveCount > negativeCount) return 'positive';
-    if (negativeCount > positiveCount) return 'negative';
-    return 'neutral';
-  } catch (error) {
-    console.error('Error analyzing sentiment:', error);
-    return 'neutral';
-  }
-}
-
-/**
  * Check if email should be processed or blocked
  */
 export const shouldProcessEmail = async (userId, fromEmail, fromDomain) => {
@@ -297,38 +146,189 @@ Guidelines:
 
 /**
  * Process new emails
- * @param {string} userId - User ID
- * @param {string} email - Email address
- * @returns {Promise<Array>} Array of processed emails
  */
 export const processEmails = async (userId, email) => {
   try {
-    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    const connectedEmail = await ConnectedEmail.findOne({ 
+      userId, 
+      email,
+      status: 'active'
+    });
+    
     if (!connectedEmail) {
       throw new Error('Connected email account not found');
     }
 
-    // Get new emails from the email service
-    const emailService = await ConnectionManager.getEmailService(connectedEmail.provider);
-    const newEmails = await emailService.getNewEmails(userId, email);
+    // Get connection from connection manager
+    const connection = ConnectionManager.getConnection(userId, email);
+    if (!connection) {
+      throw new Error('No active connection found');
+    }
+
+    // Process each email that's already been fetched
+    const emailModels = connection.emailModels;
+    const unprocessedEmails = await emailModels.Email.find({
+      processed: { $ne: true },
+      messageId: { $exists: true }
+    }).limit(20);
+
+    console.log(`Found ${unprocessedEmails.length} unprocessed emails to process`);
 
     // Process each email
     const processedEmails = await Promise.all(
-      newEmails.map(async (newEmail) => {
-        return await processEmailContent({
-          ...newEmail,
+      unprocessedEmails.map(async (unprocessedEmail) => {
+        const processed = await processEmailContent({
+          ...unprocessedEmail.toObject(),
           userId,
           userEmail: email
         });
+
+        // Update the email with processed data
+        await emailModels.Email.findByIdAndUpdate(unprocessedEmail._id, {
+          $set: {
+            processed: true,
+            processedAt: new Date(),
+            category: processed.category,
+            keywords: processed.keywords,
+            actionItems: processed.actionItems,
+            requiresResponse: processed.requiresResponse,
+            priority: processed.priority,
+            sentiment: processed.sentiment
+          }
+        });
+
+        return processed;
       })
     );
 
-    return processedEmails;
+    return processedEmails.filter(e => e); // Filter out any nulls
   } catch (error) {
     console.error('Error processing emails:', error);
     return [];
   }
 };
+
+// Helper functions
+function extractKeywords(emailData) {
+  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
+  const words = text.split(/\W+/);
+  const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']);
+  
+  return Array.from(new Set(
+    words.filter(word => 
+      word.length > 2 && 
+      !commonWords.has(word)
+    )
+  )).slice(0, 5);
+}
+
+function determineCategory(emailData) {
+  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
+  
+  if (/(urgent|asap|attention|priority)/i.test(text)) return 'important';
+  return 'inbox';
+}
+
+function extractActionItems(body) {
+  if (!body || typeof body !== 'string') return [];
+  
+  const actionItems = [];
+  const actionKeywords = [
+    'please', 'kindly', 'could you', 'can you', 'need to', 'action required',
+    'let me know', 'confirm', 'review', 'approve', 'send', 'provide', 'update'
+  ];
+  
+  const sentences = body.split(/[.?!]\s+/);
+  
+  for (const sentence of sentences) {
+    if (actionKeywords.some(keyword => 
+      sentence.toLowerCase().includes(keyword.toLowerCase()))) {
+      const cleanSentence = sentence.trim()
+        .replace(/^(>|\s)+/, '')
+        .replace(/\s+/g, ' ');
+      
+      if (cleanSentence.length > 5 && cleanSentence.length < 200) {
+        actionItems.push(cleanSentence);
+      }
+    }
+  }
+  
+  return actionItems.slice(0, 3);
+}
+
+function determineIfResponseNeeded(email) {
+  if (!email) return false;
+  
+  const noResponseCategories = ['promotions', 'newsletter', 'updates', 'social'];
+  
+  if (noResponseCategories.includes(determineCategory(email))) {
+    return false;
+  }
+  
+  if (email.subject?.includes('?') || email.body?.includes('?')) {
+    return true;
+  }
+  
+  const responsePatterns = [
+    'please let me know', 'looking forward to', 'your response', 'get back to me',
+    'what do you think', 'confirm receipt', 'thoughts on', 'please respond',
+    'can you help', 'would you be able', 'get your input', 'need your feedback'
+  ];
+  
+  const text = `${email.subject} ${email.body}`.toLowerCase();
+  return responsePatterns.some(pattern => text.includes(pattern));
+}
+
+function calculatePriority(email, category, requiresResponse) {
+  let priority = 'medium';
+  const text = `${email.subject} ${email.body}`.toLowerCase();
+  
+  const urgentKeywords = ['urgent', 'asap', 'emergency', 'critical'];
+  if (urgentKeywords.some(kw => text.includes(kw))) {
+    return 'urgent';
+  }
+  
+  const highPriorityKeywords = ['important', 'attention', 'priority'];
+  if (highPriorityKeywords.some(kw => text.includes(kw))) {
+    return 'high';
+  }
+  
+  if (category === 'important' || requiresResponse) {
+    priority = 'high';
+  } else if (category === 'uncategorized') {
+    priority = 'low';
+  }
+  
+  return priority;
+}
+
+async function analyzeEmailSentiment(text) {
+  try {
+    const lowerText = text.toLowerCase();
+    const positiveWords = ['thank', 'thanks', 'appreciate', 'good', 'great', 'excellent'];
+    const negativeWords = ['issue', 'problem', 'error', 'wrong', 'bad', 'sorry'];
+    
+    let positiveCount = 0;
+    let negativeCount = 0;
+    
+    positiveWords.forEach(word => {
+      const matches = lowerText.match(new RegExp(word, 'g'));
+      if (matches) positiveCount += matches.length;
+    });
+    
+    negativeWords.forEach(word => {
+      const matches = lowerText.match(new RegExp(word, 'g'));
+      if (matches) negativeCount += matches.length;
+    });
+    
+    if (positiveCount > negativeCount) return 'positive';
+    if (negativeCount > positiveCount) return 'negative';
+    return 'neutral';
+  } catch (error) {
+    console.error('Error analyzing sentiment:', error);
+    return 'neutral';
+  }
+}
 
 export default {
   processEmailContent,

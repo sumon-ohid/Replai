@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import EmailAccount from '../../models/ConnectedEmailModels.js';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
 import { getMonitoringConfig } from '../config/emailConfig.js';
 
 // Define notification schema
@@ -161,7 +161,7 @@ class NotificationManager {
       
       // Update account status if email-related
       if (notification.email) {
-        await EmailAccount.findOneAndUpdate(
+        await ConnectedEmail.findOneAndUpdate(
           { email: notification.email },
           { 
             $set: { status: 'error' },
@@ -254,6 +254,67 @@ class NotificationManager {
 }
 
 /**
+ * Notify about email connection status
+ * @param {Object} params
+ * @param {string} params.userId - The user ID
+ * @param {string} params.email - The email address
+ * @param {string} params.status - Connection status (active, error, warning, info)
+ * @param {string} params.message - Notification message
+ * @param {Object} [params.metadata] - Additional data
+ * @returns {Promise<Object|null>} The created notification or null on failure
+ */
+export const notifyConnectionStatus = async (params) => {
+  const { userId, email, status, message, metadata = {} } = params;
+  
+  // Map status to notification type
+  let type = 'info';
+  let title = 'Email Connection Update';
+  
+  if (status === 'error') {
+    type = 'error';
+    title = 'Email Connection Error';
+  } else if (status === 'warning') {
+    type = 'warning';
+    title = 'Email Connection Warning';
+  } else if (status === 'active') {
+    type = 'success';
+    title = 'Email Connection Established';
+  }
+  
+  try {
+    const notification = await NotificationManager.createNotification({
+      userId,
+      type,
+      title,
+      message,
+      email,
+      metadata: {
+        ...metadata,
+        connectionStatus: status,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    // Update email connection status in database if needed
+    if (status === 'error' || status === 'active') {
+      try {
+        await ConnectedEmail.findOneAndUpdate(
+          { email },
+          { $set: { status } }
+        );
+      } catch (dbError) {
+        console.error(`Failed to update email account status: ${dbError.message}`);
+      }
+    }
+    
+    return notification;
+  } catch (error) {
+    console.error(`Failed to create connection status notification: ${error.message}`);
+    return null;
+  }
+};
+
+/**
  * Notify about connection errors.
  * @param {Object} params
  */
@@ -264,6 +325,54 @@ export const notifyConnectionError = async (params) => {
     email,
     status: 'error',
     message,
+  });
+};
+
+/**
+ * Notify about connection success
+ * @param {Object} params
+ */
+export const notifyConnectionSuccess = async (params) => {
+  const { userId, email, message = 'Email connection established successfully' } = params;
+  await notifyConnectionStatus({
+    userId,
+    email,
+    status: 'active',
+    message,
+  });
+};
+
+/**
+ * Notify about sync status
+ * @param {Object} params
+ */
+export const notifySyncStatus = async (params) => {
+  const { userId, email, success, emailsProcessed = 0, message } = params;
+  
+  await notifyConnectionStatus({
+    userId,
+    email,
+    status: success ? 'info' : 'warning',
+    message: message || (success 
+      ? `Successfully synced ${emailsProcessed} emails` 
+      : 'Email sync encountered issues'),
+    metadata: { emailsProcessed }
+  });
+};
+
+/**
+ * Notify about rate limiting
+ * @param {Object} params
+ */
+export const notifyRateLimited = async (params) => {
+  const { userId, email, limit, resetTime } = params;
+  
+  await notifyConnectionStatus({
+    userId,
+    email,
+    status: 'warning',
+    message: `Rate limit reached for ${email}. Operations will resume at ${new Date(resetTime).toLocaleTimeString()}`,
+    metadata: { limit, resetTime }
   });
 };
 

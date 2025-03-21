@@ -1,401 +1,192 @@
-import mongoose from "mongoose";
-import User from "../../models/User.js";
-import {
-  getConnection,
-  updateConnectionConfig,
-} from "../managers/connectionManager.js";
+import mongoose from 'mongoose';
+import ConnectedEmail from '../../models/ConnectedEmail.js';
+import connectionManager from '../managers/connectionManager.js';
+import { notifyConnectionStatus } from '../managers/notificationManager.js';
+import { getSyncConfig } from '../config/emailConfig.js';
 
 /**
- * Get all connected email accounts for a user
+ * Get all connected emails for a user
  */
 export const getConnectedEmails = async (req, res) => {
   try {
     const userId = req.user._id;
-    console.log("Fetching connected emails for user:", userId);
+    const connectedEmails = await ConnectedEmail.find({ userId })
+      .select('-tokens.accessToken -tokens.refreshToken')
+      .sort('-createdAt');
+    
+    res.json({ success: true, emails: connectedEmails });
+  } catch (error) {
+    console.error('Error getting connected emails:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get connected emails' 
+    });
+  }
+};
 
-    const user = await User.findById(userId).select(
-      "connectedEmails emailPreferences"
-    );
+/**
+ * Update connection settings
+ */
+export const updateSettings = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { config } = req.body;
+    const userId = req.user._id;
 
-    if (!user || !user.connectedEmails) {
-      console.log("No connected emails found for user:", userId);
-      return res.json([]);
-    }
-
-    // Map connected emails to include additional status information
-    const connectedEmails = user.connectedEmails.map((email) => {
-      const emailAddress = email.email;
-      const preferences = user.emailPreferences?.[emailAddress] || {};
-
-      // Get connection status
-      const connection = getConnection(userId, emailAddress);
+    // Update using connection manager
+    const success = await connectionManager.updateConnectionConfig(userId, email, config);
+    
+    if (success) {
+      await notifyConnectionStatus({
+        userId,
+        email,
+        status: 'info',
+        message: 'Connection settings updated'
+      });
       
-      const mappedEmail = {
-        _id: email._id.toString(), // Convert ObjectId to string
-        email: emailAddress,
-        provider: email.provider || "google",
-        connected: email.connected || true,
-        connectedAt: email.connectedAt || new Date(),
-        syncEnabled: preferences.syncEnabled !== false,
-        autoReplyEnabled: preferences.mode === "auto-reply",
-        aiEnabled: preferences.aiEnabled || false, // Include AI enabled status
-        mode: preferences.mode || "auto-reply",
-        lastSync: connection?.lastSync || email.lastSync || null,
-        status: connection ? (connection.error ? "error" : "active") : "paused",
-        name: email.name || emailAddress.split("@")[0],
-        picture: email.picture || null,
-      };
-
-      console.log("Mapped email account:", emailAddress, "with ID:", mappedEmail._id);
-      return mappedEmail;
-    });
-
-    console.log(`Returning ${connectedEmails.length} connected email(s)`, 
-      connectedEmails.map(e => ({ id: e._id, email: e.email }))
-    );
-    
-    res.json(connectedEmails);
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        error: 'Failed to update settings' 
+      });
+    }
   } catch (error) {
-    console.error("Error getting connected emails:", error);
-    res.status(500).json({ error: "Failed to get connected emails" });
+    console.error('Error updating settings:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
 /**
- * Toggle auto-reply mode for an email
+ * Get connection status
  */
-export const toggleAutoReply = async (req, res) => {
+export const getStatus = async (req, res) => {
   try {
     const { email } = req.params;
-    const { enabled } = req.body;
     const userId = req.user._id;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email address is required" });
-    }
-
-    // Update user preferences
-    const mode = enabled ? "auto-reply" : "draft";
-
-    // Check if user has this email connected
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
+    const connection = connectionManager.getConnection(userId, email);
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
 
     if (!connectedEmail) {
-      return res
-        .status(404)
-        .json({ error: "Email not found in connected accounts" });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Email connection not found' 
+      });
     }
-
-    // Update the email preferences with both mode and aiEnabled status
-    await User.findByIdAndUpdate(userId, {
-      $set: { 
-        [`emailPreferences.${email}.mode`]: mode,
-        [`emailPreferences.${email}.aiEnabled`]: enabled // Set AI enabled based on auto-reply state
-      },
-    });
-
-    // Update live connection if it exists
-    const connectionUpdated = await updateConnectionConfig(userId, email, {
-      mode,
-      aiEnabled: enabled
-    });
 
     res.json({
       success: true,
-      email,
-      mode,
-      aiEnabled: enabled,
-      connectionUpdated,
-    });
-  } catch (error) {
-    console.error("Error toggling auto-reply:", error);
-    res.status(500).json({ error: "Failed to update auto-reply settings" });
-  }
-};
-
-/**
- * Toggle sync status for an email
- */
-export const toggleSync = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { enabled } = req.body;
-    const userId = req.user._id;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email address is required" });
-    }
-
-    // Check if user has this email connected
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
-
-    if (!connectedEmail) {
-      return res
-        .status(404)
-        .json({ error: "Email not found in connected accounts" });
-    }
-
-    // Update the email preferences
-    await User.findByIdAndUpdate(userId, {
-      $set: { [`emailPreferences.${email}.syncEnabled`]: enabled },
-    });
-
-    // Update live connection if it exists
-    const connection = getConnection(userId, email);
-    let lastSync = null;
-
-    if (connection) {
-      await updateConnectionConfig(userId, email, { syncEnabled: enabled });
-
-      if (enabled && connection.checkForNewEmails) {
-        try {
-          await connection.checkForNewEmails();
-          lastSync = new Date();
-
-          await User.findByIdAndUpdate(
-            userId,
-            {
-              $set: { [`connectedEmails.$[elem].lastSync`]: lastSync },
-            },
-            {
-              arrayFilters: [{ "elem.email": email }],
-            }
-          );
-        } catch (syncError) {
-          console.error(
-            `Error checking for new emails on sync toggle: ${syncError}`
-          );
-        }
+      status: {
+        isConnected: !!connection,
+        lastConnected: connectedEmail.lastConnected,
+        status: connectedEmail.status,
+        syncConfig: connectedEmail.syncConfig,
+        aiSettings: connectedEmail.aiSettings,
+        error: connectedEmail.lastError
       }
-    }
-
-    res.json({
-      success: true,
-      email,
-      syncEnabled: enabled,
-      lastSync,
     });
   } catch (error) {
-    console.error("Error toggling sync:", error);
-    res.status(500).json({ error: "Failed to update sync settings" });
+    console.error('Error getting status:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
 /**
- * Update email mode (draft/normal)
- */
-export const updateEmailMode = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { mode } = req.body;
-    const userId = req.user._id;
-
-    console.log("Updating email mode:", email, mode);
-
-    if (!email) {
-      return res.status(400).json({ error: "Email address is required" });
-    }
-
-    if (!["draft", "normal", "auto-reply"].includes(mode)) {
-      return res
-        .status(400)
-        .json({ error: "Invalid mode. Must be draft, normal, or auto-reply" });
-    }
-
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
-
-    if (!connectedEmail) {
-      return res
-        .status(404)
-        .json({ error: "Email not found in connected accounts" });
-    }
-
-    // Update mode and aiEnabled status
-    const aiEnabled = mode === "auto-reply";
-    
-    await User.findByIdAndUpdate(userId, {
-      $set: { 
-        [`emailPreferences.${email}.mode`]: mode,
-        [`emailPreferences.${email}.aiEnabled`]: aiEnabled
-      },
-    });
-
-    const connectionUpdated = await updateConnectionConfig(userId, email, {
-      mode,
-      aiEnabled
-    });
-
-    res.json({
-      success: true,
-      email,
-      mode,
-      aiEnabled,
-      connectionUpdated,
-      emailId: connectedEmail._id,
-    });
-  } catch (error) {
-    console.error("Error updating email mode:", error);
-    res.status(500).json({ error: "Failed to update email mode" });
-  }
-};
-
-/**
- * Refresh email account sync
+ * Manually refresh email sync
  */
 export const refreshEmailSync = async (req, res) => {
   try {
     const { email } = req.params;
     const userId = req.user._id;
-    let syncError = null;
-    let lastSync = null;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email address is required" });
+    const connection = connectionManager.getConnection(userId, email);
+    if (!connection) {
+      return res.status(400).json({
+        success: false,
+        error: 'No active connection found'
+      });
     }
 
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
-
-    if (!connectedEmail) {
-      return res
-        .status(404)
-        .json({ error: "Email not found in connected accounts" });
-    }
-
-    const connection = getConnection(userId, email);
-    console.log("Got connection for refresh:", connection ? "yes" : "no");
-
-    if (connection && connection.checkForNewEmails) {
-      try {
-        await connection.checkForNewEmails();
-        lastSync = new Date();
-
-        await updateConnectionConfig(userId, email, { syncEnabled: true });
-
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            $set: {
-              [`connectedEmails.$[elem].lastSync`]: lastSync,
-              [`emailPreferences.${email}.syncEnabled`]: true,
-            },
-          },
-          {
-            arrayFilters: [{ "elem.email": email }],
-          }
-        );
-      } catch (error) {
-        console.error("Error during email sync:", error);
-        syncError = error.message;
-      }
+    // Check for new emails
+    const result = await connectionManager.checkEmails(userId, email);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Email sync refreshed',
+        newEmails: result.count
+      });
     } else {
-      console.log(`Using temporary connection for ${email}`);
-      
-      const tempConnection = {
-        checkForNewEmails: async () => {
-          console.log(`[Temporary Connection] Checking emails for ${email}`);
-          return { count: 0 };
-        },
-        status: "temporary",
-        lastSync: new Date(),
-        error: null,
-      };
-
-      try {
-        await tempConnection.checkForNewEmails();
-        lastSync = new Date();
-        
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            $set: {
-              [`connectedEmails.$[elem].lastSync`]: lastSync,
-              [`emailPreferences.${email}.syncEnabled`]: true,
-            },
-          },
-          {
-            arrayFilters: [{ "elem.email": email }],
-          }
-        );
-      } catch (error) {
-        console.error("Error with temporary connection:", error);
-        syncError = error.message;
-      }
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to refresh sync'
+      });
     }
-
-    res.json({
-      success: !syncError,
-      email,
-      emailId: connectedEmail._id,
-      lastSync: syncError ? null : lastSync,
-      error: syncError,
-      temporary: !connection || !connection.checkForNewEmails
-    });
   } catch (error) {
-    console.error("Error refreshing email sync:", error);
-    res.status(500).json({ error: "Failed to refresh email sync" });
+    console.error('Error refreshing sync:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
 /**
- * Toggle AI-enabled status directly
+ * Disconnect email
  */
-export const toggleAI = async (req, res) => {
+export const disconnect = async (req, res) => {
   try {
     const { email } = req.params;
-    const { enabled } = req.body;
     const userId = req.user._id;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email address is required" });
-    }
-
-    // Check if user has this email connected
-    const user = await User.findById(userId);
-    const connectedEmail = user.connectedEmails.find((e) => e.email === email);
-
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
     if (!connectedEmail) {
-      return res
-        .status(404)
-        .json({ error: "Email not found in connected accounts" });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Email connection not found' 
+      });
     }
 
-    // Update the email preferences for AI
-    await User.findByIdAndUpdate(userId, {
-      $set: { 
-        [`emailPreferences.${email}.aiEnabled`]: enabled,
-        // If enabling AI, also set mode to auto-reply
-        ...(enabled ? { [`emailPreferences.${email}.mode`]: "auto-reply" } : {})
-      },
+    // Use connection manager to stop connection
+    const key = `${userId}:${email}`;
+    await connectionManager.stopConnection(key);
+
+    // Update database status
+    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      status: 'disconnected',
+      disconnectedAt: new Date(),
+      'tokens.accessToken': null,
+      'tokens.refreshToken': null
     });
 
-    // Update config with AI settings
-    const connectionUpdated = await updateConnectionConfig(userId, email, {
-      aiEnabled: enabled,
-      ...(enabled ? { mode: "auto-reply" } : {})
-    });
-
-    res.json({
-      success: true,
+    await notifyConnectionStatus({
+      userId,
       email,
-      aiEnabled: enabled,
-      mode: enabled ? "auto-reply" : user.emailPreferences?.[email]?.mode || "draft",
-      connectionUpdated,
+      status: 'info',
+      message: 'Email disconnected successfully'
     });
+
+    res.json({ success: true });
   } catch (error) {
-    console.error("Error toggling AI:", error);
-    res.status(500).json({ error: "Failed to update AI settings" });
+    console.error('Error disconnecting email:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
 export default {
   getConnectedEmails,
-  toggleAutoReply,
-  toggleSync,
-  updateEmailMode,
-  refreshEmailSync,
-  toggleAI,
+  updateSettings,
+  getStatus,
+  disconnect,
+  refreshEmailSync
 };
