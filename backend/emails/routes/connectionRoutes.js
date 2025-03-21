@@ -24,6 +24,12 @@ router.put('/:email', ConnectionController.updateConnection);
 // Delete connection
 router.delete('/:email', ConnectionController.deleteConnection);
 
+// Resume connection or pause connection
+router.post('/:email/toggle-connection', ConnectionController.toggleConnectionStatus);
+
+// Refresh connection
+router.post('/:email/refresh', ConnectionController.refreshConnection);
+
 // Connection operations
 router.post('/:email/check', ConnectionController.checkEmails);
 router.post('/:email/sync', ConnectionController.syncEmails);

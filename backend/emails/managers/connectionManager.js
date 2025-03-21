@@ -557,6 +557,40 @@ export const forceSyncAllAccounts = async () => {
   }
 };
 
+/**
+ * Get all active connections for a specific user
+ * @param {string} userId - User ID to filter connections
+ * @returns {Array} Array of active connection objects for the user
+ */
+export const getUserConnections = (userId) => {
+  if (!userId) {
+    console.warn('getUserConnections called without userId');
+    return [];
+  }
+  
+  try {
+    // Filter connections by userId
+    const userConnections = [];
+    
+    for (const [key, connection] of activeConnections.entries()) {
+      if (connection.userId === userId) {
+        userConnections.push({
+          email: connection.email,
+          provider: connection.provider,
+          startTime: connection.startTime,
+          status: 'active'
+        });
+      }
+    }
+    
+    return userConnections;
+  } catch (error) {
+    console.error('Error getting user connections:', error);
+    return [];
+  }
+};
+
+// Make sure to add the function to the default export
 export default {
   initializeAllConnections,
   addConnection,
@@ -569,5 +603,6 @@ export default {
   reconnectEmail,
   getAllConnections,
   updateLastSync,
-  forceSyncAllAccounts
+  forceSyncAllAccounts,
+  getUserConnections
 };

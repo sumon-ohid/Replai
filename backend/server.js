@@ -25,7 +25,7 @@ import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import authConfig from './emails/config/authConfig.js';
 import { requireAuth } from './emails/middleware/emailAuthMiddleware.js';
-import connectedEmailsRoutes from './emails/routes/connectedEmailsRoutes.js';
+import connectionController from './emails/routes/connectionRoutes.js';
 import emailExtraRoutes from './emails/routes/index.js';
 import { errorMiddleware } from './emails/utils/errorHandler.js';
 
@@ -256,7 +256,7 @@ app.use("/api/calendar", googleCalendar);
 app.use("/api/emails/v2", emailRoutes);
 app.use("/api/emails/auth", emailAuthRoutes);
 app.use("/api/emails/stats", emailStatsRoutes);
-app.use("/api/emails/auth/connected", connectedEmailsRoutes);
+app.use("/api/emails/connection", connectionController);
 
 // Extra email routes for additional features
 app.use("/api/emails/extras", emailExtraRoutes);

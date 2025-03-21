@@ -88,61 +88,82 @@ function ConnectedEmailsContent() {
   const [actionEmail, setActionEmail] = React.useState<EmailAccount | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-  const fetchConnectedEmails = async () => {
+   const fetchConnectedEmails = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
       enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
-
+  
     setLoading(true);
     setError(null);
-
+  
     try {
-      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/connected`, {
+      const response = await axios.get(`${apiBaseUrl}/api/emails/connection`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       // Extract connected emails from response
-      let responseData = response.data as any[];
-
-      // Handle case where backend returns { connectedEmails: [...] }
-      if (
-        responseData &&
-        typeof responseData === "object" &&
-        "connectedEmails" in responseData
-      ) {
-        responseData = (responseData as { connectedEmails: any[] }).connectedEmails;
+      let responseData = response.data;
+      console.log("Raw connection response data:", responseData);
+  
+      // Handle different response formats
+      if (responseData && typeof responseData === "object") {
+        // If response is an object with emails property, extract it
+        if ("emails" in responseData) {
+          responseData = responseData.emails;
+          console.log("Extracted emails from object:", responseData);
+        }
+        // If response is an object with connectedEmails property, extract it
+        else if ("connectedEmails" in responseData) {
+          responseData = responseData.connectedEmails;
+          console.log("Extracted connectedEmails from object:", responseData);
+        }
       }
-
+      
+      // Ensure responseData is an array
+      if (!Array.isArray(responseData)) {
+        console.error("Response data is not an array:", responseData);
+        setError("Invalid response format from server");
+        setLoading(false);
+        return;
+      }
+  
+      console.log("Normalized response data (array):", responseData);
+  
       // Map response data to our EmailAccount interface and assign IDs
       // Filter out disconnected or deactivated accounts
       const emails = responseData
         .filter((email: any) => {
-          // Remove disconnected emails or ones with status "deactivated"
-          return (email.connected !== false) && (email.status !== "disconnected");
+          // Keep accounts that are not explicitly disconnected or deactivated
+          return email.status !== "disconnected" && email.status !== "deactivated";
         })
-        .map((email: any, index: number) => ({
-          id: index, // Use index as ID
-          _id: email._id || `temp-id-${index}`,
-          email: email.email || "",
-          provider: email.provider || "google",
-          status:
-            email.syncEnabled === false ? "paused" : email.status || "active",
-          lastSync: formatLastSync(email.lastSync),
-          type: email.type || "personal",
-          autoReplyEnabled: email.autoReplyEnabled !== false, // Default to true if not specified
-          aiEnabled: email.aiEnabled !== false, // Default to true if not specified
-          mode: email.mode || "auto",
-          syncEnabled: email.syncEnabled !== false, // Default to true if not specified
-          picture: email.picture || null,
-          name: email.name || "",
-          connected: email.connected !== false, // Default to true if not specified
-        }));
+        .map((email: any, index: number) => {
+          // Debug individual email mapping
+          console.log(`Mapping email ${index}:`, email);
+          
+          return {
+            id: index, // Use index as ID
+            _id: email._id || `temp-id-${index}`,
+            email: email.email || "",
+            provider: email.provider || "google",
+            status: email.status || "active",
+            lastSync: formatLastSync(email.lastSync),
+            type: email.type || "personal",
+            autoReplyEnabled: email.aiEnabled || false, // Map aiEnabled to autoReplyEnabled
+            aiEnabled: email.aiEnabled || false,
+            mode: email.aiMode || "auto",
+            syncEnabled: email.syncEnabled !== false, // Default to true if not specified
+            picture: email.picture || null,
+            name: email.name || "",
+            connected: email.connected !== false, // Default to true if not specified
+          };
+        });
       
+      console.log("Processed emails:", emails);
       setConnectedEmails(emails);
       setLoading(false);
     } catch (error) {
@@ -351,7 +372,7 @@ function ConnectedEmailsContent() {
     try {
       // Use POST instead of PATCH for refresh with proper error handling
       const response = await axios.post(
-        `${apiBaseUrl}/api/emails/auth/connected/refresh/${email.email}`,
+        `${apiBaseUrl}/api/emails/connection/${email.email}/refresh/`,
         {}, // Empty body
         { 
           headers: { Authorization: `Bearer ${token}` },
