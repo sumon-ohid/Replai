@@ -194,6 +194,7 @@ class AutomatedResponseService {
           // Check if response is needed
           if (!processedEmail.requiresResponse) {
             console.log(`No response needed for email: ${emailId}`);
+
             // Mark as processed even if no response needed
             await account.emailModels.Email.findOneAndUpdate(
               { messageId: emailId },
@@ -207,7 +208,7 @@ class AutomatedResponseService {
             );
             continue;
           }
-  
+
           console.log(`Generating AI response for email: ${emailId}`);
           
           // Generate AI response
@@ -235,7 +236,7 @@ class AutomatedResponseService {
             mode: mode,
             from: email,  // The account sending the response
             to: newEmail.from?.email,
-            subject: `Re: ${newEmail.subject || 'No Subject'}`,
+            subject: `${newEmail.subject || 'No Subject'}`,
             autoResponse: true
           };
   
@@ -298,7 +299,8 @@ class AutomatedResponseService {
               },
               provider: account.provider || 'google', // Ensure provider is set
               autoResponse: true,
-              originalMessageId: emailId
+              originalMessageId: emailId,
+              read: true,
             });
             try {
               await sentEmail.save();

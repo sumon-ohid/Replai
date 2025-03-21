@@ -18,22 +18,82 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
  */
 export const processEmailContent = async (emailData) => {
   try {
-    // Ensure emailData has all required fields as strings
-    const safeData = {
-      ...emailData,
-      subject: typeof emailData.subject === 'string' ? emailData.subject : String(emailData.subject || ''),
-      body: typeof emailData.body === 'string' ? emailData.body : String(emailData.body?.text || emailData.body || '')
+    // Normalize and safely extract the body content
+    const extractBodyContent = (body) => {
+      if (!body) return '';
+      
+      // Handle string body
+      if (typeof body === 'string') return body;
+      
+      // Handle object body with text/html properties
+      if (typeof body === 'object') {
+        // First try to get text content
+        if (body.text && typeof body.text === 'string') return body.text;
+        
+        // Otherwise try HTML content and strip tags
+        if (body.html && typeof body.html === 'string') {
+          return body.html.replace(/<[^>]*>/g, ' ')
+                          .replace(/\s+/g, ' ')
+                          .trim();
+        }
+        
+        // If body is an object but doesn't have text/html props, try JSON stringify
+        try {
+          return JSON.stringify(body);
+        } catch (e) {
+          return '';
+        }
+      }
+      
+      // Last resort - try to convert to string
+      return String(body || '');
     };
     
-    // Get sender information
-    const sender = typeof safeData.from === 'object' && safeData.from !== null
-      ? safeData.from
-      : parseEmailAddress(String(safeData.from || ''));
-
+    // Normalize the email data into a consistent format
+    const normalizeEmailData = (data) => {
+      // Extract the body content safely
+      const bodyContent = extractBodyContent(data.body);
+      
+      // Create normalized body object
+      const normalizedBody = typeof data.body === 'object' && data.body !== null
+        ? {
+            text: data.body.text || bodyContent,
+            html: data.body.html || null
+          }
+        : {
+            text: bodyContent,
+            html: null
+          };
+      
+      // Create normalized email data object
+      return {
+        id: data.id || data._id?.toString() || data.messageId,
+        messageId: data.messageId || data.id || data._id?.toString(),
+        threadId: data.threadId || data.messageId,
+        subject: typeof data.subject === 'string' ? data.subject : String(data.subject || '(No Subject)'),
+        body: normalizedBody,
+        bodyText: normalizedBody.text, // Add extracted text for processing
+        from: typeof data.from === 'object' && data.from !== null
+          ? data.from
+          : parseEmailAddress(String(data.from || '')),
+        to: Array.isArray(data.to) ? data.to : [data.to].filter(Boolean),
+        userId: data.userId,
+        userEmail: data.userEmail,
+        date: data.date || data.timestamp || new Date().toISOString()
+      };
+    };
+    
+    // Normalize the email data
+    const normalizedData = normalizeEmailData(emailData);
+    
+    // Debug log to help troubleshoot
+    console.log(`Processing email: ${normalizedData.messageId}, Subject: ${normalizedData.subject.slice(0, 50)}...`);
+    console.log(`Email body type: ${typeof emailData.body}, normalized body length: ${normalizedData.bodyText.length} chars`);
+    
     // Get connected email account
     const connectedEmail = await ConnectedEmail.findOne({ 
-      userId: safeData.userId,
-      email: safeData.userEmail || sender.email
+      userId: normalizedData.userId,
+      email: normalizedData.userEmail || normalizedData.from.email
     });
 
     if (!connectedEmail) {
@@ -41,48 +101,277 @@ export const processEmailContent = async (emailData) => {
     }
     
     // Extract any possible action items
-    const actionItems = extractActionItems(safeData.body);
+    const actionItems = extractActionItems(normalizedData.bodyText);
     
     // Determine if email requires a response
-    const requiresResponse = determineIfResponseNeeded(safeData);
+    const requiresResponse = determineIfResponseNeeded({
+      ...normalizedData,
+      body: normalizedData.bodyText // Use plain text for detection
+    });
+    
+    // Log whether response is needed
+    console.log(`Response needed for ${normalizedData.subject}: ${requiresResponse}`);
     
     // Get email category
-    const category = determineCategory(safeData);
+    const category = determineCategory({
+      ...normalizedData,
+      body: normalizedData.bodyText // Use plain text for categorization
+    });
     
     // Determine priority
-    const priority = calculatePriority(safeData, category, requiresResponse);
+    const priority = calculatePriority(
+      { ...normalizedData, body: normalizedData.bodyText },
+      category, 
+      requiresResponse
+    );
 
     // Analyze sentiment
-    const sentiment = await analyzeEmailSentiment(safeData.body);
+    const sentiment = await analyzeEmailSentiment(normalizedData.bodyText);
     
-    // Return processed data
+    // Keywords extraction
+    const keywords = extractKeywords({
+      subject: normalizedData.subject,
+      body: normalizedData.bodyText
+    });
+    
+    // Return processed data with the original structure preserved
     return {
-      ...safeData,
+      ...emailData, // Keep all original fields
+      
+      // Preserve the original body structure
+      body: emailData.body,
+      
+      // Add processed metadata
       category,
-      confidence: 0.8, // Default confidence
-      keywords: extractKeywords(safeData),
+      confidence: 0.85,
+      keywords,
       actionItems: Array.isArray(actionItems) ? actionItems : [],
       requiresResponse: !!requiresResponse,
       priority,
       sentiment,
-      // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
-      // processed: true,
-      // processedAt: new Date()
+      
+      // Add normalized data for debugging
+      _normalized: {
+        subject: normalizedData.subject,
+        bodyLength: normalizedData.bodyText.length,
+        from: normalizedData.from
+      }
     };
   } catch (error) {
-    console.error('Error processing email content:', error);
+    console.error('Error processing email content:', error.message);
+    console.error('Email data:', {
+      id: emailData.id || emailData._id || emailData.messageId,
+      subject: emailData.subject,
+      bodyType: typeof emailData.body,
+      error: error.stack
+    });
     
     // On error, still return data with basic safe values
     return {
       ...emailData,
       category: 'uncategorized',
-      // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
-      // processed: true,
-      // processedAt: new Date(),
+      confidence: 0.5,
+      keywords: [],
+      actionItems: [],
+      requiresResponse: false,
+      priority: 'medium',
+      sentiment: 'neutral',
       processingError: error.message
     };
   }
 };
+
+// Helper functions
+function extractKeywords(emailData) {
+  // Early return if data is missing
+  if (!emailData) return [];
+  
+  try {
+    // Safely extract text content
+    const subject = emailData.subject || '';
+    const body = typeof emailData.body === 'string' ? emailData.body : 
+                (emailData.body?.text || 
+                 emailData.bodyText || 
+                 (typeof emailData.body === 'object' ? JSON.stringify(emailData.body) : ''));
+    
+    // Combine and normalize text
+    const text = `${subject} ${body}`.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Split into words
+    const words = text.split(/\s+/);
+    
+    // Filter common words
+    const commonWords = new Set([
+      'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with',
+      'this', 'that', 'these', 'those', 'from', 'are', 'was', 'were', 'will', 
+      'would', 'could', 'should', 'has', 'have', 'had', 'not', 'been'
+    ]);
+    
+    // Extract more meaningful keywords using frequency
+    const wordFrequency = {};
+    words.forEach(word => {
+      if (word.length > 2 && !commonWords.has(word)) {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      }
+    });
+    
+    // Sort by frequency and get top keywords
+    return Object.entries(wordFrequency)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(entry => entry[0]);
+  } catch (error) {
+    console.error('Error extracting keywords:', error);
+    return [];
+  }
+}
+
+function determineCategory(emailData) {
+  if (!emailData) return 'uncategorized';
+  
+  try {
+    // Safely extract text content
+    const subject = emailData.subject || '';
+    const body = typeof emailData.body === 'string' ? emailData.body : 
+                 (emailData.body?.text || 
+                  emailData.bodyText || 
+                  (typeof emailData.body === 'object' ? JSON.stringify(emailData.body) : ''));
+    
+    // Combine and convert to lowercase for pattern matching
+    const text = `${subject} ${body}`.toLowerCase();
+    
+    // Category detection patterns
+    const patterns = {
+      'important': /(urgent|asap|attention|priority|immediate|critical)/i,
+      'work': /(meeting|project|report|deadline|task|client|team|update)/i,
+      'notification': /(notification|alert|update|announcement|notice)/i,
+      'social': /(invitation|event|party|birthday|celebration|gathering)/i,
+      'travel': /(flight|hotel|booking|reservation|itinerary|travel)/i,
+      'shopping': /(order|purchase|shipping|delivery|tracking|receipt)/i,
+      'financial': /(payment|invoice|bill|transaction|receipt|accounting)/i
+    };
+    
+    // Check each pattern
+    for (const [category, pattern] of Object.entries(patterns)) {
+      if (pattern.test(text)) {
+        return category;
+      }
+    }
+    
+    // Default category if no patterns match
+    return 'inbox';
+  } catch (error) {
+    console.error('Error determining category:', error);
+    return 'inbox';
+  }
+}
+
+function extractActionItems(body) {
+  if (!body || typeof body !== 'string') return [];
+  
+  try {
+    const actionItems = [];
+    const actionKeywords = [
+      'please', 'kindly', 'could you', 'can you', 'need to', 'action required',
+      'let me know', 'confirm', 'review', 'approve', 'send', 'provide', 'update',
+      'due by', 'deadline', 'required', 'must', 'follow up', 'call', 'respond'
+    ];
+    
+    // Split into sentences
+    const sentences = body.split(/[.?!]\s+/)
+      .filter(s => s.trim().length > 10); // Ignore very short sentences
+    
+    for (const sentence of sentences) {
+      if (actionKeywords.some(keyword => 
+        sentence.toLowerCase().includes(keyword.toLowerCase()))) {
+        
+        // Clean the sentence
+        const cleanSentence = sentence.trim()
+          .replace(/^(>|\s)+/, '') // Remove quote markers
+          .replace(/\s+/g, ' ')    // Normalize whitespace
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .trim();
+        
+        // Add if sentence is a reasonable length
+        if (cleanSentence.length > 10 && cleanSentence.length < 250) {
+          actionItems.push(cleanSentence);
+        }
+      }
+    }
+    
+    // Return unique action items
+    return [...new Set(actionItems)].slice(0, 3);
+  } catch (error) {
+    console.error('Error extracting action items:', error);
+    return [];
+  }
+}
+
+function determineIfResponseNeeded(email) {
+  if (!email) return false;
+  
+  try {
+    // Safely extract text content
+    const subject = email.subject || '';
+    const body = typeof email.body === 'string' ? email.body : 
+                (email.body?.text || 
+                 email.bodyText || 
+                 (typeof email.body === 'object' ? JSON.stringify(email.body) : ''));
+    
+    // Combine and convert to lowercase
+    const text = `${subject} ${body}`.toLowerCase();
+    
+    // Skip certain email categories
+    const noResponseCategories = ['promotions', 'newsletter', 'updates', 'social'];
+    if (noResponseCategories.includes(determineCategory(email))) {
+      return false;
+    }
+    
+    // Check for questions
+    if (subject.includes('?') || body.includes('?')) {
+      console.log('Response needed for question:', subject);
+      return true;
+    }
+    
+    // Response pattern detection
+    const responsePatterns = [
+      'please let me know', 'looking forward to', 'your response', 'get back to me',
+      'what do you think', 'confirm receipt', 'thoughts on', 'please respond',
+      'can you help', 'would you be able', 'get your input', 'need your feedback',
+      'let me know if', 'please provide', 'do you have', 'can we', 'when can you'
+    ];
+    
+    // Check each response pattern
+    for (const pattern of responsePatterns) {
+      if (text.includes(pattern)) {
+        console.log(`Response needed - matched pattern: "${pattern}"`);
+        return true;
+      }
+    }
+    
+    // No response needed indicators
+    const noResponsePatterns = [
+      'no need to respond', 'no response needed', 'for your information',
+      'fyi', 'do not reply', 'no reply', 'noreply', 'no-reply', 'notification only'
+    ];
+    
+    // Check no-response patterns
+    for (const pattern of noResponsePatterns) {
+      if (text.includes(pattern)) {
+        return false;
+      }
+    }
+    
+    // Default to false if no patterns match
+    return false;
+  } catch (error) {
+    console.error('Error determining if response needed:', error);
+    return false;
+  }
+}
 
 /**
  * Check if email should be processed or blocked
@@ -119,16 +408,32 @@ export const generateEmailResponse = async (userId, fromEmail, subject, body) =>
   try {
     const user = await User.findById(userId);
     const userName = user?.name || '';
+
+    // Parse and clean the email body
+    const parsedBody = parseEmailBody(body, {
+      maxLength: 3000,          // Reasonable length for AI prompts
+      preserveNewlines: true,   // Keep structure
+      removeQuotes: true,       // Skip quoted replies
+      trimSignatures: true      // Remove signatures
+    });
     
+    // Log the parsed body for debugging
+    console.log('\x1b[32m', 'Parsed email body for AI prompt:', '\x1b[0m');
+    console.log('\x1b[32m', '--------------------------------', '\x1b[0m');
+    console.log('\x1b[32m', parsedBody, '\x1b[0m');
+    console.log('\x1b[32m', '--------------------------------', '\x1b[0m');
+
+    // Get custom prompt if available
     let userPrompt = await TextData.findOne({ userId });
     const promptText = userPrompt 
       ? (userPrompt.text + (userPrompt.fileData || '')) 
       : '';
     
+    // Fallback to default prompt if no custom prompt exists
     const defaultPrompt = `Respond to this email briefly and naturally as a real person:
 From: ${fromEmail}
 Subject: ${subject}
-Body: ${body}
+Body: ${parsedBody}
 
 Guidelines:
 - Keep response short and simple
@@ -138,8 +443,17 @@ Guidelines:
     
     const prompt = promptText || defaultPrompt;
     
+    // Log that we're sending to the AI
+    console.log('Sending prompt to AI model...');
+    
+    // Generate the response
     const aiRes = await model.generateContent(prompt);
-    return aiRes.response.text();
+    const response = aiRes.response.text();
+    
+    console.log('\x1b[34m', 'AI generated response:', '\x1b[0m');
+    console.log('\x1b[34m', response, '\x1b[0m');
+    
+    return response;
   } catch (error) {
     console.error('Error generating email response:', error);
 
@@ -148,10 +462,191 @@ Guidelines:
       throw new Error('AI service is temporarily unavailable due to rate limits. Please try again later.');
     }
 
-    // Use user's name from earlier query
+    // Fallback response
     return `Sorry, I couldn't generate a response at this time.\n\nBest regards,\n${user?.name || 'AI Assistant'}`;
   }
 };
+
+/**
+ * Parse email body intelligently, handling various formats
+ * Prioritizes text content over HTML when available
+ * Cleans up formatting for AI prompt use
+ * 
+ * @param {string|object} body - The email body to parse
+ * @param {object} options - Parsing options
+ * @returns {string} - Clean text suitable for AI prompting
+ */
+function parseEmailBody(body, options = {}) {
+  try {
+    const {
+      maxLength = 5000,         // Maximum length to return
+      preserveNewlines = true,  // Keep some newlines for readability
+      removeQuotes = true,      // Remove quoted text (">...")
+      trimSignatures = true     // Try to remove email signatures
+    } = options;
+    
+    // Handle undefined/null input
+    if (!body) return '';
+    
+    // Get text content based on body type
+    let textContent = '';
+    
+    // Case 1: If body is already a string
+    if (typeof body === 'string') {
+      textContent = body;
+    } 
+    // Case 2: If body is an object with text/html properties
+    else if (typeof body === 'object') {
+      // Check for explicitly labeled text/html sections
+      const hasTextSection = /text\s*:/i.test(JSON.stringify(body));
+      const hasHtmlSection = /html\s*:/i.test(JSON.stringify(body));
+      
+      // If body has explicit text: and html: sections, prioritize text
+      if (hasTextSection) {
+        // Extract the text section using regex
+        const textMatch = body.toString().match(/text\s*:(.*?)(?=html\s*:|$)/is);
+        if (textMatch && textMatch[1]) {
+          textContent = textMatch[1].trim();
+          console.log('Extracted text section from email body');
+        }
+      }
+      
+      // If we couldn't extract from text: section, check standard body properties
+      if (!textContent && body.text && typeof body.text === 'string') {
+        textContent = body.text;
+        console.log('Using body.text property');
+      }
+      
+      // If still no text but we have HTML, convert HTML to text
+      if ((!textContent || textContent.length < 10) && body.html) {
+        textContent = convertHtmlToText(body.html);
+        console.log('Converted HTML to text');
+      }
+      
+      // Last resort: try to use the whole object
+      if (!textContent) {
+        try {
+          textContent = JSON.stringify(body);
+        } catch (e) {
+          textContent = String(body);
+        }
+      }
+    }
+    // Case 3: Unknown type, convert to string
+    else {
+      textContent = String(body);
+    }
+    
+    // Clean up the text content
+    let cleanedText = textContent
+      // Remove HTML tags (with their content for script/style tags)
+      .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+      // Remove remaining HTML tags but keep their content
+      .replace(/<[^>]*>/g, ' ')
+      // Decode HTML entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      // Fix spacing issues
+      .replace(/\s+/g, ' ');
+    
+    // Remove quoted text (lines starting with >)
+    if (removeQuotes) {
+      cleanedText = cleanedText
+        .split('\n')
+        .filter(line => !line.trim().startsWith('>'))
+        .join('\n');
+    }
+    
+    // Try to remove email signatures
+    if (trimSignatures) {
+      const signatureMarkers = [
+        /^--\s*$/m,                        // -- marker
+        /^__+\s*$/m,                       // __ marker
+        /^Sent from my (?:iPhone|iPad|Android|Samsung|Google Pixel)/m,
+        /^Best regards,/m,                 // Common signature starter
+        /^Regards,/m,                      // Common signature starter
+        /^Thanks(?:,| & Regards)/m,        // Common signature starter
+        /^[^@]+@[^@]+\.[^@]{2,}$/m         // Email address on its own line
+      ];
+      
+      // Find the first occurrence of any signature marker
+      let signaturePos = -1;
+      for (const marker of signatureMarkers) {
+        const match = cleanedText.match(marker);
+        if (match && match.index > 100) { // Only if not at beginning
+          if (signaturePos === -1 || match.index < signaturePos) {
+            signaturePos = match.index;
+          }
+        }
+      }
+      
+      // Trim the signature if found
+      if (signaturePos > 0) {
+        cleanedText = cleanedText.substring(0, signaturePos).trim();
+        console.log('Removed email signature');
+      }
+    }
+    
+    // Preserve some meaningful newlines but collapse multiple blank lines
+    if (preserveNewlines) {
+      cleanedText = cleanedText
+        .replace(/\n{3,}/g, '\n\n')  // Replace 3+ newlines with 2
+        .replace(/([.!?])\s+/g, '$1\n'); // Add newlines after sentences
+    } else {
+      cleanedText = cleanedText.replace(/\n+/g, ' ');
+    }
+    
+    // Final cleanup and truncation
+    cleanedText = cleanedText
+      .trim()
+      .replace(/\s+/g, ' '); // Final normalization of spaces
+    
+    if (cleanedText.length > maxLength) {
+      cleanedText = cleanedText.substring(0, maxLength) + '...';
+    }
+    
+    return cleanedText;
+  } catch (error) {
+    console.error('Error parsing email body:', error);
+    // Return a safe fallback - the original body with basic HTML tag removal
+    return typeof body === 'string' 
+      ? body.replace(/<[^>]*>/g, ' ').trim() 
+      : String(body || '').replace(/<[^>]*>/g, ' ').trim();
+  }
+}
+
+/**
+ * Converts HTML to readable text
+ */
+function convertHtmlToText(html) {
+  if (!html) return '';
+  
+  return html
+    // Replace common block elements with newlines
+    .replace(/<(\/)?(?:div|p|h[1-6]|br|li|td|tr|blockquote|hr)[^>]*>/gi, (match, close) => {
+      return close ? '\n' : '\n';
+    })
+    // Replace list items with bullets
+    .replace(/<li[^>]*>/gi, '\n• ')
+    // Replace links with their text and URL
+    .replace(/<a[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, (match, url, text) => {
+      return `${text} (${url})`;
+    })
+    // Remove all other HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Decode HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    // Fix spacing issues
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 /**
  * Process new emails
@@ -221,78 +716,6 @@ export const processEmails = async (userId, email) => {
   }
 };
 
-// Helper functions
-function extractKeywords(emailData) {
-  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
-  const words = text.split(/\W+/);
-  const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']);
-  
-  return Array.from(new Set(
-    words.filter(word => 
-      word.length > 2 && 
-      !commonWords.has(word)
-    )
-  )).slice(0, 5);
-}
-
-function determineCategory(emailData) {
-  const text = `${emailData.subject} ${emailData.body}`.toLowerCase();
-  
-  if (/(urgent|asap|attention|priority)/i.test(text)) return 'important';
-  return 'inbox';
-}
-
-function extractActionItems(body) {
-  if (!body || typeof body !== 'string') return [];
-  
-  const actionItems = [];
-  const actionKeywords = [
-    'please', 'kindly', 'could you', 'can you', 'need to', 'action required',
-    'let me know', 'confirm', 'review', 'approve', 'send', 'provide', 'update'
-  ];
-  
-  const sentences = body.split(/[.?!]\s+/);
-  
-  for (const sentence of sentences) {
-    if (actionKeywords.some(keyword => 
-      sentence.toLowerCase().includes(keyword.toLowerCase()))) {
-      const cleanSentence = sentence.trim()
-        .replace(/^(>|\s)+/, '')
-        .replace(/\s+/g, ' ');
-      
-      if (cleanSentence.length > 5 && cleanSentence.length < 200) {
-        actionItems.push(cleanSentence);
-      }
-    }
-  }
-  
-  return actionItems.slice(0, 3);
-}
-
-function determineIfResponseNeeded(email) {
-  if (!email) return false;
-  
-  const noResponseCategories = ['promotions', 'newsletter', 'updates', 'social'];
-  
-  if (noResponseCategories.includes(determineCategory(email))) {
-    console.log('No response needed for category:', determineCategory(email));
-    return false;
-  }
-  
-  if (email.subject?.includes('?') || email.body?.includes('?')) {
-    console.log('Response needed for question:', email.subject);
-    return true;
-  }
-  
-  const responsePatterns = [
-    'please let me know', 'looking forward to', 'your response', 'get back to me',
-    'what do you think', 'confirm receipt', 'thoughts on', 'please respond',
-    'can you help', 'would you be able', 'get your input', 'need your feedback'
-  ];
-  
-  const text = `${email.subject} ${email.body}`.toLowerCase();
-  return responsePatterns.some(pattern => text.includes(pattern));
-}
 
 function calculatePriority(email, category, requiresResponse) {
   let priority = 'medium';
