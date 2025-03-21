@@ -83,8 +83,6 @@ function parseEmailList(addressesString) {
  * @param {Object} message - The Gmail message object
  * @returns {{text: string, html: string}} The extracted email bodies
  */
-
-// Enhanced email body extraction function
 function extractEmailBodies(message) {
   try {
     let textBody = '';
@@ -103,7 +101,6 @@ function extractEmailBodies(message) {
           try {
             const decodedText = Buffer.from(part.body.data, 'base64').toString('utf-8');
             textBody = decodedText;
-            console.log(`Found text part, size: ${decodedText.length} bytes`);
           } catch (err) {
             console.warn('Error decoding text body:', err);
           }
@@ -111,13 +108,11 @@ function extractEmailBodies(message) {
           try {
             const decodedHtml = Buffer.from(part.body.data, 'base64').toString('utf-8');
             htmlBody = decodedHtml;
-            console.log(`Found HTML part, size: ${decodedHtml.length} bytes`);
           } catch (err) {
             console.warn('Error decoding HTML body:', err);
           }
         } else if (mimeType.startsWith('multipart/') && part.parts) {
           // Recursively process nested parts
-          console.log(`Processing multipart section with ${part.parts.length} parts`);
           processParts(part.parts);
         }
       }
@@ -127,15 +122,12 @@ function extractEmailBodies(message) {
     if (message.payload.body?.data) {
       try {
         const bodyData = Buffer.from(message.payload.body.data, 'base64').toString('utf-8');
-        console.log(`Found direct body data, size: ${bodyData.length} bytes`);
         
         // Try to detect if it's HTML
         if (bodyData.includes('<html') || bodyData.includes('<body') || bodyData.includes('<div')) {
           htmlBody = bodyData;
-          console.log('Detected as HTML content');
         } else {
           textBody = bodyData;
-          console.log('Detected as plain text content');
         }
       } catch (err) {
         console.warn('Error decoding direct body data:', err);
@@ -144,12 +136,7 @@ function extractEmailBodies(message) {
     
     // Process parts if available
     if (message.payload.parts) {
-      console.log(`Processing message with ${message.payload.parts.length} parts`);
       processParts(message.payload.parts);
-    }
-    
-    if (!textBody && !htmlBody) {
-      console.warn('No body content found in message');
     }
     
     // Return at least an empty object
@@ -165,7 +152,7 @@ function extractEmailBodies(message) {
 }
 
 /**
- * Sanitize text for MongoDB storage
+ * Safely sanitize and prepare text for MongoDB storage
  * @param {string} text - The text to sanitize
  * @param {number} maxLength - Maximum length to keep
  * @returns {string} - Sanitized text
@@ -173,18 +160,29 @@ function extractEmailBodies(message) {
 function sanitizeForMongoDB(text, maxLength = 100000) {
   if (!text) return '';
   
+  // Ensure text is a string
+  if (typeof text !== 'string') {
+    try {
+      text = String(text);
+    } catch (e) {
+      console.error('Cannot convert body to string:', e);
+      return '';
+    }
+  }
+  
   // Truncate if too long
   if (text.length > maxLength) {
-    console.warn(`Truncating body content from ${text.length} to ${maxLength} characters`);
     text = text.substring(0, maxLength) + '... [content truncated due to size]';
   }
   
   // Replace null characters which MongoDB doesn't allow
   text = text.replace(/\u0000/g, '');
   
+  // Handle other problematic characters (optional)
+  text = text.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDFFF]/g, '');
+  
   return text;
 }
-
 
 /**
  * Process a single Google message
@@ -223,7 +221,7 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     });
     
     const message = messageResponse.data;
-    const headers = message.payload.headers;
+    const headers = message.payload.headers || [];
     
     // Extract headers more safely
     const getHeaderValue = (name) => {
@@ -254,11 +252,19 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
 
     console.log(`Body sizes - Text: ${bodyText?.length || 0} chars, HTML: ${bodyHtml?.length || 0} chars`);
 
-    // Extract a snippet for preview
-    const snippet = message.snippet || bodyText.substring(0, 150).replace(/\s+/g, ' ').trim();
-    
-    console.log(`Extracted snippet: ${snippet}`);
+    // Sanitize the bodies
+    const sanitizedText = sanitizeForMongoDB(bodyText, 50000);
+    const sanitizedHtml = sanitizeForMongoDB(bodyHtml, 100000);
 
+    // Extract a snippet for preview (safely)
+    let snippet = '';
+    try {
+      snippet = message.snippet || sanitizedText.substring(0, 150).replace(/\s+/g, ' ').trim();
+    } catch (e) {
+      console.warn('Error creating snippet:', e);
+      snippet = '(No preview available)';
+    }
+    
     // Process labels and determine folder
     const gmailLabels = message.labelIds || [];
     let folder = 'inbox';
@@ -271,53 +277,53 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     // Process attachments
     const attachments = processAttachments(message);
     
-    // Create email data
+    // Create email data with sanitized fields
     const emailData = {
       userId,
       messageId: message.id,
-      threadId: message.threadId,
-      externalMessageId: messageIdHeader,
+      threadId: message.threadId || message.id,
+      externalMessageId: messageIdHeader || message.id,
       provider: 'google',
       providerId: message.id,
       
       from: {
         email: parsedFrom.email || 'unknown@example.com',
-        name: parsedFrom.name || parsedFrom.email.split('@')[0] || 'Unknown Sender'
+        name: sanitizeForMongoDB(parsedFrom.name || parsedFrom.email.split('@')[0] || 'Unknown Sender', 100)
       },
       
       to: parsedTo.map(recipient => ({
         email: recipient.email || '',
-        name: recipient.name || recipient.email.split('@')[0] || ''
+        name: sanitizeForMongoDB(recipient.name || recipient.email.split('@')[0] || '', 100)
       })),
       
       cc: parsedCc.map(recipient => ({
         email: recipient.email || '',
-        name: recipient.name || recipient.email.split('@')[0] || ''
+        name: sanitizeForMongoDB(recipient.name || recipient.email.split('@')[0] || '', 100)
       })),
       
       bcc: parsedBcc.map(recipient => ({
         email: recipient.email || '',
-        name: recipient.name || recipient.email.split('@')[0] || ''
+        name: sanitizeForMongoDB(recipient.name || recipient.email.split('@')[0] || '', 100)
       })),
       
       replyTo: parsedReplyTo.email ? {
         email: parsedReplyTo.email,
-        name: parsedReplyTo.name || parsedReplyTo.email.split('@')[0] || ''
+        name: sanitizeForMongoDB(parsedReplyTo.name || parsedReplyTo.email.split('@')[0] || '', 100)
       } : null,
       
-      subject: subject || '(No Subject)',
-      date: new Date(date),
+      subject: sanitizeForMongoDB(subject || '(No Subject)', 500),
+      date: new Date(date || Date.now()),
       receivedAt: new Date(),
       
       body: {
-        text: bodyText || '',
-        html: bodyHtml || ''
+        text: sanitizedText,
+        html: sanitizedHtml
       },
       
-      // Set html_preview for frontend display
-      html_preview: bodyHtml ? bodyHtml.substring(0, 1000) : '',
+      // Set html_preview for frontend display - with safe truncation
+      html_preview: sanitizedHtml ? sanitizedHtml.substring(0, 1000) : '',
 
-      snippet: snippet,
+      snippet: sanitizeForMongoDB(snippet, 200),
       
       read: !gmailLabels.includes('UNREAD'),
       starred: gmailLabels.includes('STARRED'),
@@ -325,23 +331,27 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
       folder,
       labels: gmailLabels,
       
-      attachments
+      attachments: attachments || []
     };
 
-    console.log(`Parsed email data: ${emailData.from.name} <${emailData.from.email}> - ${emailData.subject}`);
+    console.log(`Prepared email for saving: ${emailData.from.name} <${emailData.from.email}> - ${emailData.subject}`);
 
     // Process email content if enabled
     if (config.processContent !== false) {
-      const processedData = await processEmailContent({
-        ...emailData,
-        userEmail
-      });
-      Object.assign(emailData, processedData);
+      try {
+        const processedData = await processEmailContent({
+          ...emailData,
+          userEmail
+        });
+        Object.assign(emailData, processedData);
+      } catch (processError) {
+        console.error('Error processing email content:', processError);
+        // Continue without content processing
+      }
     }
 
-    // Save to the correct collection
+    // Save to the database with error handling
     try {
-      // First try to save the complete document
       const emailDoc = new emailModels.Email(emailData);
       const savedEmail = await emailDoc.save();
       console.log(`Email saved successfully with ID: ${savedEmail._id}`);
@@ -354,18 +364,50 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
       
       return savedEmail;
     } catch (saveError) {
-      // If saving fails, try again with truncated content
-      console.error('Error saving email, attempting with truncated content:', saveError);
+      console.error('Error saving email:', saveError);
       
-      // Try saving with moderate truncation first
-      emailData.body.text = sanitizeForMongoDB(emailData.body.text, 50000);
-      emailData.body.html = sanitizeForMongoDB(emailData.body.html, 100000);
-      
-      const fallbackDoc = new emailModels.Email(emailData);
-      const fallbackSave = await fallbackDoc.save();
-      
-      console.log(`Email saved with truncated content, ID: ${fallbackSave._id}`);
-      return fallbackSave;
+      // Create a minimal version if all else fails
+      try {
+        const minimalData = {
+          userId,
+          messageId: message.id,
+          providerId: message.id,
+          provider: 'google',
+          
+          from: {
+            email: parsedFrom.email || 'unknown@example.com',
+            name: sanitizeForMongoDB(parsedFrom.name || '', 50)
+          },
+          
+          to: parsedTo.slice(0, 5).map(recipient => ({
+            email: recipient.email || '',
+            name: sanitizeForMongoDB(recipient.name || '', 50)
+          })),
+          
+          subject: sanitizeForMongoDB(subject || '(No Subject)', 200),
+          date: new Date(date || Date.now()),
+          receivedAt: new Date(),
+          
+          body: {
+            text: '(Content too large to store)',
+            html: ''
+          },
+          
+          snippet: sanitizeForMongoDB(snippet, 200),
+          
+          read: !gmailLabels.includes('UNREAD'),
+          folder
+        };
+        
+        const minimalDoc = new emailModels.Email(minimalData);
+        const fallbackSave = await minimalDoc.save();
+        
+        console.log(`Minimal email saved as fallback, ID: ${fallbackSave._id}`);
+        return fallbackSave;
+      } catch (fallbackError) {
+        console.error('Fatal error: Even minimal email save failed:', fallbackError);
+        throw new Error('Unable to save email: ' + fallbackError.message);
+      }
     }
   } catch (error) {
     console.error('Error processing Google message:', error);
@@ -374,48 +416,54 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
 }
 
 /**
- * Improved attachment processing
+ * Improved attachment processing with error handling
  */
 function processAttachments(message) {
-  const attachments = [];
-  
-  // Helper function to recursively process parts
-  function processParts(parts, parentName = '') {
-    if (!parts) return;
+  try {
+    const attachments = [];
     
-    for (const part of parts) {
-      // Check if this part is an attachment
-      if (part.filename && part.filename.length > 0) {
-        attachments.push({
-          filename: part.filename,
-          contentType: part.mimeType || 'application/octet-stream',
-          size: part.body?.size || 0,
-          attachmentId: part.body?.attachmentId || null,
-          partId: part.partId || null,
-          contentId: part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value || null
-        });
-      }
+    // Helper function to recursively process parts
+    function processParts(parts, parentName = '') {
+      if (!parts) return;
       
-      // Recursively process nested parts
-      if (part.parts) {
-        processParts(part.parts, parentName + (part.partId ? '.' + part.partId : ''));
+      for (const part of parts) {
+        // Check if this part is an attachment
+        if (part.filename && part.filename.length > 0) {
+          try {
+            attachments.push({
+              filename: sanitizeForMongoDB(part.filename, 255),
+              contentType: part.mimeType || 'application/octet-stream',
+              size: part.body?.size || 0,
+              attachmentId: part.body?.attachmentId || null,
+              partId: part.partId || null,
+              contentId: part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value || null
+            });
+          } catch (error) {
+            console.warn('Error processing attachment:', error);
+          }
+        }
+        
+        // Recursively process nested parts
+        if (part.parts) {
+          processParts(part.parts, parentName + (part.partId ? '.' + part.partId : ''));
+        }
       }
     }
+    
+    // Process message parts
+    if (message.payload.parts) {
+      processParts(message.payload.parts);
+    }
+    
+    return attachments;
+  } catch (error) {
+    console.error('Error processing attachments:', error);
+    return []; // Return empty array on error
   }
-  
-  // Process message parts
-  if (message.payload.parts) {
-    processParts(message.payload.parts);
-  }
-  
-  return attachments;
 }
-
 
 /**
  * Helper to determine category from Gmail labels
- * Maps Gmail categories to our schema's valid categories:
- * ['inbox', 'sent', 'draft', 'trash', 'spam', 'important', 'uncategorized']
  */
 function determineEmailCategory(message) {
   if (!message.labelIds) return 'uncategorized';
@@ -482,7 +530,7 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
     getConnectedEmailModels(connectedEmail._id.toString());
     
     // Start sync process
-    if (config.syncEnabled) {
+    if (config.syncEnabled !== false) {
       const interval = setInterval(
         () => checkForNewGoogleEmails(gmail, userId, email, config),
         60000
@@ -503,12 +551,30 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
     return true;
   } catch (error) {
     console.error('Error initializing Google connection:', error);
+    
+    // Update status to error if connection fails
+    try {
+      const connectedEmail = await ConnectedEmail.findOne({ userId, email, provider: 'google' });
+      if (connectedEmail) {
+        await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+          status: 'error',
+          lastError: {
+            message: error.message || 'Connection initialization failed',
+            date: new Date(),
+            code: 'INIT_ERROR'
+          }
+        });
+      }
+    } catch (dbError) {
+      console.error('Failed to update email error status:', dbError);
+    }
+    
     throw error;
   }
 }
 
 /**
- * Check for new Google emails
+ * Check for new Google emails with robust error handling
  */
 export async function checkForNewGoogleEmails(gmail, userId, email, config = {}) {
   try {
@@ -519,21 +585,27 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
       provider: 'google',
       status: 'active'
     });
+    
     if (!connectedEmail) {
-      // handle error gracefully
-      console.log('Connected email not found');
+      console.log(`Connected email not found or not active: ${email}`);
       return [];
     }
 
-    // List recent messages
+    // List recent messages with a more flexible query
     const response = await gmail.users.messages.list({
       userId: 'me',
       maxResults: 20,
-      q: 'newer_than:1d is:unread'
+      q: 'newer_than:1d'  // Less restrictive query
     });
 
-    if (!response.data.messages?.length) {
+    if (!response.data.messages || response.data.messages.length === 0) {
       console.log('No new emails to sync');
+      
+      // Update last sync time even if no messages
+      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+        'stats.lastSync': new Date()
+      });
+      
       return [];
     }
 
@@ -541,6 +613,8 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
 
     // Process messages
     const processedMessages = [];
+    const errors = [];
+    
     for (const message of response.data.messages) {
       try {
         const processed = await processGoogleMessage(
@@ -553,6 +627,10 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
         if (processed) processedMessages.push(processed);
       } catch (error) {
         console.error(`Error processing message ${message.id}:`, error);
+        errors.push({
+          messageId: message.id,
+          error: error.message
+        });
       }
     }
 
@@ -562,9 +640,33 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
       $inc: { 'stats.totalEmails': processedMessages.length }
     });
 
+    // Log any errors for debugging
+    if (errors.length > 0) {
+      console.warn(`${errors.length} messages had errors during sync:`, errors);
+    }
+
     return processedMessages;
   } catch (error) {
     console.error('Error checking Google emails:', error);
+    
+    // Update error status in database
+    try {
+      await ConnectedEmail.findOneAndUpdate(
+        { userId, email, provider: 'google' },
+        { 
+          $set: { 
+            lastError: {
+              message: error.message,
+              date: new Date(),
+              code: 'SYNC_ERROR'
+            }
+          }
+        }
+      );
+    } catch (dbError) {
+      console.error('Failed to update error status:', dbError);
+    }
+    
     throw error;
   }
 }

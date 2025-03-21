@@ -95,7 +95,7 @@ async function initializeEmailConnection(connectedEmail) {
     }
 
     // Start email checking schedule
-    console.log(`💫  Starting email checks for ${email}`);
+    console.log(`💫 Starting email checks for ${email}`);
     const schedulingManager = (await import('./schedulingManager.js')).default;
     await schedulingManager.scheduleEmailChecks(userId, email);
     
