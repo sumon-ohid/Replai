@@ -141,7 +141,9 @@ export const scheduleEmailChecks = async (userId, email) => {
             console.log(
               `[${email}] Initializing missing aiSettings with defaults`
             );
-            currentAccount.aiSettings = { enabled: false, mode: "review" };
+
+            // Set default AI settings for new connections
+            currentAccount.aiSettings = { enabled: true, mode: "auto-reply" };
 
             // Also update the database to prevent this issue in the future
             try {
