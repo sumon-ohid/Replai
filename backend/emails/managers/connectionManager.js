@@ -56,8 +56,11 @@ async function initializeEmailConnection(connectedEmail) {
     // First validate/create collections for this email
     await validateEmailCollections(connectedEmail._id.toString());
 
-    // Initialize email models for this connection
+    // Initialize and validate email models
     const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+    if (!emailModels || !emailModels.Email) {
+      throw new Error('Email models not properly initialized');
+    }
 
     // Set default AI settings if not present
     await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
@@ -68,7 +71,7 @@ async function initializeEmailConnection(connectedEmail) {
       $setOnInsert: {
         aiSettings: {
           enabled: true,
-          mode: 'auto-reply'
+          mode: 'auto'
         }
       }
     }, { upsert: true });
@@ -83,7 +86,7 @@ async function initializeEmailConnection(connectedEmail) {
         tokens.accessToken,
         {
           syncEnabled: true,
-          mode: 'auto-reply',
+          mode: 'auto',
           aiEnabled: true,
           markAsRead: true
         }
@@ -138,6 +141,12 @@ export const addConnection = async (userId, email, provider, connection) => {
     // Validate collections before adding connection
     await validateEmailCollections(connectedEmail._id.toString());
 
+    // Get and validate email models
+    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+    if (!emailModels || !emailModels.Email) {
+      throw new Error('Email models not properly initialized');
+    }
+
     const key = `${userId}:${email}`;
     activeConnections.set(key, {
       userId,
@@ -145,7 +154,7 @@ export const addConnection = async (userId, email, provider, connection) => {
       provider,
       connection,
       startTime: new Date(),
-      emailModels: getConnectedEmailModels(connectedEmail._id.toString())
+      emailModels
     });
 
     console.log(`Added ${provider} connection for ${email}`);
@@ -192,9 +201,52 @@ export const updateConnectionConfig = async (userId, email, config) => {
 /**
  * Get a specific connection
  */
-export const getConnection = (userId, email) => {
+export const getConnection = async (userId, email) => {
   const key = `${userId}:${email}`;
-  return activeConnections.get(key);
+  let connection = activeConnections.get(key);
+  
+  if (!connection) {
+    // Check if the email exists and is active in the database
+    const connectedEmail = await ConnectedEmail.findOne({ 
+      userId, 
+      email,
+      status: 'active'
+    });
+    
+    if (connectedEmail) {
+      console.log(`Connection for ${email} not found in memory but active in database. Reinitializing...`);
+      try {
+        // Try to reinitialize the connection
+        const success = await initializeEmailConnection(connectedEmail);
+        if (success) {
+          // Wait a moment for the connection to be fully established
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          connection = activeConnections.get(key);
+          if (!connection) {
+            throw new Error('Connection initialization failed');
+          }
+        } else {
+          throw new Error('Connection initialization returned false');
+        }
+      } catch (error) {
+        console.error(`Failed to reinitialize connection for ${email}:`, error);
+        // Update connection status to error
+        await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+          status: 'error',
+          lastError: {
+            message: error.message,
+            date: new Date(),
+            code: 'REINIT_ERROR'
+          }
+        });
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+  
+  return connection;
 };
 
 /**
@@ -242,7 +294,7 @@ export const getEmailService = async (provider) => {
  */
 export const checkEmails = async (userId, email) => {
   try {
-    const connection = getConnection(userId, email);
+    const connection = await getConnection(userId, email);
     if (!connection || !connection.connection) {
       throw new Error('No active connection found');
     }
@@ -440,7 +492,7 @@ export const reconnectEmail = async (userId, email) => {
     await User.findByIdAndUpdate(userId, {
       $set: { 
         [`emailPreferences.${email}.syncEnabled`]: true,
-        [`emailPreferences.${email}.mode`]: 'auto-reply',
+        [`emailPreferences.${email}.mode`]: 'auto',
         [`emailPreferences.${email}.aiEnabled`]: true
       }
     });

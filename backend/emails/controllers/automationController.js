@@ -142,7 +142,7 @@ class AutomationController {
 
     const analysis = await EmailProcessingService.analyzeEmail(content);
     const response = await EmailProcessingService.generateResponse(analysis, {
-      mode: 'suggest'
+      mode: 'auto'
     });
 
     res.json({ analysis, suggestedResponse: response });

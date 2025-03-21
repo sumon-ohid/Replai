@@ -201,8 +201,8 @@ const processCustomMessage = async (imapClient, message, userId, userEmail, conf
     const receivedDateTime = message.envelope.date ? new Date(message.envelope.date) : new Date();
     
     // Process according to mode
-    if (config.mode === 'auto-reply') {
-      // Process for auto-reply
+    if (config.mode === 'auto') {
+      // Process for auto
       await processEmailContent(userId, {
         providerId,
         threadId: message.envelope['message-id'] || undefined,

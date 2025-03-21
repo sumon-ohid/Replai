@@ -67,7 +67,7 @@ const connectedEmailSchema = new mongoose.Schema({
     mode: {
       type: String,
       enum: ['suggest', 'auto', 'disabled'],
-      default: 'suggest'
+      default: 'auto'
     },
     responseTemplates: [{
       name: String,

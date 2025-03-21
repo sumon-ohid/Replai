@@ -25,7 +25,7 @@ class ConnectionController {
       syncEnabled: account.syncConfig?.enabled ?? true,
       folders: account.syncConfig?.folders || ['INBOX'],
       aiEnabled: account.aiSettings?.enabled ?? false,
-      aiMode: account.aiSettings?.mode || 'suggest'
+      aiMode: account.aiSettings?.mode || 'auto'
     }));
     
     res.json(connections);
@@ -59,7 +59,7 @@ class ConnectionController {
       },
       aiSettings: {
         enabled: false,
-        mode: 'suggest',
+        mode: 'auto',
         responseTemplates: []
       },
       status: 'disconnected'
@@ -244,64 +244,112 @@ class ConnectionController {
     });
   });
 
-  /**
-   * Check emails now
+    /**
+   * Check for new emails
    */
-  static checkEmails = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const { email } = req.params;
-    
-    const account = await ConnectedEmail.findOne({ userId, email });
-    if (!account) {
-      return res.status(404).json({ error: 'Email account not found' });
-    }
-    
+ static checkEmails = async (userId, email) => {
     try {
-      const result = await ConnectionManager.checkEmails(userId, email);
+      // Use await to ensure we get a promise resolution for the connection
+      const connection = await getConnection(userId, email);
       
-      if (!result.success) {
-        // Update error status
-        account.lastError = {
-          message: result.error,
-          date: new Date(),
-          code: 'CHECK_EMAILS_ERROR'
-        };
-        await account.save();
+      if (!connection || !connection.connection) {
+        console.log(`No active connection found for ${email}, attempting to reinitialize...`);
         
-        return res.status(400).json({ error: result.error });
+        // Try to get the ConnectedEmail record and reinitialize it
+        const connectedEmail = await ConnectedEmail.findOne({ 
+          userId, 
+          email,
+          'tokens.refreshToken': { $exists: true }
+        });
+        
+        if (connectedEmail) {
+          console.log(`Found database record for ${email}, reinitializing connection...`);
+          await initializeEmailConnection(connectedEmail);
+          
+          // Try again with the newly initialized connection
+          const refreshedConnection = await getConnection(userId, email);
+          if (!refreshedConnection || !refreshedConnection.connection) {
+            throw new Error('No active connection found after reinitialization attempt');
+          }
+          
+          console.log(`Successfully reinitialized connection for ${email}`);
+          // Continue with the refreshed connection
+          const service = await getEmailService(refreshedConnection.provider);
+          
+          // Rest of the function with refreshedConnection
+          let newEmails = [];
+          if (refreshedConnection.provider === 'google') {
+            newEmails = await service.checkForNewGoogleEmails(
+              refreshedConnection.connection.gmail,
+              userId,
+              email
+            );
+          } else {
+            throw new Error(`Unsupported provider: ${refreshedConnection.provider}`);
+          }
+          
+          // Update last sync time
+          await updateLastSync(userId, email);
+          
+          return {
+            success: true,
+            count: newEmails.length,
+            emails: newEmails
+          };
+        } else {
+          throw new Error('No active connection found');
+        }
+      }
+  
+      // Get the appropriate email service
+      const service = await getEmailService(connection.provider);
+      
+      // Dispatch to the correct check method
+      let newEmails = [];
+      if (connection.provider === 'google') {
+        newEmails = await service.checkForNewGoogleEmails(
+          connection.connection.gmail,
+          userId,
+          email
+        );
+      } else {
+        throw new Error(`Unsupported provider: ${connection.provider}`);
       }
       
-      // Update sync stats
-      account.stats = account.stats || {};
-      account.stats.lastSync = new Date();
-      account.stats.syncHistory = account.stats.syncHistory || [];
-      account.stats.syncHistory.push({
-        date: new Date(),
-        emailsProcessed: result.count,
-        success: true
-      });
-      await account.save();
-      
-      res.json({
+      // Update last sync time
+      await updateLastSync(userId, email);
+  
+      return {
         success: true,
-        message: `Checked emails for ${email}`,
-        count: result.count,
-        lastSync: account.stats.lastSync
-      });
-    } catch (error) {
-      console.error('Error checking emails:', error);
-      
-      // Update error status
-      account.lastError = {
-        message: error.message,
-        date: new Date(),
-        code: 'CHECK_EMAILS_ERROR'
+        count: newEmails.length,
+        emails: newEmails
       };
-      await account.save();
+    } catch (error) {
+      console.error(`Error checking emails for ${email}:`, error);
+      // Update error status in database
+      try {
+        await ConnectedEmail.findOneAndUpdate(
+          { userId, email },
+          { 
+            $set: { 
+              lastError: {
+                message: error.message,
+                date: new Date(),
+                code: 'SYNC_ERROR'
+              }
+            }
+          }
+        );
+      } catch (dbError) {
+        console.error('Failed to update error status:', dbError);
+      }
       
-      res.status(500).json({ error: `Error checking emails: ${error.message}` });
+      return {
+        success: false,
+        error: error.message
+      };
     }
-  });
+  };
 
   /**
    * Sync emails (full sync)

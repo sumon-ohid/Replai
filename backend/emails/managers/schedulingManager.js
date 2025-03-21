@@ -102,6 +102,20 @@ export const scheduleEmailChecks = async (userId, email) => {
       console.error(
         `[${email}] No active connection found, cannot schedule checks`
       );
+      // Update connection status to error
+      await ConnectedEmail.findOneAndUpdate(
+        { userId, email },
+        { 
+          $set: { 
+            status: 'error',
+            lastError: {
+              message: 'Failed to establish connection for scheduled checks',
+              date: new Date(),
+              code: 'SCHEDULE_ERROR'
+            }
+          }
+        }
+      );
       return false;
     }
 
@@ -111,6 +125,13 @@ export const scheduleEmailChecks = async (userId, email) => {
     const checkInterval = setInterval(async () => {
       try {
         console.log(`[${email}] Checking for new emails...`);
+        
+        // Verify connection before checking emails
+        const currentConnection = await ConnectionManager.getConnection(userId, email);
+        if (!currentConnection) {
+          throw new Error('No active connection found');
+        }
+        
         const result = await checkEmails(userId, email);
 
         if (result.success && result.count > 0) {
@@ -139,27 +160,32 @@ export const scheduleEmailChecks = async (userId, email) => {
           // Ensure aiSettings is always initialized
           if (!currentAccount.aiSettings) {
             console.log(
-              `[${email}] Initializing missing aiSettings with defaults`
+              `[${email}] Missing aiSettings, retrieving from database...`
             );
-
-            // Set default AI settings for new connections
-            currentAccount.aiSettings = { enabled: true, mode: "auto-reply" };
-
-            // Also update the database to prevent this issue in the future
-            try {
-              await ConnectedEmail.findOneAndUpdate(
-                { userId, email },
-                { $set: { aiSettings: currentAccount.aiSettings } },
-                { new: true }
-              );
-              console.log(
-                `[${email}] Updated database with default aiSettings`
-              );
-            } catch (updateError) {
-              console.error(
-                `[${email}] Failed to update aiSettings in database:`,
-                updateError
-              );
+            
+            // Get aiSettings from the database
+            const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+            
+            if (connectedEmail && connectedEmail.aiSettings) {
+              // Use the settings from the database
+              currentAccount.aiSettings = connectedEmail.aiSettings;
+              console.log(`[${email}] Retrieved aiSettings from database:`, currentAccount.aiSettings);
+            } else {
+              // Set default AI settings
+              currentAccount.aiSettings = { enabled: false, mode: 'review' };
+              console.log(`[${email}] Using default aiSettings:`, currentAccount.aiSettings);
+              
+              // Update the database with default settings
+              try {
+                await ConnectedEmail.findOneAndUpdate(
+                  { userId, email },
+                  { $set: { aiSettings: currentAccount.aiSettings } },
+                  { new: true }
+                );
+                console.log(`[${email}] Updated database with default aiSettings`);
+              } catch (updateError) {
+                console.error(`[${email}] Failed to update aiSettings in database:`, updateError);
+              }
             }
           }
 
@@ -168,22 +194,29 @@ export const scheduleEmailChecks = async (userId, email) => {
             mode: currentAccount.aiSettings.mode,
           });
 
-          const aiEnabled =
-            AutomatedResponseService.isAutomationEnabled(currentAccount);
+          const aiEnabled = AutomatedResponseService.isAutomationEnabled(currentAccount);
           console.log(`[${email}] AI automation enabled: ${aiEnabled}`);
 
           let automationApplied = false;
 
           if (aiEnabled) {
-            const mode =
-              AutomatedResponseService.getAutomationMode(currentAccount);
+            const mode = AutomatedResponseService.getAutomationMode(currentAccount);
             console.log(`[${email}] Running in ${mode} mode`);
 
             try {
+              // Ensure each email has a proper ID before processing
+              const emailsWithIds = processedEmails.map(email => {
+                if (!email.id && !email._id) {
+                  // Generate an ID if none exists
+                  email.id = email.messageId || `email-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+                }
+                return email;
+              });
+              
               await AutomatedResponseService.processNewEmails(
                 userId,
                 email,
-                processedEmails
+                emailsWithIds
               );
               console.log(`[${email}] Successfully processed emails with AI`);
               automationApplied = true;

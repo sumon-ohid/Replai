@@ -13,112 +13,117 @@ class AutomatedResponseService {
    * @param {string} email - Email address
    * @param {Array} newEmails - Array of new emails to process
    */
-  static async processNewEmails(userId, email, newEmails) {
-    console.log(`Starting to process ${newEmails.length} new emails for ${email}`);
 
-    const account = await ConnectionManager.getConnection(userId, email);
-    if (!account || !account.connection) {
-      console.error('No active connection found for:', email);
-      throw new Error('No active connection found');
-    }
-
-    // Verify AI settings are properly configured
-    if (!this.verifyAISettings(account)) {
-      console.error('AI settings are not properly configured for:', email);
-      return;
-    }
-
-    const emailService = await ConnectionManager.getEmailService(account.provider);
-    if (!emailService) {
-      console.error('Email service not found for provider:', account.provider);
-      return;
-    }
-    
-    for (const newEmail of newEmails) {
-      try {
-        console.log(`Processing email ${newEmail.id} from ${newEmail.from?.email}`);
-
-        // Check if email should be processed
-        const shouldProcess = await shouldProcessEmail(
-          userId,
-          newEmail.from.email,
-          newEmail.from.domain
-        );
-
-        if (!shouldProcess) {
-          console.log(`Skipping blocked email from ${newEmail.from.email}`);
-          continue;
-        }
-
-        // Process email content
-        const processedEmail = await EmailProcessingService.processEmailContent({
-          ...newEmail,
-          userId,
-          userEmail: email
-        });
-
-        // Check if response is needed
-        if (!processedEmail.requiresResponse) {
-          console.log(`No response needed for email: ${newEmail.id}`);
-          continue;
-        }
-
-        console.log(`Generating AI response for email: ${newEmail.id}`);
-        
-        // Generate AI response
-        const response = await EmailProcessingService.generateEmailResponse(
-          userId,
-          newEmail.from.email,
-          newEmail.subject,
-          newEmail.body
-        );
-
-        if (!response) {
-          console.error('Failed to generate AI response');
-          continue;
-        }
-
-        // Check AI settings mode (draft or auto-reply)
-        const aiSettings = account.aiSettings || {};
-        const mode = aiSettings.mode || 'draft';
-
-        // Save response regardless of mode
-        const emailResponse = {
-          messageId: newEmail.id,
-          content: response,
-          sentAt: new Date(),
-          mode: mode,
-          from: email,  // The account sending the response
-          to: newEmail.from.email,
-          subject: `Re: ${newEmail.subject}`,
-          autoResponse: true
-        };
-
-        if (mode === 'draft') {
-          // Create draft response
-          await emailService.createDraft(account.connection, emailResponse);
-          console.log(`Created draft response for email: ${newEmail.id}`);
-        } else {
-          // Send auto-reply and save
-          console.log(`Sending auto-reply for email: ${newEmail.id}`);
-          await emailService.sendEmail(account.connection, emailResponse);
+    static async processNewEmails(userId, email, newEmails) {
+      console.log(`Starting to process ${newEmails.length} new emails for ${email}`);
+  
+      const account = await ConnectionManager.getConnection(userId, email);
+      if (!account || !account.connection) {
+        console.error('No active connection found for:', email);
+        throw new Error('No active connection found');
+      }
+  
+      // Verify AI settings are properly configured
+      if (!this.verifyAISettings(account)) {
+        console.error('AI settings are not properly configured for:', email);
+        return;
+      }
+  
+      const emailService = await ConnectionManager.getEmailService(account.provider);
+      if (!emailService) {
+        console.error('Email service not found for provider:', account.provider);
+        return;
+      }
+      
+      for (const newEmail of newEmails) {
+        try {
+          // Ensure newEmail has an id, using _id, mongoId, or a generated fallback if needed
+          const emailId = newEmail.id || newEmail._id?.toString() || newEmail.messageId || `email-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
           
-          // Save to sent folder
-          console.log(`Saving response to sent folder for email: ${newEmail.id}`);
-          await emailService.saveSentEmail(account.connection, emailResponse);
+          console.log(`Processing email ${emailId} from ${newEmail.from?.email || 'unknown sender'}`);
+  
+          // Check if email should be processed
+          const shouldProcess = await shouldProcessEmail(
+            userId,
+            newEmail.from?.email,
+            newEmail.from?.domain
+          );
+  
+          if (!shouldProcess) {
+            console.log(`Skipping blocked email from ${newEmail.from?.email || 'unknown sender'}`);
+            continue;
+          }
+  
+          // Process email content
+          const processedEmail = await EmailProcessingService.processEmailContent({
+            ...newEmail,
+            id: emailId, // Ensure id is always set
+            userId,
+            userEmail: email
+          });
+  
+          // Check if response is needed
+          if (!processedEmail.requiresResponse) {
+            console.log(`No response needed for email: ${emailId}`);
+            continue;
+          }
+  
+          console.log(`Generating AI response for email: ${emailId}`);
           
-          console.log(`Successfully processed email ${newEmail.id} with auto-reply`);
+          // Generate AI response
+          const response = await EmailProcessingService.generateEmailResponse(
+            userId,
+            newEmail.from?.email,
+            newEmail.subject,
+            newEmail.body
+          );
+  
+          if (!response) {
+            console.error('Failed to generate AI response');
+            continue;
+          }
+  
+          // Check AI settings mode (draft or auto)
+          const aiSettings = account.aiSettings || {};
+          const mode = aiSettings.mode || 'draft';
+  
+          // Save response regardless of mode
+          const emailResponse = {
+            messageId: emailId,
+            content: response,
+            sentAt: new Date(),
+            mode: mode,
+            from: email,  // The account sending the response
+            to: newEmail.from?.email,
+            subject: `Re: ${newEmail.subject || 'No Subject'}`,
+            autoResponse: true
+          };
+  
+          if (mode === 'draft') {
+            // Create draft response
+            await emailService.createDraft(account.connection, emailResponse);
+            console.log(`Created draft response for email: ${emailId}`);
+          } else {
+            // Send auto and save
+            console.log(`Sending auto for email: ${emailId}`);
+            await emailService.sendEmail(account.connection, emailResponse);
+            
+            // Save to sent folder
+            console.log(`Saving response to sent folder for email: ${emailId}`);
+            await emailService.saveSentEmail(account.connection, emailResponse);
+            
+            console.log(`Successfully processed email ${emailId} with auto`);
+          }
+        } catch (error) {
+          console.error('Error processing email:', {
+            emailId: newEmail?.id || newEmail?._id?.toString() || 'unknown',
+            error: error.message,
+            stack: error.stack
+          });
+          continue; // Continue with next email even if one fails
         }
-      } catch (error) {
-        console.error('Error processing email:', {
-          emailId: newEmail.id,
-          error: error.message,
-          stack: error.stack
-        });
-        continue; // Continue with next email even if one fails
       }
     }
-  }
 
   /**
    * Verify AI settings are properly configured
@@ -141,7 +146,7 @@ class AutomatedResponseService {
       return false;
     }
 
-    if (!['draft', 'auto-reply'].includes(account.aiSettings.mode)) {
+    if (!['draft', 'auto'].includes(account.aiSettings.mode)) {
       console.log(`Invalid AI mode: ${account.aiSettings.mode}`);
       return false;
     }

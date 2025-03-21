@@ -98,7 +98,7 @@ const result = await ConnectionManager.setupCustomEmailSync(userId, credentials)
 1. Configure automation settings
 ```javascript
 await AutomationController.updateSettings(email, {
-  mode: 'auto-reply',
+  mode: 'auto',
   templates: [...],
   rules: [...]
 });

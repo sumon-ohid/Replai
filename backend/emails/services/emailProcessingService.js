@@ -162,13 +162,16 @@ export const processEmails = async (userId, email) => {
     }
 
     // Get connection from connection manager
-    const connection = ConnectionManager.getConnection(userId, email);
+    const connection = await ConnectionManager.getConnection(userId, email);
     if (!connection) {
       throw new Error('No active connection found');
     }
 
     // Process each email that's already been fetched
     const emailModels = connection.emailModels;
+    if (!emailModels || !emailModels.Email) {
+      throw new Error('Email models not properly initialized');
+    }
     const unprocessedEmails = await emailModels.Email.find({
       processed: { $ne: true },
       messageId: { $exists: true }
@@ -265,10 +268,12 @@ function determineIfResponseNeeded(email) {
   const noResponseCategories = ['promotions', 'newsletter', 'updates', 'social'];
   
   if (noResponseCategories.includes(determineCategory(email))) {
+    console.log('No response needed for category:', determineCategory(email));
     return false;
   }
   
   if (email.subject?.includes('?') || email.body?.includes('?')) {
+    console.log('Response needed for question:', email.subject);
     return true;
   }
   

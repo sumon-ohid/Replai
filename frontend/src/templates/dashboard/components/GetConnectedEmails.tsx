@@ -56,7 +56,7 @@ interface EmailAccount {
   type?: "personal" | "work";
   autoReplyEnabled?: boolean;
   aiEnabled?: boolean;
-  mode?: "draft" | "normal" | "auto-reply";
+  mode?: "draft" | "normal" | "auto";
   syncEnabled?: boolean;
   picture?: string | null;
   name?: string;
@@ -136,7 +136,7 @@ function ConnectedEmailsContent() {
           type: email.type || "personal",
           autoReplyEnabled: email.autoReplyEnabled !== false, // Default to true if not specified
           aiEnabled: email.aiEnabled !== false, // Default to true if not specified
-          mode: email.mode || "auto-reply",
+          mode: email.mode || "auto",
           syncEnabled: email.syncEnabled !== false, // Default to true if not specified
           picture: email.picture || null,
           name: email.name || "",
@@ -229,8 +229,8 @@ function ConnectedEmailsContent() {
       acc.id === email.id ? { 
         ...acc, 
         autoReplyEnabled: newValue,
-        aiEnabled: newValue, // AI is enabled when auto-reply is on
-        mode: newValue ? "auto-reply" as "auto-reply" : "draft" as "draft" 
+        aiEnabled: newValue, // AI is enabled when auto is on
+        mode: newValue ? "auto" as "auto" : "draft" as "draft" 
       } : acc
     );
     setConnectedEmails(updatedEmails);
@@ -238,13 +238,13 @@ function ConnectedEmailsContent() {
     try {
       // Update the server
       const response = await axios.patch(
-        `${apiBaseUrl}/api/emails/auth/connected/auto-reply/${email.email}`,
+        `${apiBaseUrl}/api/emails/auth/connected/auto/${email.email}`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Check for success
-      if (response.status !== 200) throw new Error("Failed to update auto-reply settings");
+      if (response.status !== 200) throw new Error("Failed to update auto settings");
 
       // Extract aiEnabled from response if available
       const data = response.data as { aiEnabled?: boolean, mode?: string };
@@ -255,20 +255,20 @@ function ConnectedEmailsContent() {
           ...actionEmail, 
           autoReplyEnabled: newValue,
           aiEnabled: data.aiEnabled !== undefined ? data.aiEnabled : newValue,
-          mode: ["auto-reply", "draft", "normal"].includes(data.mode as string)
-            ? (data.mode as "auto-reply" | "draft" | "normal")
-            : (newValue ? "auto-reply" : "draft")
+          mode: ["auto", "draft", "normal"].includes(data.mode as string)
+            ? (data.mode as "auto" | "draft" | "normal")
+            : (newValue ? "auto" : "draft")
         });
       }
 
-      enqueueSnackbar(`${newValue ? "Auto-reply" : "Draft"} mode activated`, { variant: "success" });
+      enqueueSnackbar(`${newValue ? "auto" : "Draft"} mode activated`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
-      console.error("Error toggling auto-reply:", error);
+      console.error("Error toggling auto:", error);
       
       // Revert optimistic update on failure
       setConnectedEmails(connectedEmails);
-      enqueueSnackbar("Failed to update auto-reply settings", { variant: "error" });
+      enqueueSnackbar("Failed to update auto settings", { variant: "error" });
     }
   };
 
@@ -824,7 +824,7 @@ function ConnectedEmailsContent() {
                             color={email.autoReplyEnabled ? "success" : "info"}
                             label={
                               email.autoReplyEnabled
-                                ? "Auto-reply enabled"
+                                ? "auto enabled"
                                 : "Draft mode enabled"
                             }
                             icon={
@@ -958,7 +958,7 @@ function ConnectedEmailsContent() {
                             <ListItemText>
                               Toggle to {actionEmail?.autoReplyEnabled
                                 ? "Draft"
-                                : "Auto-Reply"} Mode
+                                : "auto"} Mode
                             </ListItemText>
                           </MenuItem>
                           <MenuItem

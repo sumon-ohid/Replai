@@ -189,16 +189,30 @@ function sanitizeForMongoDB(text, maxLength = 100000) {
  */
 export async function processGoogleMessage(gmail, userId, userEmail, messageId, config = {}) {
   try {
-    // Get the connected email account
+    // Get the connected email account with more lenient status check
     const connectedEmail = await ConnectedEmail.findOne({
       userId,
       email: userEmail,
       provider: 'google',
-      status: 'active'
+      'tokens.refreshToken': { $exists: true }
     });
 
     if (!connectedEmail) {
       throw new Error('Connected email account not found');
+    }
+
+    // If account exists but status isn't active, try to reactivate
+    if (connectedEmail.status !== 'active') {
+      console.log(`Found inactive account for ${userEmail}, attempting to reactivate...`);
+      
+      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+        status: 'active',
+        lastConnected: new Date(),
+        $unset: { 
+          disconnectedAt: "",
+          lastError: ""
+        }
+      });
     }
 
     // Get models for this email account
@@ -578,17 +592,31 @@ export async function initializeGoogleConnection(userId, email, refreshToken, ac
  */
 export async function checkForNewGoogleEmails(gmail, userId, email, config = {}) {
   try {
-    // Get ConnectedEmail record for collections
+    // Get ConnectedEmail record for collections with more lenient check
     const connectedEmail = await ConnectedEmail.findOne({ 
       userId, 
       email,
       provider: 'google',
-      status: 'active'
+      'tokens.refreshToken': { $exists: true }
     });
     
     if (!connectedEmail) {
-      console.log(`Connected email not found or not active: ${email}`);
+      console.log(`Connected email not found: ${email}`);
       return [];
+    }
+    
+    // If account exists but status isn't active, try to reactivate
+    if (connectedEmail.status !== 'active') {
+      console.log(`Found inactive account for ${email}, attempting to reactivate...`);
+      
+      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+        status: 'active',
+        lastConnected: new Date(),
+        $unset: { 
+          disconnectedAt: "",
+          lastError: ""
+        }
+      });
     }
 
     // List recent messages with a more flexible query
@@ -708,6 +736,7 @@ export async function saveSentEmail(gmail, email) {
     throw error;
   }
 }
+
 
 export default {
   initializeGoogleConnection,

@@ -139,8 +139,8 @@ const processOutlookMessage = async (graphClient, message, userId, userEmail, co
     const receivedDateTime = message.receivedDateTime ? new Date(message.receivedDateTime) : new Date();
     
     // Process according to mode
-    if (config.mode === 'auto-reply') {
-      // Process for auto-reply
+    if (config.mode === 'auto') {
+      // Process for auto
       await processEmailContent(userId, {
         providerId: message.id,
         threadId: message.conversationId,
