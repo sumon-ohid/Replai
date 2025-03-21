@@ -85,13 +85,38 @@ const connectedEmailSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
+    totalReplied: {
+      type: Number,
+      default: 0
+    },
     lastSync: Date,
+    lastReply: Date,
     syncHistory: [{
       date: Date,
       emailsProcessed: Number,
+      emailsReplied: Number,
       success: Boolean,
       error: String
+    }],
+    replyHistory: [{
+      date: Date,
+      messageId: String,
+      subject: String,
+      success: Boolean,
+      mode: String, // 'auto' or 'draft'
+      error: String
     }]
+  },
+
+  // Email processing status
+  lastProcessed: {
+    messageId: String,
+    date: Date,
+    status: {
+      type: String,
+      enum: ['pending', 'processed', 'replied', 'error'],
+      default: 'pending'
+    }
   },
 
   // Connection status

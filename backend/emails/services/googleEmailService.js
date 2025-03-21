@@ -364,64 +364,62 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
       }
     }
 
-    // Save to the database with error handling
+    // Save or update email in database
     try {
-      const emailDoc = new emailModels.Email(emailData);
-      const savedEmail = await emailDoc.save();
-      console.log(`Email saved successfully with ID: ${savedEmail._id}`);
-      
-      // Update sync stats
-      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-        $inc: { 'stats.totalEmails': 1 },
-        $set: { 'stats.lastSync': new Date() }
+      // Try to find existing email first
+      const existingEmail = await emailModels.Email.findOne({
+        $or: [
+          { messageId: message.id },
+          { externalMessageId: messageIdHeader }
+        ]
       });
-      
-      return savedEmail;
+
+      if (existingEmail) {
+        // Update existing email
+        const updatedEmail = await emailModels.Email.findByIdAndUpdate(
+          existingEmail._id,
+          {
+            $set: {
+              ...emailData,
+              updatedAt: new Date(),
+              lastSync: new Date()
+            }
+          },
+          { new: true }
+        );
+        console.log(`Email updated successfully with ID: ${updatedEmail._id}`);
+        return updatedEmail;
+      } else {
+        // Save new email
+        const emailDoc = new emailModels.Email(emailData);
+        const savedEmail = await emailDoc.save();
+        console.log(`Email saved successfully with ID: ${savedEmail._id}`);
+
+        // Update sync stats
+        await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+          $inc: { 'stats.totalEmails': 1 },
+          $set: { 'stats.lastSync': new Date() }
+        });
+
+        return savedEmail;
+      }
     } catch (saveError) {
       console.error('Error saving email:', saveError);
       
-      // Create a minimal version if all else fails
-      try {
-        const minimalData = {
-          userId,
-          messageId: message.id,
-          providerId: message.id,
-          provider: 'google',
-          
-          from: {
-            email: parsedFrom.email || 'unknown@example.com',
-            name: sanitizeForMongoDB(parsedFrom.name || '', 50)
-          },
-          
-          to: parsedTo.slice(0, 5).map(recipient => ({
-            email: recipient.email || '',
-            name: sanitizeForMongoDB(recipient.name || '', 50)
-          })),
-          
-          subject: sanitizeForMongoDB(subject || '(No Subject)', 200),
-          date: new Date(date || Date.now()),
-          receivedAt: new Date(),
-          
-          body: {
-            text: '(Content too large to store)',
-            html: ''
-          },
-          
-          snippet: sanitizeForMongoDB(snippet, 200),
-          
-          read: !gmailLabels.includes('UNREAD'),
-          folder
-        };
-        
-        const minimalDoc = new emailModels.Email(minimalData);
-        const fallbackSave = await minimalDoc.save();
-        
-        console.log(`Minimal email saved as fallback, ID: ${fallbackSave._id}`);
-        return fallbackSave;
-      } catch (fallbackError) {
-        console.error('Fatal error: Even minimal email save failed:', fallbackError);
-        throw new Error('Unable to save email: ' + fallbackError.message);
+      if (saveError.code === 11000) {
+        // Handle duplicate key more gracefully
+        try {
+          const email = await emailModels.Email.findOne({ messageId: message.id });
+          if (email) {
+            console.log(`Found existing email with ID: ${email._id}`);
+            return email;
+          }
+        } catch (findError) {
+          console.error('Error finding existing email:', findError);
+        }
       }
+
+      throw new Error(`Unable to save email: ${saveError.message}`);
     }
   } catch (error) {
     console.error('Error processing Google message:', error);
@@ -711,15 +709,24 @@ export async function sendEmail(connection, email) {
       throw new Error('Gmail connection not properly initialized');
     }
 
-    // Create email message in base64 format
+    // Properly format the email address with name if available
+    const formatEmailAddress = (emailObj) => {
+      if (typeof emailObj === 'string') return emailObj;
+      const name = emailObj.name || emailObj.email.split('@')[0];
+      return `${name} <${emailObj.email}>`;
+    };
+
+    // Create email message in base64 format with proper headers
     const messageParts = [
-      `From: ${email.from}`,
-      `To: ${email.to}`,
+      `From: ${formatEmailAddress(email.from)}`,
+      `To: ${formatEmailAddress(email.to)}`,
       `Subject: ${email.subject}`,
-      `Date: ${email.sentAt.toUTCString()}`,
+      'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
+      `Date: ${email.sentAt.toUTCString()}`,
+      'Content-Transfer-Encoding: base64',
       '',
-      email.content
+      Buffer.from(email.content, 'utf-8').toString('base64')
     ];
     
     const message = messageParts.join('\r\n');
@@ -728,15 +735,21 @@ export async function sendEmail(connection, email) {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Send the email
+    // Send the email and get thread ID
     const result = await connection.gmail.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: encodedMessage
+        raw: encodedMessage,
+        threadId: email.threadId // Include thread ID if available
       }
     });
 
-    return result.data;
+    // Return both message data and ID
+    return {
+      messageId: result.data.id,
+      threadId: result.data.threadId,
+      ...result.data
+    };
   } catch (error) {
     console.error('Error sending email:', error);
     throw error;
@@ -746,7 +759,7 @@ export async function sendEmail(connection, email) {
 /**
  * Save sent email to Gmail's sent folder
  */
-export async function saveSentEmail(gmail, email) {
+export async function saveSentEmail(gmail, email, messageId = null) {
   try {
     // Create email message in base64 format
     const messageParts = [

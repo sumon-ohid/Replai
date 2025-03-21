@@ -142,7 +142,14 @@ Guidelines:
     return aiRes.response.text();
   } catch (error) {
     console.error('Error generating email response:', error);
-    return `Sorry, I couldn't generate a response at this time.\n\nBest regards,\n${userName}`;
+
+    // Google API quota error handling
+    if (error?.status === 429) {
+      throw new Error('AI service is temporarily unavailable due to rate limits. Please try again later.');
+    }
+
+    // Use user's name from earlier query
+    return `Sorry, I couldn't generate a response at this time.\n\nBest regards,\n${user?.name || 'AI Assistant'}`;
   }
 };
 
