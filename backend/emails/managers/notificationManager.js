@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import EmailAccount from '../../models/emailSchema.js';
+import EmailAccount from '../../models/ConnectedEmailModels.js';
 import { getMonitoringConfig } from '../config/emailConfig.js';
 
 // Define notification schema

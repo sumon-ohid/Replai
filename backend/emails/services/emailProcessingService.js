@@ -4,6 +4,7 @@ import User from '../../models/User.js';
 import ConnectedEmail from '../../models/ConnectedEmail.js';
 import BlockList from '../../models/BlockList.js';
 import { parseEmailAddress } from '../utils/emailParser.js';
+import ConnectionManager from '../managers/connectionManager.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -294,11 +295,47 @@ Guidelines:
   }
 };
 
+/**
+ * Process new emails
+ * @param {string} userId - User ID
+ * @param {string} email - Email address
+ * @returns {Promise<Array>} Array of processed emails
+ */
+export const processEmails = async (userId, email) => {
+  try {
+    const connectedEmail = await ConnectedEmail.findOne({ userId, email });
+    if (!connectedEmail) {
+      throw new Error('Connected email account not found');
+    }
+
+    // Get new emails from the email service
+    const emailService = await ConnectionManager.getEmailService(connectedEmail.provider);
+    const newEmails = await emailService.getNewEmails(userId, email);
+
+    // Process each email
+    const processedEmails = await Promise.all(
+      newEmails.map(async (newEmail) => {
+        return await processEmailContent({
+          ...newEmail,
+          userId,
+          userEmail: email
+        });
+      })
+    );
+
+    return processedEmails;
+  } catch (error) {
+    console.error('Error processing emails:', error);
+    return [];
+  }
+};
+
 export default {
   processEmailContent,
   shouldProcessEmail,
   generateEmailResponse,
   extractActionItems,
   determineIfResponseNeeded,
-  calculatePriority
+  calculatePriority,
+  processEmails
 };

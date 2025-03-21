@@ -6,7 +6,7 @@ dotenv.config();
  * Email processing configuration
  * Contains email handling settings, sync intervals, and processing options
  */
-export default {
+const emailConfig = {
   // General configuration
   general: {
     dashboard_url: process.env.DASHBOARD_URL || 'http://localhost:3001/email-manager',
@@ -138,6 +138,56 @@ export default {
     channels: ['email', 'dashboard']
   },
   
+  // Monitoring and alerting configuration
+  monitoring: {
+    // Enable monitoring
+    enabled: process.env.ENABLE_MONITORING !== 'false',
+    // Log level for monitoring
+    logLevel: process.env.MONITORING_LOG_LEVEL || 'info',
+    // Enable error tracking
+    trackErrors: true,
+    // Error thresholds
+    errorThresholds: {
+      critical: 10,
+      warning: 5
+    },
+    // Performance metrics to track
+    performanceMetrics: [
+      'cpuUsage',
+      'memoryUsage',
+      'responseTime',
+      'processingTime',
+      'concurrentConnections'
+    ],
+    // Alert channels
+    alertChannels: ['email', 'dashboard', 'log'],
+    // Health check interval in milliseconds
+    healthCheckInterval: process.env.HEALTH_CHECK_INTERVAL ? 
+      parseInt(process.env.HEALTH_CHECK_INTERVAL, 10) : 300000, // 5 minutes
+    // Notification thresholds
+    notificationThresholds: {
+      // Failed connection attempts before alerting
+      connectionFailures: 3,
+      // Sync failures before alerting
+      syncFailures: 5,
+      // Processing errors before alerting
+      processingErrors: 10,
+      // API request failures before alerting
+      apiRequestFailures: 5
+    },
+    // Whether to send detailed error reports
+    detailedErrorReports: true,
+    // Recovery strategies
+    recovery: {
+      // Whether to attempt automatic recovery
+      attemptAutoRecovery: true,
+      // Maximum auto recovery attempts
+      maxRecoveryAttempts: 3,
+      // Delay between recovery attempts (ms)
+      recoveryDelay: 60000
+    }
+  },
+  
   // Default templates for automated responses
   templates: {
     // Response signature format
@@ -148,3 +198,61 @@ export default {
     defaultIntro: 'Thank you for your email. '
   }
 };
+
+/**
+ * Get the monitoring configuration
+ * @returns {Object} The monitoring configuration
+ */
+export const getMonitoringConfig = () => {
+  return emailConfig.monitoring;
+};
+
+/**
+ * Get the notification configuration
+ * @returns {Object} The notification configuration
+ */
+export const getNotificationConfig = () => {
+  return emailConfig.notifications;
+};
+
+/**
+ * Get the retry policy configuration
+ * @returns {Object} The retry policy configuration
+ */
+export const getRetryPolicy = () => {
+  return emailConfig.retry;
+};
+
+/**
+ * Get the sync configuration
+ * @returns {Object} The sync configuration
+ */
+export const getSyncConfig = () => {
+  return emailConfig.sync;
+};
+
+/**
+ * Get the processing configuration
+ * @returns {Object} The processing configuration
+ */
+export const getProcessingConfig = () => {
+  return emailConfig.processing;
+};
+
+/**
+ * Get the general configuration
+ * @returns {Object} The general configuration
+ */
+export const getGeneralConfig = () => {
+  return emailConfig.general;
+};
+
+/**
+ * Get the modes configuration
+ * @returns {Object} The modes configuration
+ */
+export const getModesConfig = () => {
+  return emailConfig.modes;
+};
+
+export default emailConfig;

@@ -564,9 +564,47 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
   }
 }
 
+/**
+ * Save sent email to Gmail's sent folder
+ */
+export async function saveSentEmail(gmail, email) {
+  try {
+    // Create email message in base64 format
+    const messageParts = [
+      `From: ${email.from}`,
+      `To: ${email.to}`,
+      `Subject: ${email.subject}`,
+      `Date: ${email.sentAt.toUTCString()}`,
+      'Content-Type: text/html; charset=utf-8',
+      '',
+      email.content
+    ];
+    
+    const message = messageParts.join('\r\n');
+    const encodedMessage = Buffer.from(message).toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Insert the message into the sent folder
+    const result = await gmail.users.messages.insert({
+      userId: 'me',
+      resource: {
+        raw: encodedMessage,
+        labelIds: ['SENT']
+      }
+    });
+
+    return result.data;
+  } catch (error) {
+    console.error('Error saving sent email:', error);
+    throw error;
+  }
+}
+
 export default {
   initializeGoogleConnection,
   processGoogleMessage,
   checkForNewGoogleEmails,
-  initializeGoogleConnection,
+  saveSentEmail
 };
