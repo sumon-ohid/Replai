@@ -409,7 +409,7 @@ export default function AITraining() {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Advanced settings">
+            {/* <Tooltip title="Advanced settings">
               <IconButton
                 sx={{
                   bgcolor: alpha(theme.palette.primary.main, 0.1),
@@ -420,7 +420,7 @@ export default function AITraining() {
               >
                 <SettingsSuggestIcon />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
           </Box>
         </Box>
 
@@ -454,10 +454,10 @@ export default function AITraining() {
             <Stepper
               activeStep={activeStep}
               alternativeLabel={isSmallScreen}
-              orientation={isSmallScreen ? "horizontal" : "vertical"}
+              orientation={isSmallScreen ? "horizontal" : "horizontal"}
               sx={{
                 ".MuiStepConnector-line": {
-                  minHeight: isSmallScreen ? 0 : 40,
+                  minHeight: isSmallScreen ? 0 : 0,
                 },
               }}
             >
