@@ -887,10 +887,10 @@ async function processIncomingEmail(emailData) {
                         variant="body1" 
                         sx={{ mb: 2 }}
                     >
-                        <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>1.</Box> Register your application with the email provider's developer console
+                        <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>1.</Box> Simply connect your Email account from the dashboard, and you are good to go.
                     </Typography>
                     
-                    <Typography
+                    {/* <Typography
                         component="div" 
                         variant="body1" 
                         sx={{ mb: 2 }}
@@ -911,7 +911,7 @@ async function processIncomingEmail(emailData) {
                         variant="body1"
                     >
                         <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>4.</Box> Use the client ID and secret to initialize the OAuth client in your application
-                    </Typography>
+                    </Typography> */}
                 </Box>
 
                 <Typography variant="h5" fontWeight={600} sx={{ mb: 2, mt: 5 }} id="permissions">

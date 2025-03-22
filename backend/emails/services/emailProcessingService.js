@@ -3,11 +3,18 @@ import TextData from '../../models/TextData.js';
 import User from '../../models/User.js';
 import ConnectedEmail from '../../models/ConnectedEmail.js';
 import BlockList from '../../models/BlockList.js';
+import TrainAI from '../../models/TrainAI.js';
 import { parseEmailAddress } from '../utils/emailParser.js';
 import ConnectionManager from '../managers/connectionManager.js';
 import dotenv from 'dotenv';
 
+// Load environment variables
 dotenv.config();
+
+// Validate required environment variables
+if (!process.env.GENERATIVE_AI_API_KEY) {
+  throw new Error('GENERATIVE_AI_API_KEY environment variable is required');
+}
 
 // Initialize AI model
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
@@ -409,61 +416,137 @@ export const generateEmailResponse = async (userId, fromEmail, subject, body) =>
     const user = await User.findById(userId);
     const userName = user?.name || '';
 
-    // Parse and clean the email body
-    const parsedBody = parseEmailBody(body, {
-      maxLength: 3000,          // Reasonable length for AI prompts
-      preserveNewlines: true,   // Keep structure
-      removeQuotes: true,       // Skip quoted replies
-      trimSignatures: true      // Remove signatures
-    });
-    
-    // Log the parsed body for debugging
-    console.log('\x1b[32m', 'Parsed email body for AI prompt:', '\x1b[0m');
-    console.log('\x1b[32m', '--------------------------------', '\x1b[0m');
-    console.log('\x1b[32m', parsedBody, '\x1b[0m');
-    console.log('\x1b[32m', '--------------------------------', '\x1b[0m');
+    // Get user's custom settings and training data
+    const [textData, trainAI] = await Promise.all([
+      TextData.findOne({ userId }),
+      TrainAI.findOne({ userId })
+    ]);
 
-    // Get custom prompt if available
-    let userPrompt = await TextData.findOne({ userId });
-    const promptText = userPrompt 
-      ? (userPrompt.text + (userPrompt.fileData || '')) 
+    // Parse and clean the email body with enhanced limits
+    const parsedBody = parseEmailBody(body, {
+      maxLength: 8000,         // Increased for better context
+      preserveNewlines: true,  
+      removeQuotes: true,      
+      trimSignatures: true     
+    });
+
+    // Security check for sensitive information
+    const sensitivePatterns = [
+      /password/i, /credential/i, /secret/i, /key/i, /token/i,
+      /private/i, /confidential/i, /ssn/i, /social security/i,
+      /bank/i, /credit card/i, /\b\d{16}\b/, // Credit card number pattern
+      /\b\d{3}-\d{2}-\d{4}\b/ // SSN pattern
+    ];
+
+    const hasSensitiveInfo = sensitivePatterns.some(pattern => 
+      pattern.test(subject) || pattern.test(parsedBody)
+    );
+
+    if (hasSensitiveInfo) {
+      console.log('Sensitive information detected - marking as draft');
+      return {
+        content: null,
+        isDraft: true,
+        reason: 'Potentially sensitive information detected'
+      };
+    }
+
+    // Build enhanced context from user's training data
+    const trainingContext = trainAI ? `
+Communication Style: ${trainAI.communicationStyle || 'professional'}
+Company Voice: ${trainAI.companyVoice || 'neutral'}
+Industry Context: ${trainAI.industryContext || 'general'}
+Key Phrases: ${(trainAI.keyPhrases || []).join(', ')}
+` : '';
+
+    // Get custom prompt if available, enhanced with training data
+    const customPrompt = textData 
+      ? (textData.text + (textData.fileData || '') + '\n' + trainingContext)
       : '';
     
-    // Fallback to default prompt if no custom prompt exists
-    const defaultPrompt = `Respond to this email briefly and naturally as a real person:
+    // Enhanced default prompt with more context
+    const defaultPrompt = `
+You are responding as ${userName} in a professional capacity.
+
+Email Context:
 From: ${fromEmail}
 Subject: ${subject}
 Body: ${parsedBody}
 
-Guidelines:
-- Keep response short and simple
-- Use casual language
-- Sign with "Best regards, ${userName}"
-- Avoid markdown formatting`;
+Response Guidelines:
+1. Maintain a natural, human-like tone
+2. Match the formality level of the incoming email
+3. Be concise but thorough
+4. Address all key points raised
+5. Sign with "Best regards, ${userName}"
+6. Avoid technical jargon unless in the original email
+7. Focus on clear, actionable responses
+8. Match company voice and communication style
+9. No sensitive information or personal data
+10. Never share passwords or credentials or credit card numbers
+12. Use line breaks and newlines for readability, empty newlines for separation
+13. Never write placeholder, always generate a complete text
+14. Don't include the subject or the original email in the response
+15. Always add a newline before signature and Best regards
+16. Never include [ e.g.,] in the response, if something is not clear, skip it.
+17. If asked for Time, Date, appointment, write that you will write get back in few hours with confirmation.
+
+Please generate a response:`;
     
-    const prompt = promptText || defaultPrompt;
+    const prompt = defaultPrompt; // customPrompt + defaultPrompt;
     
-    // Log that we're sending to the AI
-    console.log('Sending prompt to AI model...');
+    // Handle large prompts by breaking into chunks if needed
+    const maxChunkSize = 4096;
+    let finalResponse = '';
+
+    if (prompt.length > maxChunkSize) {
+      // Split into manageable chunks
+      const chunks = prompt.match(new RegExp(`.{1,${maxChunkSize}}`, 'g')) || [];
+      
+      // Process each chunk and combine responses
+      for (const chunk of chunks) {
+        const chunkRes = await model.generateContent(chunk);
+        finalResponse += chunkRes.response.text() + ' ';
+      }
+    } else {
+      const aiRes = await model.generateContent(prompt);
+      finalResponse = aiRes.response.text();
+    }
+
+    // Post-process the response
+    const processedResponse = finalResponse; // postProcessResponse(finalResponse);
     
-    // Generate the response
-    const aiRes = await model.generateContent(prompt);
-    const response = aiRes.response.text();
+    // Log for debugging in green color
+    // console.log('\x1b[32m%s\x1b[0m', 'Generated email response:', processedResponse);
     
-    console.log('\x1b[34m', 'AI generated response:', '\x1b[0m');
-    console.log('\x1b[34m', response, '\x1b[0m');
-    
-    return response;
+    // Return with metadata
+    return {
+      content: processedResponse,
+      isDraft: false,
+      metadata: {
+        tone: detectTone(processedResponse),
+        length: processedResponse.length,
+        timestamp: new Date().toISOString()
+      }
+    };
   } catch (error) {
     console.error('Error generating email response:', error);
 
-    // Google API quota error handling
+    // Enhanced error handling
     if (error?.status === 429) {
       throw new Error('AI service is temporarily unavailable due to rate limits. Please try again later.');
     }
 
-    // Fallback response
-    return `Sorry, I couldn't generate a response at this time.\n\nBest regards,\n${user?.name || 'AI Assistant'}`;
+    // Return structured error response
+    return {
+      content: `Sorry, I couldn't generate a response at this time.\n\nBest regards,\n${User?.name || 'AI Assistant'}`,
+      isDraft: true,
+      error: error.message,
+      metadata: {
+        errorType: error.name,
+        timestamp: new Date().toISOString()
+      }
+    };
   }
 };
 
@@ -475,6 +558,44 @@ Guidelines:
  * @param {string|object} body - The email body to parse
  * @param {object} options - Parsing options
  * @returns {string} - Clean text suitable for AI prompting
+ */
+/**
+ * Post-process the AI generated response
+ */
+function postProcessResponse(response) {
+  if (!response) return '';
+  
+  return response
+    // Clean up extra whitespace
+    .replace(/\s+/g, ' ')
+    // Ensure proper spacing after punctuation
+    .replace(/([.!?])\s*/g, '$1 ')
+    // Remove any HTML that might have been generated
+    .replace(/<[^>]*>/g, '')
+    // Clean up signature formatting
+    .replace(/(\n*)Best regards,/, '\n\nBest regards,')
+    .trim();
+}
+
+/**
+ * Detect the tone of the response
+ */
+function detectTone(text) {
+  const tones = {
+    formal: /dear|sincerely|regards|pleasure|opportunity|appreciate/i,
+    casual: /hey|hi|thanks|great|awesome/i,
+    urgent: /asap|urgent|immediately|emergency/i,
+    neutral: /^[^]*$/  // Default fallback
+  };
+
+  for (const [tone, pattern] of Object.entries(tones)) {
+    if (pattern.test(text)) return tone;
+  }
+  return 'neutral';
+}
+
+/**
+ * Enhanced email body parser with additional options
  */
 function parseEmailBody(body, options = {}) {
   try {

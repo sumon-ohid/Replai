@@ -102,13 +102,15 @@ const connectedEmailSchema = new mongoose.Schema({
 
   // Email processing status
   lastProcessed: {
+    email: String,
     messageId: String,
     date: Date,
     status: {
       type: String,
-      enum: ['pending', 'processed', 'replied', 'error'],
+      enum: ['success', 'error', 'draft', 'pending', 'ignored', 'draft_created'], // Add 'draft_created' here
       default: 'pending'
-    }
+    },
+    error: String
   },
 
   // Connection status
