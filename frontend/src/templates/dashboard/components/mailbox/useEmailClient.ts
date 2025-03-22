@@ -34,7 +34,11 @@ interface EmailResponse {
     text?: string;
   };
   snippet?: string;
-  date: string;
+  date?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sentAt?: string;
+  dateSent?: string;
   read: boolean;
   starred: boolean;
   attachments?: Array<{
@@ -337,8 +341,65 @@ export const useEmailClient = (): UseEmailClientReturn => {
                 return "";
               })(),
               preview: email.snippet || "",
-              date: new Date(email.date).toLocaleString(),
-              timestamp: new Date(email.date).getTime(),
+              date: (() => {
+                // Check multiple possible date fields
+                const possibleDateFields = [
+                  email.date,
+                  email.createdAt,
+                  email.updatedAt,
+                  email.sentAt,
+                  email.dateSent
+                ];
+                
+                // Find the first valid date
+                for (const dateValue of possibleDateFields) {
+                  if (dateValue) {
+                    try {
+                      const parsedDate = new Date(dateValue);
+                      // Check if date is valid
+                      if (!isNaN(parsedDate.getTime())) {
+                        return parsedDate.toLocaleString();
+                      }
+                    } catch (e) {
+                      // Continue to next date field if parsing fails
+                      continue;
+                    }
+                  }
+                }
+                
+                // Default to current date if no valid date found
+                return new Date().toLocaleString();
+              })(),
+              
+              timestamp: (() => {
+                // Check multiple possible date fields
+                const possibleDateFields = [
+                  email.date,
+                  email.createdAt,
+                  email.updatedAt, 
+                  email.sentAt,
+                  email.dateSent
+                ];
+                
+                // Find the first valid date
+                for (const dateValue of possibleDateFields) {
+                  if (dateValue) {
+                    try {
+                      const parsedDate = new Date(dateValue);
+                      // Check if date is valid
+                      if (!isNaN(parsedDate.getTime())) {
+                        return parsedDate.getTime();
+                      }
+                    } catch (e) {
+                      // Continue to next date field if parsing fails
+                      continue;
+                    }
+                  }
+                }
+                
+                // Default to current timestamp if no valid date found
+                return Date.now();
+              })(),
               isRead: email.read === true,
               isStarred: email.starred === true,
               hasAttachments: Array.isArray(email.attachments) && email.attachments.length > 0,
@@ -626,8 +687,8 @@ export const useEmailClient = (): UseEmailClientReturn => {
             return fullEmailData.snippet ? `<p>${fullEmailData.snippet}</p>` : "";
           })(),
           preview: fullEmailData.snippet || "",
-          date: new Date(fullEmailData.date).toLocaleString(),
-          timestamp: new Date(fullEmailData.date).getTime(),
+          date: new Date(fullEmailData.date || Date.now()).toLocaleString(),
+          timestamp: new Date(fullEmailData.date || Date.now()).getTime(),
           isRead: fullEmailData.read === true,
           isStarred: fullEmailData.starred === true,
           hasAttachments: Array.isArray(fullEmailData.attachments) && fullEmailData.attachments.length > 0,
