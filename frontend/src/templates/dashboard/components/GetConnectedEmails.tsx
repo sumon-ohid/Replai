@@ -152,21 +152,18 @@ function ConnectedEmailsContent() {
         .map((email: any, index: number) => {
           // Debug individual email mapping
           console.log(`Mapping email ${index}:`, email);
-
+        
           // Determine the mode based on aiEnabled and aiMode
           let mode: "auto" | "draft" | "normal" = "draft"; // Default to draft
-
-          if (
-            email.aiMode &&
-            ["auto", "draft", "normal"].includes(email.aiMode)
-          ) {
+        
+          if (email.aiMode && ["auto", "draft", "normal"].includes(email.aiMode)) {
             // If aiMode is valid, use it directly
             mode = email.aiMode as "auto" | "draft" | "normal";
           } else if (email.aiEnabled) {
             // If aiMode is missing but aiEnabled is true, default to auto
             mode = "auto";
           }
-
+        
           return {
             id: index, // Use index as ID
             _id: email._id || `temp-id-${index}`,
@@ -175,13 +172,15 @@ function ConnectedEmailsContent() {
             status: email.status || "active",
             lastSync: formatLastSync(email.lastSync),
             type: email.type || "personal",
-            autoReplyEnabled: email.aiEnabled || false, // Map aiEnabled to autoReplyEnabled
+            // AI is enabled in both auto and draft modes as long as aiEnabled is true
             aiEnabled: email.aiEnabled || false,
-            mode: email.aiMode || "auto",
+            // autoReplyEnabled reflects if we're in auto mode (for UI purposes)
+            autoReplyEnabled: mode === "auto",
+            mode: mode,
             syncEnabled: email.syncEnabled !== false, // Default to true if not specified
             picture: email.picture || null,
             name: email.name || "",
-            connected: email.connected !== false, // Default to true if not specified
+            connected: email.connected !== false // Default to true if not specified
           };
         });
 
@@ -257,7 +256,7 @@ function ConnectedEmailsContent() {
     }
   };
 
-  // For Auto Reply toggle (which also handles AI)
+  // For Auto Reply toggle - now just toggles between auto and draft modes
   const handleToggleAutoReply = async (email: EmailAccount) => {
     if (!email) return;
   
@@ -268,19 +267,23 @@ function ConnectedEmailsContent() {
       return;
     }
   
-    // Toggle the current value
-    const newValue = !email.autoReplyEnabled;
+    // Toggle between auto and draft mode, not AI itself
+    // If currently in auto mode, switch to draft; otherwise switch to auto
+    const isCurrentlyAuto = email.mode === "auto";
+    const newMode = isCurrentlyAuto ? "draft" as const : "auto" as const;
     
-    // Determine new mode based on toggled value
-    const newMode = newValue ? "auto" as const : "draft" as const;
+    // AI remains enabled in both modes
+    const aiEnabled = true;
     
-    // Optimistic update
+    // Optimistic update - note we keep aiEnabled true
     const updatedEmails = connectedEmails.map((acc) =>
       acc.id === email.id ? { 
         ...acc, 
-        autoReplyEnabled: newValue,
-        aiEnabled: newValue, // AI is enabled when auto is on
-        mode: newMode
+        mode: newMode,
+        // autoReplyEnabled reflects if auto mode is active (for UI purposes)
+        autoReplyEnabled: newMode === "auto",
+        // AI remains enabled in both modes
+        aiEnabled: true
       } : acc
     );
     setConnectedEmails(updatedEmails);
@@ -290,14 +293,14 @@ function ConnectedEmailsContent() {
       const response = await axios.post(
         `${apiBaseUrl}/api/emails/connection/${email.email}/mode-switch`,
         { 
-          enabled: newValue,
-          mode: newMode // Send the mode explicitly
+          enabled: true, // AI should remain enabled
+          mode: newMode // Just change the mode 
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
       // Check for success
-      if (response.status !== 200) throw new Error("Failed to update auto settings");
+      if (response.status !== 200) throw new Error("Failed to update mode settings");
   
       // Extract relevant data from response
       const data = response.data as { aiEnabled?: boolean, mode?: string };
@@ -311,20 +314,23 @@ function ConnectedEmailsContent() {
           
         setActionEmail({ 
           ...actionEmail, 
-          autoReplyEnabled: data.aiEnabled ?? newValue,
-          aiEnabled: data.aiEnabled ?? newValue,
-          mode: responseMode
+          mode: responseMode,
+          // autoReplyEnabled reflects if we're in auto mode (for UI purposes)
+          autoReplyEnabled: responseMode === "auto",
+          // AI should remain enabled
+          aiEnabled: true
         });
       }
   
-      enqueueSnackbar(`${newValue ? "Auto" : "Draft"} mode activated`, { variant: "success" });
+      // Update success message to reflect mode change, not enabling/disabling
+      enqueueSnackbar(`Switched to ${newMode === "auto" ? "Auto" : "Draft"} mode`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
-      console.error("Error toggling auto:", error);
+      console.error("Error switching mode:", error);
       
       // Revert optimistic update on failure
       setConnectedEmails(connectedEmails);
-      enqueueSnackbar("Failed to update auto settings", { variant: "error" });
+      enqueueSnackbar("Failed to switch modes", { variant: "error" });
     }
   };
 
