@@ -37,4 +37,7 @@ router.patch('/:email/emails/:messageId/unread', auth, EmailController.markAsUnr
 // mark all emails as read
 router.patch('/:email/emails/mark-all-read', auth, EmailController.markAllAsRead);
 
+// send email
+router.post('/:email/send', auth, EmailController.sendEmail);
+
 export default router;

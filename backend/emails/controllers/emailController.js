@@ -879,6 +879,235 @@ class EmailController {
     console.log("🔵🔵 Marked all emails as read successfully", email);
     res.json({ success: true, totalUpdated: result.nModified });
   });
+
+        /**
+     * Send an email from a connected account
+     */
+    static sendEmail = asyncHandler(async (req, res) => {
+      const userId = req.user._id;
+      const { email } = req.params; // The connected email account (sender)
+      const { to, cc, bcc, subject, body, attachments, inReplyTo, threadId } = req.body;
+    
+      logger.info("Sending email", { from: email, to, subject });
+    
+      // Get the connected email account
+      const account = await ConnectedEmail.findOne({ userId, email });
+      if (!account) {
+        return res.status(404).json({ error: "Connected email not found" });
+      }
+    
+      try {
+        // Get active connection from connection manager
+        const connectionManager = await import("../managers/connectionManager.js");
+        const emailConnection = await connectionManager.default.getConnection(userId, email);
+        
+        if (!emailConnection || !emailConnection.connection || !emailConnection.connection.gmail) {
+          logger.error(`No valid Gmail connection found for ${email}`);
+          return res.status(400).json({ error: "No valid Gmail connection available" });
+        }
+        
+        // Format the body content
+        let processedBody = body;
+        if (typeof body === 'string') {
+          processedBody = {
+            text: body,
+            html: EmailController.convertPlainTextToHtml(body)
+          };
+        } else if (body && typeof body === 'object') {
+          if (body.text && !body.html) {
+            processedBody = {
+              text: body.text,
+              html: EmailController.convertPlainTextToHtml(body.text)
+            };
+          } else if (body.html && !body.text) {
+            processedBody = {
+              html: body.html,
+              text: EmailController.extractTextFromHtml(body.html)
+            };
+          } else {
+            processedBody = body;
+          }
+        }
+    
+        // Format recipients properly
+        const formattedTo = Array.isArray(to) 
+          ? to.map(recipient => {
+              if (typeof recipient === 'string') {
+                return { email: recipient, name: recipient.split('@')[0] };
+              }
+              return recipient;
+            })
+          : typeof to === 'string'
+            ? [{ email: to, name: to.split('@')[0] }]
+            : [];
+    
+        const formattedCc = cc ? (Array.isArray(cc) 
+          ? cc.map(recipient => {
+              if (typeof recipient === 'string') {
+                return { email: recipient, name: recipient.split('@')[0] };
+              }
+              return recipient;
+            })
+          : typeof cc === 'string'
+            ? [{ email: cc, name: cc.split('@')[0] }]
+            : []) : [];
+    
+        const formattedBcc = bcc ? (Array.isArray(bcc) 
+          ? bcc.map(recipient => {
+              if (typeof recipient === 'string') {
+                return { email: recipient, name: recipient.split('@')[0] };
+              }
+              return recipient;
+            })
+          : typeof bcc === 'string'
+            ? [{ email: bcc, name: bcc.split('@')[0] }]
+            : []) : [];
+    
+        // Prepare email data for sending
+        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+        
+        // Import the proper email service
+        const googleEmailService = await import("../services/googleEmailService.js");
+        
+        // Format email data for the service
+        const emailData = {
+          from: {
+            email: email,
+            name: account.name || email.split('@')[0]
+          },
+          to: formattedTo,
+          cc: formattedCc,
+          bcc: formattedBcc,
+          subject: subject || "(No Subject)",
+          body: processedBody,
+          inReplyTo,
+          threadId,
+          sentAt: new Date()
+        };
+        
+        logger.info("Sending email with service", { provider: account.provider });
+        
+        // Send the email using the appropriate service
+        const sendResult = await googleEmailService.sendEmail(emailConnection, emailData);
+        
+        // Get models for this email account
+        const emailModels = getConnectedEmailModels(account._id.toString());
+    
+        // Store sent email in the database
+        const sentEmail = new emailModels.Sent({
+          userId: userId,
+          messageId: sendResult.messageId || messageId,
+          threadId: sendResult.threadId || threadId || messageId,
+          externalMessageId: sendResult.messageId,
+          from: {
+            email: email,
+            name: account.name || email.split('@')[0]
+          },
+          to: formattedTo,
+          cc: formattedCc,
+          bcc: formattedBcc,
+          subject: subject || "(No Subject)",
+          body: processedBody,
+          attachments: attachments || [],
+          sentAt: new Date(),
+          dateSent: new Date(),
+          folder: "sent",
+          status: "sent",
+          provider: account.provider,
+          inReplyTo: inReplyTo || null,
+        });
+    
+        await sentEmail.save();
+        logger.info("Email sent and saved", { messageId: sentEmail.messageId });
+    
+        // Return success with sent email details
+        res.json({
+          success: true,
+          message: "Email sent successfully",
+          sentEmail: {
+            id: sentEmail._id,
+            messageId: sentEmail.messageId,
+            threadId: sentEmail.threadId,
+            sentAt: sentEmail.sentAt
+          }
+        });
+      } catch (error) {
+        logger.error("Error sending email", { error: error.message, stack: error.stack });
+        
+        // Log detailed connection info for debugging
+        try {
+          console.log("Account connection structure:", JSON.stringify({
+            hasConnection: !!account.connection,
+            provider: account.provider,
+            keys: account.connection ? Object.keys(account.connection) : []
+          }));
+        } catch (e) {
+          console.log("Could not stringify connection");
+        }
+        
+        // Try to create draft if sending fails
+        try {
+          // Get models for this email account
+          const emailModels = getConnectedEmailModels(account._id.toString());
+          
+          if (!emailModels.Draft) {
+            return res.status(500).json({ 
+              error: "Failed to send email and Draft model not found", 
+              message: error.message 
+            });
+          }
+          
+          const draftId = `draft-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+          const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+          
+          const draft = new emailModels.Draft({
+            userId: userId,
+            messageId: messageId,
+            draftId: draftId,
+            threadId: threadId || messageId,
+            from: {
+              email: email,
+              name: account.name || email.split('@')[0]
+            },
+            to: formattedTo,
+            cc: formattedCc,
+            bcc: formattedBcc,
+            subject: subject || "(No Subject)",
+            body: processedBody,
+            attachments: attachments || [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            status: "error",
+            error: error.message,
+            provider: account.provider,
+            inReplyTo: inReplyTo || null
+          });
+          
+          await draft.save();
+          logger.info("Email saved as draft due to send error", { draftId });
+          
+          res.status(500).json({ 
+            error: "Failed to send email, saved as draft", 
+            message: error.message,
+            draft: {
+              id: draft._id,
+              draftId: draft.draftId
+            }
+          });
+        } catch (draftError) {
+          // If even saving as draft fails, return just the error
+          logger.error("Failed to save draft after send error", { 
+            error: draftError.message, 
+            originalError: error.message 
+          });
+          
+          res.status(500).json({ 
+            error: "Failed to send email and could not save as draft", 
+            message: error.message 
+          });
+        }
+      }
+    });
 }
 
 EmailController.processEmailBody = function (emailDoc) {

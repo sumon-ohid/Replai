@@ -739,37 +739,117 @@ export async function checkForNewGoogleEmails(gmail, userId, email, config = {})
   }
 }
 
-/**
- * Save sent email to Gmail's sent folder
- */
+
 /**
  * Send an email using Gmail API
  */
 export async function sendEmail(connection, email) {
   try {
-    if (!connection.gmail) {
+    console.log("Sending email with connection:", connection ? "Connection exists" : "No connection");
+    
+    // Check connection structure
+    if (!connection) {
+      throw new Error('Email connection not provided');
+    }
+    
+    // The connection might be directly the connection object or nested inside a connection property
+    const gmailConnection = connection.gmail || (connection.connection && connection.connection.gmail);
+    
+    if (!gmailConnection) {
+      console.error("Connection structure:", JSON.stringify(connection, null, 2));
       throw new Error('Gmail connection not properly initialized');
     }
 
-    // Properly format the email address with name if available
-    const formatEmailAddress = (emailObj) => {
-      if (typeof emailObj === 'string') return emailObj;
-      const name = emailObj.name || emailObj.email.split('@')[0];
-      return `${name} <${emailObj.email}>`;
+    // Properly format email addresses
+    const formatEmailAddress = (address) => {
+      if (typeof address === 'string') {
+        // If it already has angle brackets, return as is
+        if (address.includes('<') && address.includes('>')) {
+          return address;
+        }
+        
+        // If it's just an email address, add default name
+        if (address.includes('@')) {
+          const name = address.split('@')[0];
+          return `${name} <${address}>`;
+        }
+        
+        return address; // Return as is if we can't determine format
+      }
+      
+      // If it's an array of addresses
+      if (Array.isArray(address)) {
+        return address.map(addr => {
+          if (typeof addr === 'string') return formatEmailAddress(addr);
+          const name = addr.name || addr.email.split('@')[0];
+          return `${name} <${addr.email}>`;
+        }).join(', ');
+      }
+      
+      // If it's an object with email property
+      if (address && address.email) {
+        const name = address.name || address.email.split('@')[0];
+        return `${name} <${address.email}>`;
+      }
+      
+      // Fallback
+      return '';
     };
 
+    // Handle missing sentAt
+    const sentAt = email.sentAt || new Date();
+    
+    // Get content - handle both string and object formats
+    let content = '';
+    if (typeof email.content === 'string') {
+      content = email.content;
+    } else if (email.body && email.body.html) {
+      content = email.body.html;
+    } else if (email.body && email.body.text) {
+      content = email.body.text;
+    }
+    
     // Create email message in base64 format with proper headers
     const messageParts = [
       `From: ${formatEmailAddress(email.from)}`,
-      `To: ${formatEmailAddress(email.to)}`,
-      `Subject: ${email.subject}`,
+      `To: ${formatEmailAddress(email.to)}`
+    ];
+    
+    // Add CC if present
+    if (email.cc && (typeof email.cc === 'string' || 
+                    (Array.isArray(email.cc) && email.cc.length > 0) || 
+                    (email.cc.email))) {
+      messageParts.push(`Cc: ${formatEmailAddress(email.cc)}`);
+    }
+    
+    // Add BCC if present
+    if (email.bcc && (typeof email.bcc === 'string' || 
+                     (Array.isArray(email.bcc) && email.bcc.length > 0) || 
+                     (email.bcc.email))) {
+      messageParts.push(`Bcc: ${formatEmailAddress(email.bcc)}`);
+    }
+    
+    // Add subject
+    messageParts.push(`Subject: ${email.subject || '(No Subject)'}`);
+    
+    // Add reply-to and in-reply-to if present
+    if (email.replyTo) {
+      messageParts.push(`Reply-To: ${formatEmailAddress(email.replyTo)}`);
+    }
+    
+    if (email.inReplyTo) {
+      messageParts.push(`In-Reply-To: ${email.inReplyTo}`);
+    }
+    
+    // Add remaining headers and content
+    messageParts.push(
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
-      `Date: ${email.sentAt.toUTCString()}`,
+      `Date: ${sentAt.toUTCString()}`,
       'Content-Transfer-Encoding: base64',
       '',
-      Buffer.from(email.content, 'utf-8').toString('base64')
-    ];
+      Buffer.from(content || 'No content provided', 'utf-8').toString('base64')
+    );
     
     const message = messageParts.join('\r\n');
     const encodedMessage = Buffer.from(message).toString('base64')
@@ -777,8 +857,10 @@ export async function sendEmail(connection, email) {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Send the email and get thread ID
-    const result = await connection.gmail.users.messages.send({
+    console.log("Sending email via Gmail API");
+    
+    // Send the email
+    const result = await gmailConnection.users.messages.send({
       userId: 'me',
       requestBody: {
         raw: encodedMessage,
@@ -786,11 +868,15 @@ export async function sendEmail(connection, email) {
       }
     });
 
-    // Return both message data and ID
+    console.log("Email sent successfully:", result.data);
+    
+    // Return successful result
     return {
+      success: true,
       messageId: result.data.id,
-      threadId: result.data.threadId,
-      ...result.data
+      threadId: result.data.threadId || email.threadId,
+      labelIds: result.data.labelIds,
+      raw: result.data
     };
   } catch (error) {
     console.error('Error sending email:', error);
