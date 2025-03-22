@@ -836,11 +836,64 @@ export async function saveSentEmail(gmail, email, messageId = null) {
   }
 }
 
+/**
+ * Create a draft email response
+ * @param {Object} connection - Gmail connection object
+ * @param {Object} emailData - Email data to draft
+ * @returns {Object} Draft creation result
+ */
+export const createDraft = async (connection, emailData) => {
+  try {
+    if (!connection || !connection.gmail) {
+      throw new Error('No valid Gmail connection provided');
+    }
+
+    // Extract necessary data
+    const { to, subject, content, from } = emailData;
+
+    // Prepare email content
+    const emailContent = 
+      `From: ${from}\n` +
+      `To: ${to}\n` +
+      `Subject: ${subject}\n\n` +
+      `${content}`;
+    
+    // Base64 encode the email content
+    const encodedEmail = Buffer.from(emailContent)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Create the draft using Gmail API
+    const response = await connection.gmail.users.drafts.create({
+      userId: 'me',
+      requestBody: {
+        message: {
+          raw: encodedEmail
+        }
+      }
+    });
+
+    console.log(`Draft created successfully with ID: ${response.data.id}`);
+    
+    return {
+      success: true,
+      draftId: response.data.id,
+      messageId: response.data.message?.id || null,
+      threadId: response.data.message?.threadId || null
+    };
+  } catch (error) {
+    console.error('Error creating draft email:', error);
+    throw new Error(`Failed to create draft: ${error.message}`);
+  }
+};
 
 export default {
   initializeGoogleConnection,
   processGoogleMessage,
   checkForNewGoogleEmails,
   saveSentEmail,
-  sendEmail
+  sendEmail,
+  createDraft
 };
