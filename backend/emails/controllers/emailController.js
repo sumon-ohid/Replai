@@ -95,49 +95,108 @@ class EmailController {
     });
   });
 
-  /**
+   /**
    * Get a single email by ID with proper body handling
    */
   static getEmail = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email, messageId } = req.params;
-
+  
     logger.info("Getting email details", { email, messageId });
-
+  
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: "Connected email not found" });
     }
-
+  
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
-
-    // Find the email - try multiple possible ID fields
-    const emailDoc = await emailModels.Email.findOne({
-      $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
-    }).lean();
-
+  
+    // Try to find the email across all collections
+    let emailDoc = null;
+    let collectionType = null;
+  
+    // First check regular emails
+    if (emailModels.Email) {
+      emailDoc = await emailModels.Email.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      }).lean();
+      
+      if (emailDoc) {
+        collectionType = "Email";
+      }
+    }
+  
+    // Then check sent emails
+    if (!emailDoc && emailModels.Sent) {
+      emailDoc = await emailModels.Sent.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      }).lean();
+      
+      if (emailDoc) {
+        collectionType = "Sent";
+      }
+    }
+  
+    // Finally check drafts
+    if (!emailDoc && emailModels.Draft) {
+      emailDoc = await emailModels.Draft.findOne({
+        $or: [
+          { messageId: messageId }, 
+          { _id: messageId }, 
+          { id: messageId },
+          { draftId: messageId }
+        ],
+      }).lean();
+      
+      if (emailDoc) {
+        collectionType = "Draft";
+      }
+    }
+  
     if (!emailDoc) {
-      logger.warn("Email not found", { email, messageId });
+      logger.warn("Email not found when trying to get email details", {
+        email,
+        messageId,
+        availableIds: "Tried messageId, _id, id, and draftId fields across all collections",
+      });
+      
       return res.status(404).json({ error: "Email not found" });
     }
-
-    // Changed: Use EmailController.processEmailBody instead of processEmailBody
+  
+    // Process the email body to ensure consistent format
     const processedEmail = EmailController.processEmailBody(emailDoc);
-
-    // Mark as read if not already read
+  
+    // Mark as read if not already read (for all collection types)
     if (!processedEmail.read) {
-      logger.info("Marking email as read", { messageId });
-      await emailModels.Email.findByIdAndUpdate(processedEmail._id, {
+      logger.info("Marking email as read", { messageId, collectionType });
+      
+      const updateData = {
         $set: { read: true },
         $currentDate: { readAt: true },
-      });
+      };
+      
+      switch (collectionType) {
+        case "Email":
+          await emailModels.Email.findByIdAndUpdate(processedEmail._id, updateData);
+          break;
+        case "Sent":
+          await emailModels.Sent.findByIdAndUpdate(processedEmail._id, updateData);
+          break;
+        case "Draft":
+          await emailModels.Draft.findByIdAndUpdate(processedEmail._id, updateData);
+          break;
+      }
+      
       processedEmail.read = true;
       processedEmail.readAt = new Date();
     }
-
-    logger.info("Email retrieved successfully", { messageId });
+  
+    // Add source collection type to the response
+    processedEmail.sourceCollection = collectionType;
+  
+    logger.info("Email retrieved successfully", { messageId, collectionType });
     res.json(processedEmail);
   });
 
@@ -254,25 +313,25 @@ class EmailController {
       .trim();
   }
 
-   /**
+  /**
    * Get drafts for a specific email account
    */
   static getDrafts = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email } = req.params;
-    const { page = 1, limit = 50, status = 'all' } = req.query;
-  
+    const { page = 1, limit = 50, status = "all" } = req.query;
+
     logger.info("Getting drafts for", { email, page, limit, status });
-  
+
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: "Connected email not found" });
     }
-  
+
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
-    
+
     // Check if Draft model exists
     if (!emailModels.Draft) {
       logger.warn("Draft model not found for account", { email });
@@ -286,34 +345,34 @@ class EmailController {
         },
       });
     }
-  
+
     // Build query based on status parameter
     let query = {};
-    
-    if (status !== 'all') {
-      if (status === 'pending') {
+
+    if (status !== "all") {
+      if (status === "pending") {
         // Include all drafts that haven't been sent yet
         query = {
           $or: [
-            { status: 'pending' },
-            { status: 'draft' },
-            { status: { $exists: false } } // Handle drafts with no status
-          ]
+            { status: "pending" },
+            { status: "draft" },
+            { status: { $exists: false } }, // Handle drafts with no status
+          ],
         };
       } else {
         // Use specified status
         query.status = status;
       }
     }
-    
+
     // Add autoGenerated filter if specified
     if (req.query.autoGenerated) {
-      query.autoGenerated = req.query.autoGenerated === 'true';
+      query.autoGenerated = req.query.autoGenerated === "true";
     }
-  
+
     // Fetch drafts with pagination
     const skip = (page - 1) * limit;
-    
+
     try {
       const [drafts, total] = await Promise.all([
         emailModels.Draft.find(query)
@@ -323,21 +382,21 @@ class EmailController {
           .lean(),
         emailModels.Draft.countDocuments(query),
       ]);
-  
+
       logger.info(`Found ${drafts.length} drafts (total: ${total})`, { email });
-  
+
       // Process drafts to ensure body is properly formatted
       const processedDrafts = drafts.map((draft) => {
         // Ensure draft has an ID
         if (!draft._id) {
           logger.warn("Draft missing _id field", { draftId: draft.draftId });
         }
-        
+
         // Ensure body exists and has both text and html
         if (!draft.body) {
           draft.body = { text: "", html: "" };
         }
-  
+
         if (typeof draft.body === "string") {
           const text = draft.body;
           draft.body = {
@@ -345,34 +404,36 @@ class EmailController {
             html: EmailController.convertPlainTextToHtml(text),
           };
         }
-  
+
         // Ensure both formats exist
         if (!draft.body.html && draft.body.text) {
           draft.body.html = EmailController.convertPlainTextToHtml(
             draft.body.text
           );
         }
-  
+
         if (!draft.body.text && draft.body.html) {
-          draft.body.text = EmailController.extractTextFromHtml(draft.body.html);
+          draft.body.text = EmailController.extractTextFromHtml(
+            draft.body.html
+          );
         }
-        
+
         // Make sure we have subject
         if (!draft.subject) {
           draft.subject = "(No Subject)";
         }
-        
+
         // Ensure all required fields exist
         return {
           ...draft,
-          status: draft.status || 'pending',
+          status: draft.status || "pending",
           createdAt: draft.createdAt || new Date(),
           updatedAt: draft.updatedAt || draft.createdAt || new Date(),
           autoGenerated: !!draft.autoGenerated,
           aiGenerated: !!draft.aiGenerated,
         };
       });
-  
+
       res.json({
         drafts: processedDrafts,
         pagination: {
@@ -384,9 +445,9 @@ class EmailController {
       });
     } catch (error) {
       logger.error("Error fetching drafts", { email, error: error.message });
-      res.status(500).json({ 
-        error: "Failed to fetch drafts", 
-        message: error.message 
+      res.status(500).json({
+        error: "Failed to fetch drafts",
+        message: error.message,
       });
     }
   });
@@ -398,18 +459,18 @@ class EmailController {
     const userId = req.user._id;
     const { email } = req.params;
     const { page = 1, limit = 50 } = req.query;
-  
+
     logger.info("Getting sent emails for", { email, page, limit });
-  
+
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: "Connected email not found" });
     }
-  
+
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
-  
+
     // Fetch sent emails with pagination
     const skip = (page - 1) * limit;
     const [sentEmails, total] = await Promise.all([
@@ -420,14 +481,16 @@ class EmailController {
         .lean(),
       emailModels.Sent.countDocuments(),
     ]);
-  
+
     // Process sent emails to ensure consistent format, just like regular emails
-    const processedSentEmails = sentEmails.map(email => {
+    const processedSentEmails = sentEmails.map((email) => {
       return EmailController.processEmailBody(email);
     });
-  
-    logger.info(`Found ${processedSentEmails.length} sent emails (total: ${total})`);
-  
+
+    logger.info(
+      `Found ${processedSentEmails.length} sent emails (total: ${total})`
+    );
+
     res.json({
       sent: processedSentEmails,
       pagination: {
@@ -437,69 +500,6 @@ class EmailController {
         pages: Math.ceil(total / limit),
       },
     });
-  });
-
-  /**
-   * Mark email as read
-   */
-  // In backend/emails/controllers/emailController.js
-  static markAsRead = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const { email, messageId } = req.params;
-
-    console.log("🚀🚀 Marking email as read", email, messageId);
-
-    // Get the connected email account
-    const account = await ConnectedEmail.findOne({ userId, email });
-    if (!account) {
-      return res.status(404).json({ error: "Connected email not found" });
-    }
-
-    // Get models for this email account
-    const emailModels = getConnectedEmailModels(account._id.toString());
-
-    // Try to find the email by all possible ID fields
-    const email_doc = await emailModels.Email.findOne({
-      $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
-    });
-
-    if (!email_doc) {
-      console.log("🚀🚀 Email not found when trying to mark as read", {
-        email,
-        messageId,
-        availableIds: "Trying messageId, _id, and id fields",
-      });
-
-      // For debugging: Let's log a sample email to see what fields exist
-      const sampleEmail = await emailModels.Email.findOne({}).lean();
-      console.log("Sample email document structure:", {
-        idFields: {
-          _id: sampleEmail?._id,
-          messageId: sampleEmail?.messageId,
-          id: sampleEmail?.id,
-        },
-      });
-
-      return res.status(404).json({ error: "Email not found" });
-    }
-
-    // Update the found email
-    const result = await emailModels.Email.findByIdAndUpdate(
-      email_doc._id,
-      {
-        $set: { read: true },
-        $currentDate: { readAt: true },
-      },
-      { new: true }
-    ).lean();
-
-    if (!result) {
-      console.log("🚀🚀 Failed to update email", email, messageId);
-      return res.status(500).json({ error: "Failed to update email" });
-    }
-
-    console.log("🚀🚀 Email marked as read successfully", email, messageId);
-    res.json(result);
   });
 
   /**
@@ -797,12 +797,14 @@ class EmailController {
     res.json({ success: true });
   });
 
-  // Mark email as unread
-  static markAsUnread = asyncHandler(async (req, res) => {
+  /**
+   * Mark email as read
+   */
+  static markAsRead = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email, messageId } = req.params;
 
-    console.log("🔵🔵 Marking email as unread", email, messageId);
+    logger.info("Marking email as read", { email, messageId });
 
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
@@ -813,53 +815,145 @@ class EmailController {
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
 
-    // Try to find the email by all possible ID fields
-    const email_doc = await emailModels.Email.findOne({
-      $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
-    });
+    // Try to find the email across all collections
+    let emailDoc = null;
+    let collectionType = null;
 
-    if (!email_doc) {
-      console.log("🔵🔵 Email not found when trying to mark as unread", {
-        email,
-        messageId,
-        availableIds: "Trying messageId, _id, and id fields",
+    // First check regular emails
+    if (emailModels.Email) {
+      emailDoc = await emailModels.Email.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
       });
 
-      // For debugging: Let's log a sample email to see what fields exist
-      const sampleEmail = await emailModels.Email.findOne({}).lean();
-      console.log("Sample email document structure:", {
-        idFields: {
-          _id: sampleEmail?._id,
-          messageId: sampleEmail?.messageId,
-          id: sampleEmail?.id,
-        },
+      if (emailDoc) {
+        collectionType = "Email";
+      }
+    }
+
+    // Then check sent emails
+    if (!emailDoc && emailModels.Sent) {
+      emailDoc = await emailModels.Sent.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      });
+
+      if (emailDoc) {
+        collectionType = "Sent";
+      }
+    }
+
+    // Finally check drafts
+    if (!emailDoc && emailModels.Draft) {
+      emailDoc = await emailModels.Draft.findOne({
+        $or: [
+          { messageId: messageId },
+          { _id: messageId },
+          { id: messageId },
+          { draftId: messageId },
+        ],
+      });
+
+      if (emailDoc) {
+        collectionType = "Draft";
+      }
+    }
+
+    if (!emailDoc) {
+      logger.warn("Email not found when trying to mark as read", {
+        email,
+        messageId,
+        availableIds:
+          "Trying messageId, _id, and id fields across all collections",
+      });
+
+      // For debugging: Let's log sample emails from all collections
+      const sampleEmail = await emailModels.Email?.findOne({})?.lean();
+      const sampleSent = await emailModels.Sent?.findOne({})?.lean();
+      const sampleDraft = await emailModels.Draft?.findOne({})?.lean();
+
+      logger.debug("Sample document structures:", {
+        emailIdFields: sampleEmail
+          ? {
+              _id: sampleEmail._id,
+              messageId: sampleEmail.messageId,
+              id: sampleEmail.id,
+            }
+          : "No sample email found",
+        sentIdFields: sampleSent
+          ? {
+              _id: sampleSent._id,
+              messageId: sampleSent.messageId,
+              id: sampleSent.id,
+            }
+          : "No sample sent email found",
+        draftIdFields: sampleDraft
+          ? {
+              _id: sampleDraft._id,
+              messageId: sampleDraft.messageId,
+              id: sampleDraft.id,
+              draftId: sampleDraft.draftId,
+            }
+          : "No sample draft found",
       });
 
       return res.status(404).json({ error: "Email not found" });
     }
 
-    // Update the found email
-    const result = await emailModels.Email.findByIdAndUpdate(
-      email_doc._id,
-      { $set: { read: false } },
-      { new: true }
-    ).lean();
+    // Update the found email in the correct collection
+    let result;
+    const updateData = {
+      $set: { read: true },
+      $currentDate: { readAt: true },
+    };
+
+    switch (collectionType) {
+      case "Email":
+        result = await emailModels.Email.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Sent":
+        result = await emailModels.Sent.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Draft":
+        result = await emailModels.Draft.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+    }
 
     if (!result) {
-      console.log("🔵🔵 Failed to update email", email, messageId);
+      logger.error("Failed to update email", {
+        email,
+        messageId,
+        collectionType,
+      });
       return res.status(500).json({ error: "Failed to update email" });
     }
 
-    console.log("🔵🔵 Email marked as unread successfully", email, messageId);
+    logger.info("Email marked as read successfully", {
+      email,
+      messageId,
+      collectionType,
+    });
     res.json(result);
   });
 
-  // Mark all emails as read
-  static markAllAsRead = asyncHandler(async (req, res) => {
+  /**
+   * Mark email as unread
+   */
+  static markAsUnread = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const { email } = req.params;
+    const { email, messageId } = req.params;
 
-    console.log("🔵🔵 Marking all emails as read", email);
+    logger.info("Marking email as unread", { email, messageId });
 
     // Get the connected email account
     const account = await ConnectedEmail.findOne({ userId, email });
@@ -870,138 +964,521 @@ class EmailController {
     // Get models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
 
-    // Mark all emails as read
-    const result = await emailModels.Email.updateMany(
-      { read: false },
-      { $set: { read: true }, $currentDate: { readAt: true } }
-    );
+    // Try to find the email across all collections
+    let emailDoc = null;
+    let collectionType = null;
 
-    console.log("🔵🔵 Marked all emails as read successfully", email);
-    res.json({ success: true, totalUpdated: result.nModified });
+    // First check regular emails
+    if (emailModels.Email) {
+      emailDoc = await emailModels.Email.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      });
+
+      if (emailDoc) {
+        collectionType = "Email";
+      }
+    }
+
+    // Then check sent emails
+    if (!emailDoc && emailModels.Sent) {
+      emailDoc = await emailModels.Sent.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      });
+
+      if (emailDoc) {
+        collectionType = "Sent";
+      }
+    }
+
+    // Finally check drafts
+    if (!emailDoc && emailModels.Draft) {
+      emailDoc = await emailModels.Draft.findOne({
+        $or: [
+          { messageId: messageId },
+          { _id: messageId },
+          { id: messageId },
+          { draftId: messageId },
+        ],
+      });
+
+      if (emailDoc) {
+        collectionType = "Draft";
+      }
+    }
+
+    if (!emailDoc) {
+      logger.warn("Email not found when trying to mark as unread", {
+        email,
+        messageId,
+      });
+      return res.status(404).json({ error: "Email not found" });
+    }
+
+    // Update the found email in the correct collection
+    let result;
+    const updateData = { $set: { read: false } };
+
+    switch (collectionType) {
+      case "Email":
+        result = await emailModels.Email.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Sent":
+        result = await emailModels.Sent.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Draft":
+        result = await emailModels.Draft.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+    }
+
+    if (!result) {
+      logger.error("Failed to update email", {
+        email,
+        messageId,
+        collectionType,
+      });
+      return res.status(500).json({ error: "Failed to update email" });
+    }
+
+    logger.info("Email marked as unread successfully", {
+      email,
+      messageId,
+      collectionType,
+    });
+    res.json(result);
   });
 
-        /**
-     * Send an email from a connected account
-     */
-    static sendEmail = asyncHandler(async (req, res) => {
-      const userId = req.user._id;
-      const { email } = req.params; // The connected email account (sender)
-      const { to, cc, bcc, subject, body, attachments, inReplyTo, threadId } = req.body;
-    
-      logger.info("Sending email", { from: email, to, subject });
-    
-      // Get the connected email account
-      const account = await ConnectedEmail.findOne({ userId, email });
-      if (!account) {
-        return res.status(404).json({ error: "Connected email not found" });
+  /**
+   * Star email - mark as important
+   */
+  static starEmail = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { email, messageId } = req.params;
+
+    logger.info("Starring email", { email, messageId });
+
+    // Get the connected email account
+    const account = await ConnectedEmail.findOne({ userId, email });
+    if (!account) {
+      return res.status(404).json({ error: "Connected email not found" });
+    }
+
+    // Get models for this email account
+    const emailModels = getConnectedEmailModels(account._id.toString());
+
+    // Try to find the email across all collections
+    let emailDoc = null;
+    let collectionType = null;
+
+    // First check regular emails
+    if (emailModels.Email) {
+      emailDoc = await emailModels.Email.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      });
+
+      if (emailDoc) {
+        collectionType = "Email";
       }
-    
-      try {
-        // Get active connection from connection manager
-        const connectionManager = await import("../managers/connectionManager.js");
-        const emailConnection = await connectionManager.default.getConnection(userId, email);
-        
-        if (!emailConnection || !emailConnection.connection || !emailConnection.connection.gmail) {
-          logger.error(`No valid Gmail connection found for ${email}`);
-          return res.status(400).json({ error: "No valid Gmail connection available" });
-        }
-        
-        // Format the body content
-        let processedBody = body;
-        if (typeof body === 'string') {
-          processedBody = {
-            text: body,
-            html: EmailController.convertPlainTextToHtml(body)
-          };
-        } else if (body && typeof body === 'object') {
-          if (body.text && !body.html) {
-            processedBody = {
-              text: body.text,
-              html: EmailController.convertPlainTextToHtml(body.text)
-            };
-          } else if (body.html && !body.text) {
-            processedBody = {
-              html: body.html,
-              text: EmailController.extractTextFromHtml(body.html)
-            };
-          } else {
-            processedBody = body;
-          }
-        }
-    
-        // Format recipients properly
-        const formattedTo = Array.isArray(to) 
-          ? to.map(recipient => {
-              if (typeof recipient === 'string') {
-                return { email: recipient, name: recipient.split('@')[0] };
-              }
-              return recipient;
-            })
-          : typeof to === 'string'
-            ? [{ email: to, name: to.split('@')[0] }]
-            : [];
-    
-        const formattedCc = cc ? (Array.isArray(cc) 
-          ? cc.map(recipient => {
-              if (typeof recipient === 'string') {
-                return { email: recipient, name: recipient.split('@')[0] };
-              }
-              return recipient;
-            })
-          : typeof cc === 'string'
-            ? [{ email: cc, name: cc.split('@')[0] }]
-            : []) : [];
-    
-        const formattedBcc = bcc ? (Array.isArray(bcc) 
-          ? bcc.map(recipient => {
-              if (typeof recipient === 'string') {
-                return { email: recipient, name: recipient.split('@')[0] };
-              }
-              return recipient;
-            })
-          : typeof bcc === 'string'
-            ? [{ email: bcc, name: bcc.split('@')[0] }]
-            : []) : [];
-    
-        // Prepare email data for sending
-        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-        
-        // Import the proper email service
-        const googleEmailService = await import("../services/googleEmailService.js");
-        
-        // Format email data for the service
-        const emailData = {
-          from: {
-            email: email,
-            name: account.name || email.split('@')[0]
-          },
-          to: formattedTo,
-          cc: formattedCc,
-          bcc: formattedBcc,
-          subject: subject || "(No Subject)",
-          body: processedBody,
-          inReplyTo,
-          threadId,
-          sentAt: new Date()
+    }
+
+    // Then check sent emails
+    if (!emailDoc && emailModels.Sent) {
+      emailDoc = await emailModels.Sent.findOne({
+        $or: [{ messageId: messageId }, { _id: messageId }, { id: messageId }],
+      });
+
+      if (emailDoc) {
+        collectionType = "Sent";
+      }
+    }
+
+    // Finally check drafts
+    if (!emailDoc && emailModels.Draft) {
+      emailDoc = await emailModels.Draft.findOne({
+        $or: [
+          { messageId: messageId },
+          { _id: messageId },
+          { id: messageId },
+          { draftId: messageId },
+        ],
+      });
+
+      if (emailDoc) {
+        collectionType = "Draft";
+      }
+    }
+
+    if (!emailDoc) {
+      logger.warn("Email not found when trying to star", {
+        email,
+        messageId,
+      });
+      return res.status(404).json({ error: "Email not found" });
+    }
+
+    // Update the found email in the correct collection
+    let result;
+    const updateData = { $set: { starred: true } };
+
+    switch (collectionType) {
+      case "Email":
+        result = await emailModels.Email.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Sent":
+        result = await emailModels.Sent.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+      case "Draft":
+        result = await emailModels.Draft.findByIdAndUpdate(
+          emailDoc._id,
+          updateData,
+          { new: true }
+        ).lean();
+        break;
+    }
+
+    if (!result) {
+      logger.error("Failed to update email", {
+        email,
+        messageId,
+        collectionType,
+      });
+      return res.status(500).json({ error: "Failed to update email" });
+    }
+
+    logger.info("Email starred successfully", {
+      email,
+      messageId,
+      collectionType,
+    });
+    res.json(result);
+  });
+
+  /**
+   * Mark all emails as read
+   */
+  static markAllAsRead = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { email } = req.params;
+    const { folder } = req.query;
+
+    logger.info("Marking all emails as read", { email, folder });
+
+    // Get the connected email account
+    const account = await ConnectedEmail.findOne({ userId, email });
+    if (!account) {
+      return res.status(404).json({ error: "Connected email not found" });
+    }
+
+    // Get models for this email account
+    const emailModels = getConnectedEmailModels(account._id.toString());
+
+    // Create query for specific folder if requested
+    const query = { read: false };
+    if (folder && folder !== "all") {
+      query.folder = folder;
+    }
+
+    // Create update data
+    const updateData = {
+      $set: { read: true },
+      $currentDate: { readAt: true },
+    };
+
+    // Update counts to track total changes
+    let totalUpdated = 0;
+
+    // Update emails in each collection based on the folder
+    const updatePromises = [];
+
+    // Regular emails
+    if (
+      emailModels.Email &&
+      (!folder || folder === "inbox" || folder === "all")
+    ) {
+      updatePromises.push(
+        emailModels.Email.updateMany(query, updateData).then((result) => {
+          totalUpdated += result.nModified || 0;
+          return result;
+        })
+      );
+    }
+
+    // Sent emails
+    if (
+      emailModels.Sent &&
+      (!folder || folder === "sent" || folder === "all")
+    ) {
+      updatePromises.push(
+        emailModels.Sent.updateMany(query, updateData).then((result) => {
+          totalUpdated += result.nModified || 0;
+          return result;
+        })
+      );
+    }
+
+    // Drafts
+    if (
+      emailModels.Draft &&
+      (!folder || folder === "drafts" || folder === "all")
+    ) {
+      updatePromises.push(
+        emailModels.Draft.updateMany(query, updateData).then((result) => {
+          totalUpdated += result.nModified || 0;
+          return result;
+        })
+      );
+    }
+
+    await Promise.all(updatePromises);
+
+    logger.info("Marked all emails as read successfully", {
+      email,
+      folder,
+      totalUpdated,
+    });
+    res.json({ success: true, totalUpdated });
+  });
+
+  /**
+   * Send an email from a connected account
+   */
+  static sendEmail = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { email } = req.params; // The connected email account (sender)
+    const { to, cc, bcc, subject, body, attachments, inReplyTo, threadId } =
+      req.body;
+
+    logger.info("Sending email", { from: email, to, subject });
+
+    // Get the connected email account
+    const account = await ConnectedEmail.findOne({ userId, email });
+    if (!account) {
+      return res.status(404).json({ error: "Connected email not found" });
+    }
+
+    try {
+      // Get active connection from connection manager
+      const connectionManager = await import(
+        "../managers/connectionManager.js"
+      );
+      const emailConnection = await connectionManager.default.getConnection(
+        userId,
+        email
+      );
+
+      if (
+        !emailConnection ||
+        !emailConnection.connection ||
+        !emailConnection.connection.gmail
+      ) {
+        logger.error(`No valid Gmail connection found for ${email}`);
+        return res
+          .status(400)
+          .json({ error: "No valid Gmail connection available" });
+      }
+
+      // Format the body content
+      let processedBody = body;
+      if (typeof body === "string") {
+        processedBody = {
+          text: body,
+          html: EmailController.convertPlainTextToHtml(body),
         };
-        
-        logger.info("Sending email with service", { provider: account.provider });
-        
-        // Send the email using the appropriate service
-        const sendResult = await googleEmailService.sendEmail(emailConnection, emailData);
-        
+      } else if (body && typeof body === "object") {
+        if (body.text && !body.html) {
+          processedBody = {
+            text: body.text,
+            html: EmailController.convertPlainTextToHtml(body.text),
+          };
+        } else if (body.html && !body.text) {
+          processedBody = {
+            html: body.html,
+            text: EmailController.extractTextFromHtml(body.html),
+          };
+        } else {
+          processedBody = body;
+        }
+      }
+
+      // Format recipients properly
+      const formattedTo = Array.isArray(to)
+        ? to.map((recipient) => {
+            if (typeof recipient === "string") {
+              return { email: recipient, name: recipient.split("@")[0] };
+            }
+            return recipient;
+          })
+        : typeof to === "string"
+        ? [{ email: to, name: to.split("@")[0] }]
+        : [];
+
+      const formattedCc = cc
+        ? Array.isArray(cc)
+          ? cc.map((recipient) => {
+              if (typeof recipient === "string") {
+                return { email: recipient, name: recipient.split("@")[0] };
+              }
+              return recipient;
+            })
+          : typeof cc === "string"
+          ? [{ email: cc, name: cc.split("@")[0] }]
+          : []
+        : [];
+
+      const formattedBcc = bcc
+        ? Array.isArray(bcc)
+          ? bcc.map((recipient) => {
+              if (typeof recipient === "string") {
+                return { email: recipient, name: recipient.split("@")[0] };
+              }
+              return recipient;
+            })
+          : typeof bcc === "string"
+          ? [{ email: bcc, name: bcc.split("@")[0] }]
+          : []
+        : [];
+
+      // Prepare email data for sending
+      const messageId = `msg-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 10)}`;
+
+      // Import the proper email service
+      const googleEmailService = await import(
+        "../services/googleEmailService.js"
+      );
+
+      // Format email data for the service
+      const emailData = {
+        from: {
+          email: email,
+          name: account.name || email.split("@")[0],
+        },
+        to: formattedTo,
+        cc: formattedCc,
+        bcc: formattedBcc,
+        subject: subject || "(No Subject)",
+        body: processedBody,
+        inReplyTo,
+        threadId,
+        sentAt: new Date(),
+      };
+
+      logger.info("Sending email with service", { provider: account.provider });
+
+      // Send the email using the appropriate service
+      const sendResult = await googleEmailService.sendEmail(
+        emailConnection,
+        emailData
+      );
+
+      // Get models for this email account
+      const emailModels = getConnectedEmailModels(account._id.toString());
+
+      // Store sent email in the database
+      const sentEmail = new emailModels.Sent({
+        userId: userId,
+        messageId: sendResult.messageId || messageId,
+        threadId: sendResult.threadId || threadId || messageId,
+        externalMessageId: sendResult.messageId,
+        from: {
+          email: email,
+          name: account.name || email.split("@")[0],
+        },
+        to: formattedTo,
+        cc: formattedCc,
+        bcc: formattedBcc,
+        subject: subject || "(No Subject)",
+        body: processedBody,
+        attachments: attachments || [],
+        sentAt: new Date(),
+        dateSent: new Date(),
+        folder: "sent",
+        status: "sent",
+        provider: account.provider,
+        inReplyTo: inReplyTo || null,
+      });
+
+      await sentEmail.save();
+      logger.info("Email sent and saved", { messageId: sentEmail.messageId });
+
+      // Return success with sent email details
+      res.json({
+        success: true,
+        message: "Email sent successfully",
+        sentEmail: {
+          id: sentEmail._id,
+          messageId: sentEmail.messageId,
+          threadId: sentEmail.threadId,
+          sentAt: sentEmail.sentAt,
+        },
+      });
+    } catch (error) {
+      logger.error("Error sending email", {
+        error: error.message,
+        stack: error.stack,
+      });
+
+      // Log detailed connection info for debugging
+      try {
+        console.log(
+          "Account connection structure:",
+          JSON.stringify({
+            hasConnection: !!account.connection,
+            provider: account.provider,
+            keys: account.connection ? Object.keys(account.connection) : [],
+          })
+        );
+      } catch (e) {
+        console.log("Could not stringify connection");
+      }
+
+      // Try to create draft if sending fails
+      try {
         // Get models for this email account
         const emailModels = getConnectedEmailModels(account._id.toString());
-    
-        // Store sent email in the database
-        const sentEmail = new emailModels.Sent({
+
+        if (!emailModels.Draft) {
+          return res.status(500).json({
+            error: "Failed to send email and Draft model not found",
+            message: error.message,
+          });
+        }
+
+        const draftId = `draft-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 10)}`;
+        const messageId = `msg-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}`;
+
+        const draft = new emailModels.Draft({
           userId: userId,
-          messageId: sendResult.messageId || messageId,
-          threadId: sendResult.threadId || threadId || messageId,
-          externalMessageId: sendResult.messageId,
+          messageId: messageId,
+          draftId: draftId,
+          threadId: threadId || messageId,
           from: {
             email: email,
-            name: account.name || email.split('@')[0]
+            name: account.name || email.split("@")[0],
           },
           to: formattedTo,
           cc: formattedCc,
@@ -1009,105 +1486,39 @@ class EmailController {
           subject: subject || "(No Subject)",
           body: processedBody,
           attachments: attachments || [],
-          sentAt: new Date(),
-          dateSent: new Date(),
-          folder: "sent",
-          status: "sent",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: "error",
+          error: error.message,
           provider: account.provider,
           inReplyTo: inReplyTo || null,
         });
-    
-        await sentEmail.save();
-        logger.info("Email sent and saved", { messageId: sentEmail.messageId });
-    
-        // Return success with sent email details
-        res.json({
-          success: true,
-          message: "Email sent successfully",
-          sentEmail: {
-            id: sentEmail._id,
-            messageId: sentEmail.messageId,
-            threadId: sentEmail.threadId,
-            sentAt: sentEmail.sentAt
-          }
+
+        await draft.save();
+        logger.info("Email saved as draft due to send error", { draftId });
+
+        res.status(500).json({
+          error: "Failed to send email, saved as draft",
+          message: error.message,
+          draft: {
+            id: draft._id,
+            draftId: draft.draftId,
+          },
         });
-      } catch (error) {
-        logger.error("Error sending email", { error: error.message, stack: error.stack });
-        
-        // Log detailed connection info for debugging
-        try {
-          console.log("Account connection structure:", JSON.stringify({
-            hasConnection: !!account.connection,
-            provider: account.provider,
-            keys: account.connection ? Object.keys(account.connection) : []
-          }));
-        } catch (e) {
-          console.log("Could not stringify connection");
-        }
-        
-        // Try to create draft if sending fails
-        try {
-          // Get models for this email account
-          const emailModels = getConnectedEmailModels(account._id.toString());
-          
-          if (!emailModels.Draft) {
-            return res.status(500).json({ 
-              error: "Failed to send email and Draft model not found", 
-              message: error.message 
-            });
-          }
-          
-          const draftId = `draft-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-          const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-          
-          const draft = new emailModels.Draft({
-            userId: userId,
-            messageId: messageId,
-            draftId: draftId,
-            threadId: threadId || messageId,
-            from: {
-              email: email,
-              name: account.name || email.split('@')[0]
-            },
-            to: formattedTo,
-            cc: formattedCc,
-            bcc: formattedBcc,
-            subject: subject || "(No Subject)",
-            body: processedBody,
-            attachments: attachments || [],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            status: "error",
-            error: error.message,
-            provider: account.provider,
-            inReplyTo: inReplyTo || null
-          });
-          
-          await draft.save();
-          logger.info("Email saved as draft due to send error", { draftId });
-          
-          res.status(500).json({ 
-            error: "Failed to send email, saved as draft", 
-            message: error.message,
-            draft: {
-              id: draft._id,
-              draftId: draft.draftId
-            }
-          });
-        } catch (draftError) {
-          // If even saving as draft fails, return just the error
-          logger.error("Failed to save draft after send error", { 
-            error: draftError.message, 
-            originalError: error.message 
-          });
-          
-          res.status(500).json({ 
-            error: "Failed to send email and could not save as draft", 
-            message: error.message 
-          });
-        }
+      } catch (draftError) {
+        // If even saving as draft fails, return just the error
+        logger.error("Failed to save draft after send error", {
+          error: draftError.message,
+          originalError: error.message,
+        });
+
+        res.status(500).json({
+          error: "Failed to send email and could not save as draft",
+          message: error.message,
+        });
       }
-    });
+    }
+  });
 }
 
 EmailController.processEmailBody = function (emailDoc) {
