@@ -31,7 +31,7 @@ router.post('/:email/toggle-connection', ConnectionController.toggleConnectionSt
 router.post('/:email/refresh', ConnectionController.refreshConnection);
 
 // Mode switch draft or auto
-router.post('/:email/mode-switch', ConnectionController.switchMode);
+router.post('/:email/mode-switch', ConnectionController.toggleAIMode);
 
 // Connection operations
 router.post('/:email/check', ConnectionController.checkEmails);

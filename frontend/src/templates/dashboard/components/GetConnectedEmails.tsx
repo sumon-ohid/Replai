@@ -22,7 +22,7 @@ import Badge from "@mui/material/Badge";
 import Paper from "@mui/material/Paper";
 import { motion } from "framer-motion";
 // Notistack import
-import { SnackbarProvider, useSnackbar } from 'notistack';
+import { SnackbarProvider, useSnackbar } from "notistack";
 
 // Icons
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
@@ -81,35 +81,41 @@ function ConnectedEmailsContent() {
   const { user } = useAuth();
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
-  const [connectedEmails, setConnectedEmails] = React.useState<EmailAccount[]>([]);
+  const [connectedEmails, setConnectedEmails] = React.useState<EmailAccount[]>(
+    []
+  );
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState<string>("");
-  const [actionEmail, setActionEmail] = React.useState<EmailAccount | null>(null);
+  const [actionEmail, setActionEmail] = React.useState<EmailAccount | null>(
+    null
+  );
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-   const fetchConnectedEmails = async () => {
+  const fetchConnectedEmails = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
-      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
+      enqueueSnackbar("Authentication error. Please log in again.", {
+        variant: "error",
+      });
       return;
     }
-  
+
     setLoading(true);
     setError(null);
-  
+
     try {
       const response = await axios.get(`${apiBaseUrl}/api/emails/connection`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       // Extract connected emails from response
       let responseData = response.data;
       console.log("Raw connection response data:", responseData);
-  
+
       // Handle different response formats
       if (responseData && typeof responseData === "object") {
         // If response is an object with emails property, extract it
@@ -123,7 +129,7 @@ function ConnectedEmailsContent() {
           console.log("Extracted connectedEmails from object:", responseData);
         }
       }
-      
+
       // Ensure responseData is an array
       if (!Array.isArray(responseData)) {
         console.error("Response data is not an array:", responseData);
@@ -131,20 +137,36 @@ function ConnectedEmailsContent() {
         setLoading(false);
         return;
       }
-  
+
       console.log("Normalized response data (array):", responseData);
-  
+
       // Map response data to our EmailAccount interface and assign IDs
       // Filter out disconnected or deactivated accounts
       const emails = responseData
         .filter((email: any) => {
           // Keep accounts that are not explicitly disconnected or deactivated
-          return email.status !== "disconnected" && email.status !== "deactivated";
+          return (
+            email.status !== "disconnected" && email.status !== "deactivated"
+          );
         })
         .map((email: any, index: number) => {
           // Debug individual email mapping
           console.log(`Mapping email ${index}:`, email);
-          
+
+          // Determine the mode based on aiEnabled and aiMode
+          let mode: "auto" | "draft" | "normal" = "draft"; // Default to draft
+
+          if (
+            email.aiMode &&
+            ["auto", "draft", "normal"].includes(email.aiMode)
+          ) {
+            // If aiMode is valid, use it directly
+            mode = email.aiMode as "auto" | "draft" | "normal";
+          } else if (email.aiEnabled) {
+            // If aiMode is missing but aiEnabled is true, default to auto
+            mode = "auto";
+          }
+
           return {
             id: index, // Use index as ID
             _id: email._id || `temp-id-${index}`,
@@ -162,7 +184,7 @@ function ConnectedEmailsContent() {
             connected: email.connected !== false, // Default to true if not specified
           };
         });
-      
+
       console.log("Processed emails:", emails);
       setConnectedEmails(emails);
       setLoading(false);
@@ -207,7 +229,9 @@ function ConnectedEmailsContent() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
-      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
+      enqueueSnackbar("Authentication error. Please log in again.", {
+        variant: "error",
+      });
       return;
     }
 
@@ -223,7 +247,9 @@ function ConnectedEmailsContent() {
         connectedEmails.filter((account) => account.email !== email)
       );
 
-      enqueueSnackbar(`Email ${email} disconnected successfully`, { variant: "success" });
+      enqueueSnackbar(`Email ${email} disconnected successfully`, {
+        variant: "success",
+      });
       handleCloseMenu();
     } catch (error) {
       console.error("Error disconnecting email:", error);
@@ -234,16 +260,19 @@ function ConnectedEmailsContent() {
   // For Auto Reply toggle (which also handles AI)
   const handleToggleAutoReply = async (email: EmailAccount) => {
     if (!email) return;
-
+  
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
       enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
       return;
     }
-
+  
     // Toggle the current value
     const newValue = !email.autoReplyEnabled;
+    
+    // Determine new mode based on toggled value
+    const newMode = newValue ? "auto" as const : "draft" as const;
     
     // Optimistic update
     const updatedEmails = connectedEmails.map((acc) =>
@@ -251,38 +280,44 @@ function ConnectedEmailsContent() {
         ...acc, 
         autoReplyEnabled: newValue,
         aiEnabled: newValue, // AI is enabled when auto is on
-        mode: newValue ? "auto" as "auto" : "draft" as "draft" 
+        mode: newMode
       } : acc
     );
     setConnectedEmails(updatedEmails);
-
+  
     try {
       // Update the server
       const response = await axios.post(
         `${apiBaseUrl}/api/emails/connection/${email.email}/mode-switch`,
-        { enabled: newValue },
+        { 
+          enabled: newValue,
+          mode: newMode // Send the mode explicitly
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       // Check for success
       if (response.status !== 200) throw new Error("Failed to update auto settings");
-
-      // Extract aiEnabled from response if available
+  
+      // Extract relevant data from response
       const data = response.data as { aiEnabled?: boolean, mode?: string };
       
       // Update action email if it's the same
       if (actionEmail && actionEmail.id === email.id) {
+        // Validate mode or fall back to our determined mode
+        const responseMode = data.mode && ["auto", "draft", "normal"].includes(data.mode)
+          ? (data.mode as "auto" | "draft" | "normal")
+          : newMode;
+          
         setActionEmail({ 
           ...actionEmail, 
-          autoReplyEnabled: newValue,
-          aiEnabled: data.aiEnabled !== undefined ? data.aiEnabled : newValue,
-          mode: ["auto", "draft", "normal"].includes(data.mode as string)
-            ? (data.mode as "auto" | "draft" | "normal")
-            : (newValue ? "auto" : "draft")
+          autoReplyEnabled: data.aiEnabled ?? newValue,
+          aiEnabled: data.aiEnabled ?? newValue,
+          mode: responseMode
         });
       }
-
-      enqueueSnackbar(`${newValue ? "auto" : "Draft"} mode activated`, { variant: "success" });
+  
+      enqueueSnackbar(`${newValue ? "Auto" : "Draft"} mode activated`, { variant: "success" });
       handleCloseMenu();
     } catch (error) {
       console.error("Error toggling auto:", error);
@@ -300,13 +335,15 @@ function ConnectedEmailsContent() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
-      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
+      enqueueSnackbar("Authentication error. Please log in again.", {
+        variant: "error",
+      });
       return;
     }
 
     // Toggle the current value
     const newValue = !email.syncEnabled;
-    
+
     // Optimistic update
     const updatedEmails = connectedEmails.map((acc) =>
       acc.id === email.id
@@ -328,7 +365,8 @@ function ConnectedEmailsContent() {
       );
 
       // Check for success
-      if (response.status !== 200) throw new Error("Failed to update sync settings");
+      if (response.status !== 200)
+        throw new Error("Failed to update sync settings");
 
       // Update action email if it's the same
       if (actionEmail && actionEmail.id === email.id) {
@@ -339,11 +377,13 @@ function ConnectedEmailsContent() {
         });
       }
 
-      enqueueSnackbar(`Service ${newValue ? "resumed" : "paused"}`, { variant: "success" });
+      enqueueSnackbar(`Service ${newValue ? "resumed" : "paused"}`, {
+        variant: "success",
+      });
       handleCloseMenu();
     } catch (error) {
       console.error("Error toggling sync:", error);
-      
+
       // Revert optimistic update on failure
       setConnectedEmails(connectedEmails);
       enqueueSnackbar("Failed to update sync settings", { variant: "error" });
@@ -353,7 +393,7 @@ function ConnectedEmailsContent() {
   // Improved refresh account function
   const handleRefreshAccount = async (email: EmailAccount) => {
     if (!email) return;
-  
+
     // Set specific account to syncing status (optimistic update)
     const updatedEmails = connectedEmails.map((acc) =>
       acc.id === email.id
@@ -361,31 +401,33 @@ function ConnectedEmailsContent() {
         : acc
     );
     setConnectedEmails(updatedEmails);
-  
+
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
-      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
+      enqueueSnackbar("Authentication error. Please log in again.", {
+        variant: "error",
+      });
       return;
     }
-  
+
     try {
       // Use POST instead of PATCH for refresh with proper error handling
       const response = await axios.post(
         `${apiBaseUrl}/api/emails/connection/${email.email}/refresh/`,
         {}, // Empty body
-        { 
+        {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 30000 // 30 second timeout for potentially long operation
+          timeout: 30000, // 30 second timeout for potentially long operation
         }
       );
-  
+
       // Get last sync time from response
-      const data = response.data as { lastSync?: string, aiEnabled?: boolean };
+      const data = response.data as { lastSync?: string; aiEnabled?: boolean };
       const lastSync = data.lastSync
         ? formatLastSync(data.lastSync)
         : "Just now";
-  
+
       // Update with new last sync time
       const newEmails = connectedEmails.map((acc) =>
         acc.id === email.id
@@ -394,25 +436,27 @@ function ConnectedEmailsContent() {
               status: "active" as "active",
               lastSync,
               // Update aiEnabled if returned from server
-              ...(data.aiEnabled !== undefined ? { aiEnabled: data.aiEnabled } : {})
+              ...(data.aiEnabled !== undefined
+                ? { aiEnabled: data.aiEnabled }
+                : {}),
             }
           : acc
       );
       setConnectedEmails(newEmails);
-  
+
       enqueueSnackbar("Account refreshed successfully", { variant: "success" });
     } catch (error) {
       console.error("Error refreshing account:", error);
-  
+
       // Show error state
       const errorEmails = connectedEmails.map((acc) =>
         acc.id === email.id ? { ...acc, status: "error" as "error" } : acc
       );
-  
+
       setConnectedEmails(errorEmails);
       enqueueSnackbar("Failed to refresh account", { variant: "error" });
     }
-  
+
     handleCloseMenu();
   };
 
@@ -493,7 +537,9 @@ function ConnectedEmailsContent() {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
-      enqueueSnackbar("Authentication error. Please log in again.", { variant: "error" });
+      enqueueSnackbar("Authentication error. Please log in again.", {
+        variant: "error",
+      });
       setLoading(false);
       return;
     }
@@ -509,7 +555,9 @@ function ConnectedEmailsContent() {
       window.location.href = authUrl;
     } catch (error) {
       console.error("Error creating bot:", error);
-      enqueueSnackbar("Failed to start Google authentication", { variant: "error" });
+      enqueueSnackbar("Failed to start Google authentication", {
+        variant: "error",
+      });
       setLoading(false);
     }
   };
@@ -860,7 +908,7 @@ function ConnectedEmailsContent() {
                               px: 1,
                             }}
                           />
-                          
+
                           {email.aiEnabled && (
                             <Chip
                               size="small"
@@ -906,19 +954,23 @@ function ConnectedEmailsContent() {
                             },
                           }}
                         >
-                          <SyncIcon 
-                            fontSize="small" 
-                            sx={email.status === "syncing" ? {
-                              animation: "spin 1.5s linear infinite",
-                              "@keyframes spin": {
-                                "0%": {
-                                  transform: "rotate(0deg)",
-                                },
-                                "100%": {
-                                  transform: "rotate(360deg)",
-                                },
-                              },
-                            } : {}}
+                          <SyncIcon
+                            fontSize="small"
+                            sx={
+                              email.status === "syncing"
+                                ? {
+                                    animation: "spin 1.5s linear infinite",
+                                    "@keyframes spin": {
+                                      "0%": {
+                                        transform: "rotate(0deg)",
+                                      },
+                                      "100%": {
+                                        transform: "rotate(360deg)",
+                                      },
+                                    },
+                                  }
+                                : {}
+                            }
                           />
                         </IconButton>
                       </Tooltip>
@@ -977,9 +1029,9 @@ function ConnectedEmailsContent() {
                               )}
                             </ListItemIcon>
                             <ListItemText>
-                              Switch to {actionEmail?.autoReplyEnabled
-                                ? "Draft"
-                                : "Auto"} Mode
+                              Switch to{" "}
+                              {actionEmail?.autoReplyEnabled ? "Draft" : "Auto"}{" "}
+                              Mode
                             </ListItemText>
                           </MenuItem>
                           <MenuItem
@@ -1063,8 +1115,8 @@ export default function GetConnectedEmails() {
     <SnackbarProvider
       maxSnack={3}
       anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'center',
+        vertical: "bottom",
+        horizontal: "center",
       }}
       autoHideDuration={5000}
     >

@@ -631,26 +631,55 @@ class ConnectionController {
   /**
    * Switch AI mode (auto/manual)
    */
-  static switchMode = asyncHandler(async (req, res) => {
+  static toggleAIMode = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email } = req.params;
-    const { mode } = req.body;
-
-    const account = await ConnectedEmail.findOne({ userId, email });
-    if (!account) {
-      return res.status(404).json({ error: "Email account not found" });
+    const { enabled, mode } = req.body;
+  
+    try {
+      // Find the account
+      const account = await ConnectedEmail.findOne({ userId, email });
+      if (!account) {
+        return res.status(404).json({ error: 'Email account not found' });
+      }
+  
+      // Initialize aiSettings if it doesn't exist
+      if (!account.aiSettings) {
+        account.aiSettings = {};
+      }
+  
+      // Update AI enabled status
+      account.aiSettings.enabled = !!enabled;
+  
+      // Ensure mode is set - use the provided mode or set a default based on enabled status
+      if (mode && ['auto', 'draft', 'normal'].includes(mode)) {
+        account.aiSettings.mode = mode;
+      } else if (account.aiSettings.mode === undefined) {
+        // If mode doesn't exist in the database, set a default based on enabled
+        account.aiSettings.mode = enabled ? 'auto' : 'draft';
+      }
+  
+      // Add timestamp for tracking
+      account.aiSettings.updatedAt = new Date();
+  
+      // Save the account with updated AI settings
+      await account.save();
+  
+      // Return the updated settings
+      res.json({
+        success: true,
+        email: account.email,
+        aiEnabled: account.aiSettings.enabled,
+        aiMode: account.aiSettings.mode,
+        message: `AI ${account.aiSettings.enabled ? 'enabled' : 'disabled'} with mode: ${account.aiSettings.mode}`
+      });
+    } catch (error) {
+      console.error(`Error toggling AI mode for ${email}:`, error);
+      res.status(500).json({ 
+        error: 'Failed to update AI settings',
+        message: error.message 
+      });
     }
-
-    // Update AI mode in the database
-    account.aiSettings = account.aiSettings || {};
-    account.aiSettings.mode = mode;
-    await account.save();
-
-    res.json({
-      success: true,
-      email,
-      mode,
-    });
   });
 }
 
