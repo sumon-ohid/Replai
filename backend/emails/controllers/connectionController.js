@@ -627,6 +627,31 @@ class ConnectionController {
         .json({ error: "Failed to refresh connection: " + error.message });
     }
   });
+
+  /**
+   * Switch AI mode (auto/manual)
+   */
+  static switchMode = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { email } = req.params;
+    const { mode } = req.body;
+
+    const account = await ConnectedEmail.findOne({ userId, email });
+    if (!account) {
+      return res.status(404).json({ error: "Email account not found" });
+    }
+
+    // Update AI mode in the database
+    account.aiSettings = account.aiSettings || {};
+    account.aiSettings.mode = mode;
+    await account.save();
+
+    res.json({
+      success: true,
+      email,
+      mode,
+    });
+  });
 }
 
 export default ConnectionController;

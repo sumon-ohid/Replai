@@ -166,12 +166,23 @@ const emailSchema = new mongoose.Schema({
     index: true
   },
   
-  // Classification
   category: {
     type: String,
-    enum: ['primary', 'social', 'promotions', 'updates', 'forums', 'sent', 'draft', 'trash', 'spam', 'inbox'],
-    default: 'inbox',
-    index: true
+    enum: [
+      'inbox',
+      'sent',
+      'draft',
+      'trash',
+      'spam',
+      'important',
+      'social',
+      'promotions',
+      'updates',
+      'forums',
+      'work',
+      'personal'
+    ],
+    default: 'inbox'
   },
   
   // AI processing

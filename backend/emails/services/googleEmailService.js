@@ -349,7 +349,7 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
     };
 
     console.log(`Prepared email for saving: ${emailData.from.name} <${emailData.from.email}> - ${emailData.subject}`);
-
+    
     // Process email content if enabled
     if (config.processContent !== false) {
       try {
@@ -357,13 +357,35 @@ export async function processGoogleMessage(gmail, userId, userEmail, messageId, 
           ...emailData,
           userEmail
         });
-        Object.assign(emailData, processedData);
+        
+        // Make sure category is valid before assigning
+        if (processedData.category) {
+          // Define valid categories from schema
+          const validCategories = [
+            'inbox', 'sent', 'draft', 'trash', 'spam', 'important',
+            'social', 'promotions', 'updates', 'forums', 'work', 'personal'
+          ];
+          
+          // Only use category if it's valid, otherwise keep the original
+          if (validCategories.includes(processedData.category)) {
+            emailData.category = processedData.category;
+          } else {
+            console.warn(`Ignoring invalid category "${processedData.category}" from processing`);
+            // Use folder as fallback for category
+            emailData.category = validCategories.includes(emailData.folder) ? 
+              emailData.folder : 'inbox';
+          }
+        }
+        
+        // Copy other processed fields (except category which we've handled)
+        const {category, ...otherProcessedData} = processedData;
+        Object.assign(emailData, otherProcessedData);
       } catch (processError) {
         console.error('Error processing email content:', processError);
         // Continue without content processing
       }
     }
-
+    
     // Save or update email in database
     try {
       // Try to find existing email first
@@ -476,27 +498,47 @@ function processAttachments(message) {
 
 /**
  * Helper to determine category from Gmail labels
+ * Returns only valid email categories according to the schema
  */
 function determineEmailCategory(message) {
-  if (!message.labelIds) return 'uncategorized';
+  if (!message.labelIds) return 'inbox';
   
-  if (message.labelIds.includes('SENT')) return 'sent';
-  if (message.labelIds.includes('DRAFT')) return 'draft';
-  if (message.labelIds.includes('TRASH')) return 'trash';
-  if (message.labelIds.includes('SPAM')) return 'spam';
-  if (message.labelIds.includes('IMPORTANT')) return 'important';
+  // Define valid categories that match your Mongoose schema
+  const validCategories = [
+    'inbox',
+    'sent',
+    'draft',
+    'trash',
+    'spam',
+    'important',
+    'social',
+    'promotions',
+    'updates',
+    'forums',
+    'work',
+    'personal'
+  ];
   
-  // Map Gmail categories to inbox
-  if (message.labelIds.includes('INBOX') ||
-      message.labelIds.includes('CATEGORY_PRIMARY') ||
-      message.labelIds.includes('CATEGORY_SOCIAL') ||
-      message.labelIds.includes('CATEGORY_PROMOTIONS') ||
-      message.labelIds.includes('CATEGORY_UPDATES') ||
-      message.labelIds.includes('CATEGORY_FORUMS')) {
-    return 'inbox';
+  // First, try to map Gmail categories to our system
+  let category = 'inbox'; // Default category
+  
+  if (message.labelIds.includes('SENT')) category = 'sent';
+  else if (message.labelIds.includes('DRAFT')) category = 'draft';
+  else if (message.labelIds.includes('TRASH')) category = 'trash';
+  else if (message.labelIds.includes('SPAM')) category = 'spam';
+  else if (message.labelIds.includes('IMPORTANT')) category = 'important';
+  else if (message.labelIds.includes('CATEGORY_SOCIAL')) category = 'social';
+  else if (message.labelIds.includes('CATEGORY_PROMOTIONS')) category = 'promotions';
+  else if (message.labelIds.includes('CATEGORY_UPDATES')) category = 'updates';
+  else if (message.labelIds.includes('CATEGORY_FORUMS')) category = 'forums';
+  
+  // Ensure the category is valid according to our schema
+  if (!validCategories.includes(category)) {
+    console.warn(`Invalid category "${category}" detected, defaulting to "inbox"`);
+    category = 'inbox';
   }
   
-  return 'uncategorized';
+  return category;
 }
 
 /**

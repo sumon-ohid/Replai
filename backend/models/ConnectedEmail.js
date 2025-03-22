@@ -66,7 +66,7 @@ const connectedEmailSchema = new mongoose.Schema({
     },
     mode: {
       type: String,
-      enum: ['suggest', 'auto', 'disabled'],
+      enum: ['draft', 'auto', 'disabled'],
       default: 'auto'
     },
     responseTemplates: [{
@@ -98,14 +98,6 @@ const connectedEmailSchema = new mongoose.Schema({
       success: Boolean,
       error: String
     }],
-    replyHistory: [{
-      date: Date,
-      messageId: String,
-      subject: String,
-      success: Boolean,
-      mode: String, // 'auto' or 'draft'
-      error: String
-    }]
   },
 
   // Email processing status

@@ -258,8 +258,8 @@ function ConnectedEmailsContent() {
 
     try {
       // Update the server
-      const response = await axios.patch(
-        `${apiBaseUrl}/api/emails/auth/connected/auto/${email.email}`,
+      const response = await axios.post(
+        `${apiBaseUrl}/api/emails/connection/${email.email}/mode-switch`,
         { enabled: newValue },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -846,7 +846,7 @@ function ConnectedEmailsContent() {
                             label={
                               email.autoReplyEnabled
                                 ? "auto enabled"
-                                : "Draft mode enabled"
+                                : "draft mode enabled"
                             }
                             icon={
                               email.autoReplyEnabled ? (
@@ -977,7 +977,7 @@ function ConnectedEmailsContent() {
                               )}
                             </ListItemIcon>
                             <ListItemText>
-                              Toggle to {actionEmail?.autoReplyEnabled
+                              Switch to {actionEmail?.autoReplyEnabled
                                 ? "Draft"
                                 : "Auto"} Mode
                             </ListItemText>
