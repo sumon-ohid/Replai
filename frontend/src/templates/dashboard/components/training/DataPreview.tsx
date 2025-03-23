@@ -197,7 +197,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
     const estimatedTokens = Math.ceil(totalCharCount / 4);
     
     // Always show 10-15 seconds for training time
-    const estimatedTrainingTime = "10-15 sec";
+    const estimatedTrainingTime = "~15 sec";
     
     return {
       totalSources,
@@ -626,7 +626,7 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
               
               <Divider sx={{ my: 2.5, opacity: 0.6 }} />
               
-              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem', flexDirection: isMobile ? 'column' : 'row', textAlign: 'center' }}>
                 <HelpOutlineIcon sx={{ fontSize: '1rem', mr: 0.8, color: theme.palette.info.main }} />
                 A total of <Box component="span" sx={{ fontWeight: 600, mx: 0.5 }}>{dataStats.totalCharCount.toLocaleString()}</Box> 
                 characters will be processed during training to create your custom AI assistant.
