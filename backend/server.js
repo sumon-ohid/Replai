@@ -347,11 +347,14 @@ async function generateSitemap() {
     
     // Add URLs with improved SEO parameters
     smStream.write({ url: '/', changefreq: 'daily', priority: 1.0 });
-    smStream.write({ url: '/features', changefreq: 'weekly', priority: 0.8 });
-    smStream.write({ url: '/pricing', changefreq: 'weekly', priority: 0.8 });
-    smStream.write({ url: '/about', changefreq: 'monthly', priority: 0.7 });
-    smStream.write({ url: '/contact', changefreq: 'monthly', priority: 0.7 });
-    smStream.write({ url: '/blog', changefreq: 'daily', priority: 0.9 });
+    smStream.write({ url: '/login', changefreq: 'daily', priority: 1 });
+    smStream.write({ url: '/signup', changefreq: 'daily', priority: 1 });
+    smStream.write({ url: '/about', changefreq: 'daily', priority: 1 });
+    smStream.write({ url: '/contact', changefreq: 'daily', priority: 1});
+    smStream.write({ url: '/blog', changefreq: 'daily', priority: 1 });
+    smStream.write({ url: '/docs', changefreq: 'daily', priority: 1 });
+    smStream.write({ url: '/privacy', changefreq: 'daily', priority: 1 });
+    
     
     // Add any dynamic pages here
     
