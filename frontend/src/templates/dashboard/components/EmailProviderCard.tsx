@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Paper, Typography, Box, alpha, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
-import LoadingButton from '@mui/lab/LoadingButton';
+import Button from '@mui/material/Button';
 
 interface EmailProviderCardProps {
   title: string;
@@ -88,7 +88,7 @@ export default function EmailProviderCard({
         </Typography>
         
         <Box sx={{ mt: 'auto', zIndex: 1 }}>
-          <LoadingButton
+          <Button
             variant="contained"
             fullWidth
             loading={loading}
@@ -104,7 +104,7 @@ export default function EmailProviderCard({
             }}
           >
             Connect
-          </LoadingButton>
+          </Button>
         </Box>
       </Paper>
     </motion.div>

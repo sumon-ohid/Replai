@@ -55,7 +55,7 @@ const trainingPhases = [
     thresholdPercentage: 15
   },
   { 
-    name: "Feature Extraction", 
+    name: "Data Analysis", 
     description: "Identifying patterns and key elements",
     icon: <SwapVertIcon />,
     thresholdPercentage: 30 
@@ -213,30 +213,18 @@ export function TrainingProgress({ progress, error }: TrainingProgressProps) {
           </Grid>
         </Paper>
       </Box>
-
-      {/* Actions */}
-      <Box component={motion.div} variants={itemVariants}>
-        <Stack 
-          direction={isMobile ? 'column' : 'row'} 
-          spacing={isMobile ? 1 : 2}
-          justifyContent={isMobile ? 'center' : 'flex-end'}
-        >
-          <Button 
-            variant="contained" 
-            color="primary" 
-            size="large"
-            startIcon={<DeveloperBoardIcon />}
-            sx={{ 
-              px: 4,
-              borderRadius: 5,
-              textTransform: 'none',
-              fontSize: '0.875rem'
-            }}
-          >
-            View Model
-          </Button>
-        </Stack>
-      </Box>
+          
+      {/* Random strings while waiting for the process */}
+      {progress < 100 && (
+        <Box component={motion.div} variants={itemVariants} sx={{ mb: 4 }}>
+          <Stack spacing={2}>
+            <Typography variant="body2" sx={{ textAlign: 'center' }}>
+            This won't take long. Just a few more seconds...
+            </Typography>
+          </Stack>
+        </Box>
+      )}
+      
     </Box>
   );
 }

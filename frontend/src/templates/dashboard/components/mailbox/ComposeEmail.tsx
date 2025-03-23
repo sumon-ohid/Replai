@@ -45,7 +45,10 @@ interface ComposeEmailProps {
     cc: string[];
     bcc: string[];
     subject: string;
-    content: string;
+    body: {
+      html: string;
+      text: string;
+    };
     attachments: File[];
   }) => Promise<void>;
   selectedAccount: EmailAccount | undefined;
@@ -110,12 +113,13 @@ export default function ComposeEmail({
     }
   }, [replyTo, forwardEmail]);
 
+  // Update the handleSend function
   const handleSend = async () => {
     if (!to.trim()) {
       // Show validation error
       return;
     }
-
+  
     setSending(true);
     try {
       await onSend({
@@ -123,13 +127,18 @@ export default function ComposeEmail({
         cc: cc ? cc.split(",").map((email) => email.trim()) : [],
         bcc: bcc ? bcc.split(",").map((email) => email.trim()) : [],
         subject,
-        content,
+        // Format the content properly for the backend
+        body: {
+          html: content,
+          text: content.replace(/<[^>]*>/g, '') // Simple HTML to text conversion
+        },
         attachments,
       });
       handleClose();
     } catch (error) {
       console.error("Failed to send email:", error);
-      // Show error message
+      // Show error message to the user
+      alert(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSending(false);
     }

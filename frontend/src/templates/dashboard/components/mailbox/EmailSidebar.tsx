@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  List, 
-  ListItemButton, 
-  ListItemIcon, 
+import React, { useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Typography,
+  List,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
   Divider,
   Avatar,
@@ -17,22 +17,22 @@ import {
   Menu,
   MenuItem,
   ListItemAvatar,
-  Tooltip
-} from '@mui/material';
-import { motion } from 'framer-motion';
+  Tooltip,
+} from "@mui/material";
+import { motion } from "framer-motion";
 
 // Icons
-import InboxIcon from '@mui/icons-material/Inbox';
-import StarIcon from '@mui/icons-material/Star';
-import SendIcon from '@mui/icons-material/Send';
-import DraftsIcon from '@mui/icons-material/Drafts';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CreateIcon from '@mui/icons-material/Create';
-import LabelIcon from '@mui/icons-material/Label';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import CloseIcon from '@mui/icons-material/Close';
+import InboxIcon from "@mui/icons-material/Inbox";
+import StarIcon from "@mui/icons-material/Star";
+import SendIcon from "@mui/icons-material/Send";
+import DraftsIcon from "@mui/icons-material/Drafts";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CreateIcon from "@mui/icons-material/Create";
+import LabelIcon from "@mui/icons-material/Label";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import CloseIcon from "@mui/icons-material/Close";
 
-import { EmailAccount } from './useEmailClient';
+import { EmailAccount } from "./useEmailClient";
 
 interface EmailSidebarProps {
   accounts: EmailAccount[];
@@ -57,13 +57,18 @@ export default function EmailSidebar({
   onCompose,
   onCloseMobileSidebar,
   isMobile,
-  collapsed = false
+  collapsed = false,
 }: EmailSidebarProps) {
   const theme = useTheme();
-  const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<HTMLElement | null>(null);
-  
-  const selectedAccountData = accounts.find(acc => acc.id === selectedAccount);
+  const [accountMenuAnchor, setAccountMenuAnchor] =
+    React.useState<HTMLElement | null>(null);
 
+    
+    const selectedAccountData = accounts.find(
+      (acc) => acc.id === selectedAccount
+    );
+    
+  
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAccountMenuAnchor(event.currentTarget);
   };
@@ -78,67 +83,87 @@ export default function EmailSidebar({
   };
 
   const folderItems = [
-    { 
-      id: 'inbox',
-      label: 'Inbox',
-      icon: <InboxIcon color={currentFolder === 'inbox' ? 'primary' : 'inherit'} />,
-      count: unreadCounts.inbox || 0
+    {
+      id: "inbox",
+      label: "Inbox",
+      icon: (
+        <InboxIcon color={currentFolder === "inbox" ? "primary" : "inherit"} />
+      ),
+      count: unreadCounts.inbox || 0,
     },
-    { 
-      id: 'drafts',
-      label: 'Drafts', 
-      icon: <DraftsIcon color={currentFolder === 'drafts' ? 'primary' : 'inherit'} />,
-      count: unreadCounts.drafts || 0
+    {
+      id: "drafts",
+      label: "Drafts",
+      icon: (
+        <DraftsIcon
+          color={currentFolder === "drafts" ? "primary" : "inherit"}
+        />
+      ),
+      count: unreadCounts.drafts || 0,
     },
-    { 
-      id: 'sent',
-      label: 'Sent', 
-      icon: <SendIcon color={currentFolder === 'sent' ? 'primary' : 'inherit'} />
+    {
+      id: "sent",
+      label: "Sent",
+      icon: (
+        <SendIcon color={currentFolder === "sent" ? "primary" : "inherit"} />
+      ),
     },
-    { 
-      id: 'starred',
-      label: 'Starred', 
-      icon: <StarIcon color={currentFolder === 'starred' ? 'primary' : 'inherit'} sx={{ color: currentFolder !== 'starred' ? theme.palette.warning.main : undefined }} />,
-      count: unreadCounts.starred || 0
+    {
+      id: "starred",
+      label: "Starred",
+      icon: (
+        <StarIcon
+          color={currentFolder === "starred" ? "primary" : "inherit"}
+          sx={{
+            color:
+              currentFolder !== "starred"
+                ? theme.palette.warning.main
+                : undefined,
+          }}
+        />
+      ),
+      count: unreadCounts.starred || 0,
     },
-    { 
-      id: 'trash',
-      label: 'Trash', 
-      icon: <DeleteIcon color={currentFolder === 'trash' ? 'primary' : 'inherit'} />
-    }
+    {
+      id: "trash",
+      label: "Trash",
+      icon: (
+        <DeleteIcon color={currentFolder === "trash" ? "primary" : "inherit"} />
+      ),
+    },
   ];
 
   // Labels data
   const labels = [
-    { id: 'work', name: 'Work', color: theme.palette.success.main },
-    { id: 'personal', name: 'Personal', color: theme.palette.info.main },
-    { id: 'important', name: 'Important', color: theme.palette.warning.main },
-    { id: 'urgent', name: 'Urgent', color: theme.palette.error.main },
+    { id: "work", name: "Work", color: theme.palette.success.main },
+    { id: "personal", name: "Personal", color: theme.palette.info.main },
+    { id: "important", name: "Important", color: theme.palette.warning.main },
+    { id: "urgent", name: "Urgent", color: theme.palette.error.main },
   ];
 
   return (
-    <Box 
+    <Box
       component={motion.div}
       initial={{ x: isMobile ? -300 : 0, opacity: isMobile ? 0 : 1 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: isMobile ? -300 : 0, opacity: isMobile ? 0 : 1 }}
       transition={{ duration: 0.2 }}
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: '100%',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        border: '1px solid',
-        borderColor: 'divider',
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
+        border: "1px solid",
+        borderColor: "divider",
         borderRadius: isMobile ? 0 : 2,
         pt: 1,
         pb: 2,
         px: collapsed ? 1 : 2,
         mr: isMobile ? 0 : 1,
-        backgroundColor: 'background.default',
-        width: collapsed ? '100%' : 'auto',
-        transition: theme.transitions.create('padding', {
+        backgroundColor: "background.default",
+        width: collapsed ? "100%" : "auto",
+        transition: theme.transitions.create("padding", {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.standard,
         }),
@@ -146,37 +171,37 @@ export default function EmailSidebar({
     >
       {/* Mobile close button */}
       {isMobile && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
           <IconButton onClick={onCloseMobileSidebar} size="small">
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       )}
 
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          mb: 2, 
-          backgroundColor: 'background.default', 
-          borderRadius: 2, 
-          px: collapsed ? 0.5 : 2, 
-          py: 1 
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          mb: 2,
+          backgroundColor: "background.default",
+          borderRadius: 2,
+          px: collapsed ? 0.5 : 2,
+          py: 1,
         }}
       >
         {!collapsed && (
-          <Typography 
-            variant="h6" 
-            sx={{ 
+          <Typography
+            variant="h6"
+            sx={{
               flexGrow: 1,
               fontWeight: 600,
-              fontSize: '1.1rem'
+              fontSize: "1.1rem",
             }}
           >
             Mailbox
           </Typography>
         )}
-        
+
         <Tooltip title="Compose new email">
           <Button
             variant="contained"
@@ -184,19 +209,22 @@ export default function EmailSidebar({
             startIcon={!collapsed && <CreateIcon />}
             onClick={onCompose}
             sx={{
-              borderRadius: 8,
+              borderRadius: 2,
+              mb: 0.5,
+              p: 1,
+              justifyContent: "center",
+              minWidth: 40,
               px: collapsed ? 1 : 2,
               py: 1,
-              minWidth: collapsed ? 'unset' : undefined,
-              textTransform: 'none',
+              textTransform: "none",
               boxShadow: theme.shadows[2],
-              '&:hover': {
+              "&:hover": {
                 boxShadow: theme.shadows[4],
               },
-              width: collapsed ? 40 : 'auto',
+              width: collapsed ? 40 : "auto",
             }}
           >
-            {collapsed ? <CreateIcon fontSize="small" /> : 'Compose'}
+            {collapsed ? <CreateIcon fontSize="small" /> : "Compose"}
           </Button>
         </Tooltip>
       </Box>
@@ -207,55 +235,62 @@ export default function EmailSidebar({
           fullWidth
           onClick={handleAccountMenuOpen}
           sx={{
-            justifyContent: 'flex-start',
+            justifyContent: "flex-start",
             borderRadius: 2,
             py: 1,
             px: 1.5,
             mb: 2,
-            border: '1px solid',
+            border: "1px solid",
             borderColor: theme.palette.divider,
             backgroundColor: theme.palette.background.paper,
-            '&:hover': {
+            "&:hover": {
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
             },
-            textTransform: 'none'
+            textTransform: "none",
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
             <Avatar
               sx={{
                 width: 28,
                 height: 28,
                 bgcolor: theme.palette.primary.main,
-                fontSize: '0.9rem',
-                fontWeight: 'bold',
-                mr: 1.5
+                fontSize: "0.9rem",
+                fontWeight: "bold",
+                mr: 1.5,
               }}
             >
-              {selectedAccountData?.avatar || selectedAccountData?.name.charAt(0)}
+              {selectedAccountData?.avatar ||
+                selectedAccountData?.name.charAt(0)}
             </Avatar>
-            <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+            <Box sx={{ flexGrow: 1, textAlign: "left" }}>
               <Typography
                 variant="body2"
                 noWrap
-                sx={{ fontWeight: 500, color: 'text.primary' }}
+                sx={{ fontWeight: 500, color: "text.primary" }}
               >
                 {selectedAccountData?.email}
               </Typography>
             </Box>
-            <KeyboardArrowRightIcon fontSize="small" sx={{ color: 'text.secondary', ml: 0.5 }} />
+            <KeyboardArrowRightIcon
+              fontSize="small"
+              sx={{ color: "text.secondary", ml: 0.5 }}
+            />
           </Box>
         </Button>
       ) : (
-        <Tooltip title={`${selectedAccountData?.name} (${selectedAccountData?.email})`} placement="right">
-          <IconButton 
+        <Tooltip
+          title={`${selectedAccountData?.name} (${selectedAccountData?.email})`}
+          placement="right"
+        >
+          <IconButton
             onClick={handleAccountMenuOpen}
             sx={{
               p: 1,
               mb: 2,
               width: 40,
               height: 40,
-              alignSelf: 'center'
+              alignSelf: "center",
             }}
           >
             <Avatar
@@ -263,18 +298,19 @@ export default function EmailSidebar({
                 width: 28,
                 height: 28,
                 bgcolor: theme.palette.primary.main,
-                fontSize: '0.9rem',
-                fontWeight: 'bold'
+                fontSize: "0.9rem",
+                fontWeight: "bold",
               }}
             >
-              {selectedAccountData?.avatar || selectedAccountData?.name.charAt(0)}
+              {selectedAccountData?.avatar ||
+                selectedAccountData?.name.charAt(0)}
             </Avatar>
           </IconButton>
         </Tooltip>
       )}
 
       {/* Folders list */}
-      <List disablePadding sx={{ mb: 2, width: '100%' }}>
+      <List disablePadding sx={{ mb: 2, width: "100%" }}>
         {folderItems.map((folder) => (
           <Tooltip
             key={folder.id}
@@ -293,69 +329,81 @@ export default function EmailSidebar({
                 mb: 0.5,
                 py: 1,
                 px: collapsed ? 1 : 1.5,
-                '&.Mui-selected': {
+                "&.Mui-selected": {
                   backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
+                  "&:hover": {
                     backgroundColor: alpha(theme.palette.primary.main, 0.15),
                   },
                 },
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                minWidth: collapsed ? 40 : 'auto',
+                justifyContent: collapsed ? "center" : "flex-start",
+                minWidth: collapsed ? 40 : "auto",
               }}
             >
-              <ListItemIcon sx={{ 
-                minWidth: collapsed ? 0 : 36, 
-                color: currentFolder === folder.id ? theme.palette.primary.main : 'inherit',
-                mr: collapsed ? 0 : undefined,
-              }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: collapsed ? 0 : 36,
+                  color:
+                    currentFolder === folder.id
+                      ? theme.palette.primary.main
+                      : "inherit",
+                  mr: collapsed ? 0 : undefined,
+                }}
+              >
                 {folder.icon}
               </ListItemIcon>
-              
+
               {!collapsed && (
-                <ListItemText 
+                <ListItemText
                   primary={folder.label}
                   primaryTypographyProps={{
                     fontWeight: currentFolder === folder.id ? 600 : 400,
-                    color: currentFolder === folder.id ? theme.palette.primary.main : 'text.primary'
+                    color:
+                      currentFolder === folder.id
+                        ? theme.palette.primary.main
+                        : "text.primary",
                   }}
                 />
               )}
-              
-              {!collapsed && typeof folder.count === 'number' && folder.count > 0 && (
-                <Chip
-                  label={folder.count}
-                  size="small"
-                  color={currentFolder === folder.id ? "primary" : "default"}
-                  sx={{
-                    height: 22,
-                    fontSize: '0.75rem',
-                    fontWeight: 600
-                  }}
-                />
-              )}
-              
+
+              {!collapsed &&
+                typeof folder.count === "number" &&
+                folder.count > 0 && (
+                  <Chip
+                    label={folder.count}
+                    size="small"
+                    color={currentFolder === folder.id ? "primary" : "default"}
+                    sx={{
+                      height: 22,
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+
               {/* Show badge for collapsed mode */}
-              {collapsed && typeof folder.count === 'number' && folder.count > 0 && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    bgcolor: theme.palette.primary.main,
-                    color: theme.palette.primary.contrastText,
-                    fontSize: '0.65rem',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {folder.count > 9 ? '9+' : folder.count}
-                </Box>
-              )}
+              {collapsed &&
+                typeof folder.count === "number" &&
+                folder.count > 0 && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      bgcolor: theme.palette.primary.main,
+                      color: theme.palette.primary.contrastText,
+                      fontSize: "0.65rem",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {folder.count > 9 ? "9+" : folder.count}
+                  </Box>
+                )}
             </ListItemButton>
           </Tooltip>
         ))}
@@ -372,9 +420,9 @@ export default function EmailSidebar({
               px: 2,
               py: 0.5,
               fontWeight: 600,
-              color: 'text.secondary',
-              textTransform: 'uppercase',
-              letterSpacing: 0.5
+              color: "text.secondary",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
             }}
           >
             Labels
@@ -383,7 +431,7 @@ export default function EmailSidebar({
           <List disablePadding>
             {labels.map((label) => (
               <ListItemButton
-                key={label.id}
+                key={`expanded-${label.id}`}
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
@@ -394,10 +442,10 @@ export default function EmailSidebar({
                 <ListItemIcon sx={{ minWidth: 36 }}>
                   <LabelIcon sx={{ color: label.color }} />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={label.name}
                   primaryTypographyProps={{
-                    fontSize: '0.875rem'
+                    fontSize: "0.875rem",
                   }}
                 />
               </ListItemButton>
@@ -411,16 +459,17 @@ export default function EmailSidebar({
         <List disablePadding sx={{ mt: 1 }}>
           {labels.map((label) => (
             <Tooltip
-              key={label.id}
+              key={`collapsed-${label.id}`}
               title={label.name}
               placement="right"
             >
               <ListItemButton
+                key={`button-${label.id}`}
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
                   p: 1,
-                  justifyContent: 'center',
+                  justifyContent: "center",
                   minWidth: 40,
                 }}
               >
@@ -437,12 +486,12 @@ export default function EmailSidebar({
         open={Boolean(accountMenuAnchor)}
         onClose={handleAccountMenuClose}
         sx={{
-          '& .MuiPaper-root': {
+          "& .MuiPaper-root": {
             width: 250,
-            maxWidth: '100%',
+            maxWidth: "100%",
             borderRadius: 2,
-            mt: 1
-          }
+            mt: 1,
+          },
         }}
       >
         <Typography
@@ -451,25 +500,25 @@ export default function EmailSidebar({
             px: 2,
             pt: 1.5,
             pb: 1,
-            fontWeight: 600
+            fontWeight: 600,
           }}
         >
           Switch account
         </Typography>
-        
+
         {accounts.map((account) => (
           <MenuItem
-            key={account.id}
+            key={`menu-${account.id}`}
             selected={account.id === selectedAccount}
             onClick={() => handleAccountSelect(account.id)}
             sx={{
               py: 1,
-              '&.Mui-selected': {
+              "&.Mui-selected": {
                 backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                '&:hover': {
+                "&:hover": {
                   backgroundColor: alpha(theme.palette.primary.main, 0.15),
                 },
-              }
+              },
             }}
           >
             <ListItemAvatar>
@@ -478,18 +527,18 @@ export default function EmailSidebar({
                   width: 28,
                   height: 28,
                   bgcolor: theme.palette.primary.main,
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold',
-                  mr: 1.5
+                  fontSize: "0.9rem",
+                  fontWeight: "bold",
+                  mr: 1.5,
                 }}
               >
                 {account.avatar || account.name.charAt(0)}
               </Avatar>
             </ListItemAvatar>
-            <ListItemText 
+            <ListItemText
               primary={account.name}
               primaryTypographyProps={{
-                fontWeight: account.id === selectedAccount ? 600 : 400
+                fontWeight: account.id === selectedAccount ? 600 : 400,
               }}
               secondary={account.email}
             />

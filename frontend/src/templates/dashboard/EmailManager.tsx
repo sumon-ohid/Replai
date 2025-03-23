@@ -48,7 +48,6 @@ import {
 } from './theme/customizations';
 import axios from 'axios';
 import Footer from './components/Footer';
-import LoadingButton from '@mui/lab/LoadingButton';
 import Skeleton from '@mui/material/Skeleton';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -118,7 +117,7 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
       if (!token) return;
       
       try {
-        const response = await axios.get(`${apiBaseUrl}/api/emails/stats`, {
+        const response = await axios.get(`${apiBaseUrl}/api/emails/stats/basic`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(response.data as any);
@@ -135,6 +134,7 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
     setOpenDialog(true);
   };
 
+   // Updated the handleAuthProvider function
   const handleAuthProvider = async (provider: 'google' | 'microsoft') => {
     setLoading({...loading, [provider]: true});
     const token = localStorage.getItem('token');
@@ -143,19 +143,35 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
       setLoading({...loading, [provider]: false});
       return;
     }
-
+  
     try {
-      const endpoint = provider === 'google' ? 'google' : 'microsoft';
-      const response = await axios.get(`${apiBaseUrl}/api/emails/auth/${endpoint}`, {
+      const endpoint = provider === 'google' ? 'google' : 'outlook';
+      console.log(`Connecting to ${provider} using endpoint: /api/emails/auth/${endpoint}`);
+      
+      interface AuthResponse {
+        authUrl: string;
+      }
+
+      const response = await axios.get<AuthResponse>(`${apiBaseUrl}/api/emails/auth/${endpoint}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      const authUrl = (response.data as { authUrl: string }).authUrl;
+      
+      if (!response.data || !response.data.authUrl) {
+        throw new Error(`Invalid response from server: missing authUrl`);
+      }
+      
+      const authUrl = response.data.authUrl;
+      
+      // show success message
       window.location.href = authUrl;
+      enqueueSnackbar(`Redirecting to ${provider} for authentication`, { variant: 'info' });
+      setLoading({...loading, [provider]: false});
     } catch (error) {
       console.error(`Error connecting to ${provider}:`, error);
-      enqueueSnackbar(`Failed to connect to ${provider}`, { variant: 'error' });
+      let errorMessage = `Failed to connect to ${provider}`;
+      enqueueSnackbar(errorMessage, { variant: 'error' });
       setLoading({...loading, [provider]: false});
     }
   };
@@ -456,21 +472,9 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
                   }}
                 />
               </Typography>
-              
-              {/* Animated content wrapper */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={refreshTrigger}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <React.Suspense fallback={<Skeleton variant="rectangular" height={200} />}>
-                    <EmailConnectionStatus refreshTrigger={refreshTrigger} />
-                  </React.Suspense>
-                </motion.div>
-              </AnimatePresence>
+
+               {/* get ConnectedEmails from './components/GetConnectedEmails'; */}
+              <GetConnectedEmails/>
             </Box>
           </Box>
           <Footer />
