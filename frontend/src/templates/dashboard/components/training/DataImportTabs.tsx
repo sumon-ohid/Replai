@@ -397,6 +397,30 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
     }
   }, [selectedSources]);
 
+  // fetch text data if available
+  React.useEffect(() => {
+    const fetchTextData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          return;
+        }
+
+        const response = await axios.get<{ text: string }>(`${apiBaseUrl}/api/data/get-text`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.status === 200) {
+          setTextData(response.data.text);
+        }
+      } catch (error) {
+        console.error("Error fetching text data:", error);
+      }
+    };
+
+    fetchTextData();
+  }, []);
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -441,6 +465,10 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
               </IconButton>
             </Tooltip>
           </Box>
+
+          <Alert variant="filled" severity="info" sx={{ mb: 2 }}>
+            Please note that new text data, will overwrite previous data.
+          </Alert>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Paste or type text that represents your preferred writing style or domain-specific knowledge.
@@ -514,6 +542,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                   size="small"
                   variant="outlined"
                   color="primary"
+                  sx={{ borderRadius: "8px", py: 2, px: 1 }}
                 />
                 <Button
                   variant="contained"

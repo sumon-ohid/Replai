@@ -43,8 +43,8 @@ router.post("/save-text", auth, async (req, res) => {
     if (!userId) return res.status(400).send("User ID is required");
     if (typeof text !== "string")
       return res.status(400).send("Text must be a string");
-    if (text.length > 1000)
-      return res.status(400).send("Text is too long (max 1000 characters)");
+    if (text.length > 2000)
+      return res.status(400).send("Text is too long (max 2000 characters)");
 
     // Remove existing text data for the user
     await TextData.deleteMany({ userId });
