@@ -6,23 +6,21 @@ import {
   Grid,
   Card,
   CardContent,
-  Slider,
-  TextField,
-  InputAdornment,
-  Divider,
-  Chip,
-  Stack,
-  Tooltip,
-  IconButton,
   Paper,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Button,
-  useMediaQuery
+  useMediaQuery,
+  Divider,
+  Chip,
+  Skeleton,
+  Tooltip,
+  CircularProgress
 } from "@mui/material";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 // Icons
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -37,6 +35,10 @@ import SummarizeIcon from "@mui/icons-material/Summarize";
 import CodeIcon from "@mui/icons-material/Code";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
+import DataUsageIcon from '@mui/icons-material/DataUsage';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TimerIcon from '@mui/icons-material/Timer';
+import FolderIcon from '@mui/icons-material/Folder';
 
 // Animation variants
 const containerVariants = {
@@ -70,83 +72,234 @@ interface DataPreviewProps {
   onConfigChange: (config: any) => void;
 }
 
+// Data interfaces
+interface TextData {
+  entries: string[];
+  charCount: number;
+}
+
+interface PDFData {
+  files: { name: string; charCount: number; pages?: number }[];
+  totalCharCount: number;
+}
+
+interface WebsiteData {
+  urls: { url: string; title: string; charCount: number }[];
+  totalCharCount: number;
+}
+
 export function DataPreview({ selectedSources, config, onConfigChange }: DataPreviewProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
   
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
-  const [previewType, setPreviewType] = React.useState("summary");
+  const [loading, setLoading] = React.useState(true);
+  const [textData, setTextData] = React.useState<TextData>({ entries: [], charCount: 0 });
+  const [pdfData, setPdfData] = React.useState<PDFData>({ files: [], totalCharCount: 0 });
+  const [websiteData, setWebsiteData] = React.useState<WebsiteData>({ urls: [], totalCharCount: 0 });
+  
+  const apiBaseUrl =import.meta.env.VITE_API_BASE_URL || "";
 
-  // Mock data for preview
-  const previewData = {
-    textData: {
-      count: 3,
-      characters: 5240,
-      samples: [
-        "Our company focuses on delivering exceptional customer experiences through innovative software solutions...",
-        "The quarterly financial report shows a 15% increase in revenue compared to last year's projections..."
-      ]
-    },
-    pdfData: {
-      count: 2,
-      pages: 24,
-      fileNames: ["company_handbook.pdf", "technical_documentation.pdf"]
-    },
-    websiteData: {
-      count: 3,
-      urls: ["https://example.com/about", "https://example.com/services", "https://example.com/blog"],
-      pageCount: 12
-    }
+  // Fetch data from backend
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Authentication token not found");
+          setLoading(false);
+          return;
+        }
+        
+        const response = await axios.get(`${apiBaseUrl}/api/data/get-training-data`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 200) {
+          const data = response.data;
+          
+          // Process text data
+          if (typeof data === "object" && data !== null && "textData" in data) {
+            const textSamples = typeof data.textData === "string" 
+              ? data.textData.split(/\n{2,}/).filter((t: string) => t.trim().length > 0).slice(0, 3) 
+              : [];
+            setTextData({
+              entries: textSamples,
+              charCount: typeof data.textData === "string" ? data.textData.length : 0
+            });
+          }
+          
+          // Process PDF data
+          if (typeof data === "object" && data !== null && "fileData" in data) {
+            // Extract file information from fileData
+            // This assumes fileData has some metadata or structure to identify files
+            // You may need to adjust based on actual format
+            setPdfData({
+              files: Array.isArray(data.fileData) ? data.fileData.map((file: any) => ({
+                name: file.name || "Unknown",
+                charCount: file.charCount || 0,
+                pages: file.pages || undefined
+              })) : [],
+              totalCharCount: Array.isArray(data.fileData) ? data.fileData.length : 0
+            });
+          }
+          
+          // Process website data
+          if (typeof data === "object" && data !== null && "webData" in data) {
+            // Parse sections divided by separator
+            const webSections = typeof data.webData === "string" 
+              ? data.webData.split(/===\s*NEW\s*PAGE\s*===/) 
+              : [];
+            const urls = webSections.map((section: string) => {
+              // Extract URL and title from metadata
+              const urlMatch = section.match(/URL:\s*(https?:\/\/[^\n]+)/i);
+              const titleMatch = section.match(/Page:\s*([^\n]+)/i);
+              
+              return {
+                url: urlMatch ? urlMatch[1] : "Unknown URL",
+                title: titleMatch ? titleMatch[1] : "Untitled Page",
+                charCount: section.length
+              };
+            });
+            
+            setWebsiteData({
+              urls,
+              totalCharCount: typeof data.webData === "string" ? data.webData.length : 0
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching training data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [apiBaseUrl]);
+
+  // Calculate summary stats
+  const calculateDataStats = () => {
+    const totalSources = selectedSources.length;
+    const totalDocuments = 
+      (selectedSources.includes("text") ? textData.entries.length : 0) +
+      (selectedSources.includes("file") ? pdfData.files.length : 0) +
+      (selectedSources.includes("website") ? websiteData.urls.length : 0);
+    
+    const totalCharCount = 
+      (selectedSources.includes("text") ? textData.charCount : 0) +
+      (selectedSources.includes("file") ? pdfData.totalCharCount : 0) +
+      (selectedSources.includes("website") ? websiteData.totalCharCount : 0);
+    
+    // Estimate tokens (roughly 4 chars per token)
+    const estimatedTokens = Math.ceil(totalCharCount / 4);
+    
+    // Always show 10-15 seconds for training time
+    const estimatedTrainingTime = "10-15 sec";
+    
+    return {
+      totalSources,
+      totalDocuments,
+      totalCharCount,
+      estimatedTokens,
+      estimatedTrainingTime
+    };
   };
 
-  // Summary of training data
-  const dataStats = {
-    totalSources: selectedSources.length,
-    totalDocuments: previewData.textData.count + previewData.pdfData.count + previewData.websiteData.count,
-    estimatedTokens: 45000,
-    estimatedTrainingTime: "3-5 mins"
-  };
+  const dataStats = calculateDataStats();
 
-  const handleConfigChange = (key: string, value: number) => {
-    const updatedConfig = { ...config, [key]: value };
-    onConfigChange(updatedConfig);
-  };
+  // Render skeletons while loading
+  const renderSkeletons = () => (
+    <Box>
+      <Skeleton variant="rounded" height={60} sx={{ mb: 2 }} />
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Skeleton variant="rounded" height={120} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Skeleton variant="rounded" height={200} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Skeleton variant="rounded" height={200} />
+        </Grid>
+      </Grid>
+    </Box>
+  );
 
   const renderSourcePreview = (source: string) => {
+    if (loading) {
+      return (
+        <Box sx={{ p: 3 }}>
+          <Skeleton variant="rounded" height={150} />
+        </Box>
+      );
+    }
+
     switch (source) {
       case "text":
         return (
           <Box>
             <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
               <TextSnippetIcon color="primary" fontSize="small" /> Text Data
+              <Chip 
+                size="small" 
+                label={`${textData.charCount.toLocaleString()} characters`} 
+                color="primary" 
+                variant="outlined" 
+                sx={{ ml: 1, height: 20, fontWeight: 500 }}
+              />
             </Typography>
-            <Paper elevation={0} sx={{ p: 2, borderRadius: 2, bgcolor: alpha(theme.palette.background.paper, 0.6), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                <strong>{previewData.textData.count}</strong> text entries with <strong>{previewData.textData.characters}</strong> characters
-              </Typography>
-              <Box sx={{ mt: 2 }}>
-                {previewData.textData.samples.map((sample, index) => (
-                  <Card 
-                    key={index} 
-                    elevation={0}
-                    sx={{ 
-                      mb: 1, 
-                      p: 1.5, 
-                      borderRadius: 2,
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <FormatQuoteIcon sx={{ color: alpha(theme.palette.text.secondary, 0.6), transform: 'rotate(180deg)', fontSize: '1.2rem' }} />
-                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', flex: 1 }}>
-                        {sample.length > 100 ? `${sample.substring(0, 100)}...` : sample}
-                      </Typography>
-                    </Box>
-                  </Card>
-                ))}
-              </Box>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                bgcolor: alpha(theme.palette.background.paper, 0.6), 
+                border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                height: '100%',
+                minHeight: 200,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {textData.entries.length > 0 ? (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <strong>{textData.entries.length}</strong> text entries detected
+                  </Typography>
+                  <Box sx={{ mt: 1, flex: 1, overflow: 'auto' }}>
+                    {textData.entries.map((sample, index) => (
+                      <Card 
+                        key={index} 
+                        elevation={0}
+                        sx={{ 
+                          mb: 1, 
+                          p: 1.5, 
+                          borderRadius: 2,
+                          bgcolor: alpha(theme.palette.primary.main, 0.05),
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <FormatQuoteIcon sx={{ color: alpha(theme.palette.text.secondary, 0.6), transform: 'rotate(180deg)', fontSize: '1.2rem', flexShrink: 0, mt: 0.5 }} />
+                          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', flex: 1 }}>
+                            {sample.length > 120 ? `${sample.substring(0, 120)}...` : sample}
+                          </Typography>
+                        </Box>
+                      </Card>
+                    ))}
+                  </Box>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                  <TextSnippetIcon sx={{ fontSize: 40, color: alpha(theme.palette.text.secondary, 0.3) }} />
+                  <Typography color="text.secondary" align="center">
+                    No text data found
+                  </Typography>
+                </Box>
+              )}
             </Paper>
           </Box>
         );
@@ -156,28 +309,72 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
           <Box>
             <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
               <PictureAsPdfIcon color="error" fontSize="small" /> PDF Documents
+              <Chip 
+                size="small" 
+                label={`${pdfData.totalCharCount.toLocaleString()} characters`} 
+                color="error" 
+                variant="outlined" 
+                sx={{ ml: 1, height: 20, fontWeight: 500 }}
+              />
             </Typography>
-            <Paper elevation={0} sx={{ p: 2, borderRadius: 2, bgcolor: alpha(theme.palette.background.paper, 0.6), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                <strong>{previewData.pdfData.count}</strong> files with <strong>{previewData.pdfData.pages}</strong> total pages
-              </Typography>
-              
-              <List dense disablePadding>
-                {previewData.pdfData.fileNames.map((file, index) => (
-                  <ListItem key={index} sx={{ px: 1, py: 0.5 }}>
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <PictureAsPdfIcon fontSize="small" color="error" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={file} 
-                      primaryTypographyProps={{ 
-                        variant: 'body2',
-                        fontWeight: 500
-                      }} 
-                    />
-                  </ListItem>
-                ))}
-              </List>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                bgcolor: alpha(theme.palette.background.paper, 0.6), 
+                border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                height: '100%',
+                minHeight: 200
+              }}
+            >
+              {pdfData.files.length > 0 ? (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <strong>{pdfData.files.length}</strong> PDF files processed
+                  </Typography>
+                  
+                  <List dense disablePadding sx={{ mt: 1, maxHeight: 220, overflow: 'auto' }}>
+                    {pdfData.files.map((file, index) => (
+                      <ListItem 
+                        key={index} 
+                        sx={{ 
+                          px: 1.5, 
+                          py: 1, 
+                          mb: 1, 
+                          borderRadius: 1,
+                          bgcolor: alpha(theme.palette.error.main, 0.05),
+                          border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <PictureAsPdfIcon fontSize="small" color="error" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={file.name} 
+                          secondary={file.pages ? `${file.pages} pages • ${file.charCount.toLocaleString()} characters` : `${file.charCount.toLocaleString()} characters`}
+                          primaryTypographyProps={{ 
+                            variant: 'body2',
+                            fontWeight: 500,
+                            sx: { wordBreak: 'break-word' }
+                          }}
+                          secondaryTypographyProps={{
+                            variant: 'caption',
+                            sx: { fontSize: '0.7rem' }
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                  <PictureAsPdfIcon sx={{ fontSize: 40, color: alpha(theme.palette.text.secondary, 0.3) }} />
+                  <Typography color="text.secondary" align="center">
+                    No PDF documents found
+                  </Typography>
+                </Box>
+              )}
             </Paper>
           </Box>
         );
@@ -187,28 +384,74 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
           <Box>
             <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
               <LanguageIcon color="info" fontSize="small" /> Website Data
+              <Chip 
+                size="small" 
+                label={`${websiteData.totalCharCount.toLocaleString()} characters`} 
+                color="info" 
+                variant="outlined" 
+                sx={{ ml: 1, height: 20, fontWeight: 500 }}
+              />
             </Typography>
-            <Paper elevation={0} sx={{ p: 2, borderRadius: 2, bgcolor: alpha(theme.palette.background.paper, 0.6), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                <strong>{previewData.websiteData.count}</strong> websites with <strong>{previewData.websiteData.pageCount}</strong> total pages
-              </Typography>
-              
-              <List dense disablePadding>
-                {previewData.websiteData.urls.map((url, index) => (
-                  <ListItem key={index} sx={{ px: 1, py: 0.5 }}>
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <LanguageIcon fontSize="small" color="info" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={url} 
-                      primaryTypographyProps={{ 
-                        variant: 'body2',
-                        fontWeight: 500
-                      }} 
-                    />
-                  </ListItem>
-                ))}
-              </List>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                bgcolor: alpha(theme.palette.background.paper, 0.6), 
+                border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                height: '100%',
+                minHeight: 200
+              }}
+            >
+              {websiteData.urls.length > 0 ? (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <strong>{websiteData.urls.length}</strong> websites crawled for content
+                  </Typography>
+                  
+                  <List dense disablePadding sx={{ mt: 1, maxHeight: 220, overflow: 'auto' }}>
+                    {websiteData.urls.map((urlData, index) => (
+                      <ListItem 
+                        key={index} 
+                        sx={{ 
+                          px: 1.5, 
+                          py: 1, 
+                          mb: 1, 
+                          borderRadius: 1,
+                          bgcolor: alpha(theme.palette.info.main, 0.05),
+                          border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <LanguageIcon fontSize="small" color="info" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={urlData.title} 
+                          secondary={
+                            <Tooltip title={urlData.url} placement="bottom">
+                              <Typography variant="caption" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
+                                {urlData.url} • {urlData.charCount.toLocaleString()} characters
+                              </Typography>
+                            </Tooltip>
+                          }
+                          primaryTypographyProps={{ 
+                            variant: 'body2',
+                            fontWeight: 500,
+                            sx: { wordBreak: 'break-word' }
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                  <LanguageIcon sx={{ fontSize: 40, color: alpha(theme.palette.text.secondary, 0.3) }} />
+                  <Typography color="text.secondary" align="center">
+                    No website data found
+                  </Typography>
+                </Box>
+              )}
             </Paper>
           </Box>
         );
@@ -231,427 +474,228 @@ export function DataPreview({ selectedSources, config, onConfigChange }: DataPre
         </Typography>
       </Box>
 
-      {/* Training Summary Card */}
-      <Card 
-        component={motion.div}
-        variants={itemVariants}
-        elevation={0}
-        sx={{ 
-          mb: 3,
-          borderRadius: 3,
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.background.paper, 0.5)})`,
-        }}
-      >
-        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <SummarizeIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: isMobile ? '.8rem' : '1.25rem' }}>
-              Training Data Summary
-            </Typography>
-          </Box>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={6} sm={3}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
-                  {dataStats.totalSources}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
-                  Data Sources
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={6} sm={3}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
-                  {dataStats.totalDocuments}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
-                  Documents
+      {loading ? renderSkeletons() : (
+        <>
+          {/* Training Summary Card */}
+          <Card 
+            component={motion.div}
+            variants={itemVariants}
+            elevation={0}
+            sx={{ 
+              mb: 3,
+              borderRadius: 3,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              background: isDark 
+                ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.15)}, ${alpha(theme.palette.background.paper, 0.5)})`
+                : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.background.paper, 0.5)})`,
+              overflow: 'visible'
+            }}
+          >
+            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                <Box sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  mr: 1.5
+                }}>
+                  <DataUsageIcon color="primary" />
+                </Box>
+                <Typography variant="h6" fontWeight={600} sx={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+                  Training Data Summary
                 </Typography>
               </Box>
-            </Grid>
-            
-            <Grid item xs={6} sm={3}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
-                  {dataStats.estimatedTokens.toLocaleString()}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
-                  Tokens
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={6} sm={3}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ whiteSpace: 'nowrap' }}>
-                  {dataStats.estimatedTrainingTime}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontSize: isMobile ? '0.75rem' : '1rem' }}>
-                  Est. Time
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Data Sources Preview */}
-      <Box component={motion.div} variants={itemVariants} sx={{ mb: 4 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          flexDirection: isMobile ? 'column' : 'row',
-          mb: 2
-        }}>
-          <Typography variant="h6" fontWeight={600}>
-            Data Source Preview
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
-            <Button 
-              variant={previewType === "summary" ? "contained" : "outlined"} 
-              size="small"
-              onClick={() => setPreviewType("summary")}
-              sx={{ 
-                mr: 1,
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                py: 0.5
-              }}
-            >
-              Summary
-            </Button>
-            <Button 
-              variant={previewType === "raw" ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setPreviewType("raw")}
-              sx={{ 
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                py: 0.5
-              }}
-            >
-              Raw Data
-            </Button>
-          </Box>
-        </Box>
-
-        <Grid container spacing={3}>
-          {selectedSources.map((source) => (
-            <Grid item xs={12} md={source === "website" ? 12 : 6} key={source}>
-              {renderSourcePreview(source)}
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Training Configuration */}
-      <Box component={motion.div} variants={itemVariants}>
-        <Card 
-          elevation={0} 
-          sx={{ 
-            borderRadius: 3, 
-            border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
-            mb: 3
-          }}
-        >
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TuneIcon color="secondary" />
-                <span>Configuration</span>
-              </Typography>
               
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SettingsIcon />}
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                sx={{ borderRadius: 2 }}
-              >
-                {showAdvanced ? "Basic" : "Advanced"}
-              </Button>
+              <Grid container spacing={2}>
+                <Grid item xs={6} sm={3}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 1.5, 
+                      borderRadius: 2,
+                      height: '100%',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                      bgcolor: alpha(theme.palette.background.paper, 0.5),
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.background.paper, 0.8),
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+                      }
+                    }}
+                  >
+                    <FolderIcon sx={{ color: theme.palette.primary.main, mb: 0.5, fontSize: isMobile ? '1.5rem' : '2rem' }} />
+                    <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>
+                      {dataStats.totalSources}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 500 }}>
+                      Data Sources
+                    </Typography>
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={6} sm={3}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 1.5, 
+                      borderRadius: 2,
+                      height: '100%',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                      bgcolor: alpha(theme.palette.background.paper, 0.5),
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.background.paper, 0.8),
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+                      }
+                    }}
+                  >
+                    <DescriptionIcon sx={{ color: theme.palette.primary.main, mb: 0.5, fontSize: isMobile ? '1.5rem' : '2rem' }} />
+                    <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>
+                      {dataStats.totalDocuments}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 500 }}>
+                      Documents
+                    </Typography>
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={6} sm={3}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 1.5, 
+                      borderRadius: 2,
+                      height: '100%',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                      bgcolor: alpha(theme.palette.background.paper, 0.5),
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.background.paper, 0.8),
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+                      }
+                    }}
+                  >
+                    <SummarizeIcon sx={{ color: theme.palette.primary.main, mb: 0.5, fontSize: isMobile ? '1.5rem' : '2rem' }} />
+                    <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>
+                      {dataStats.estimatedTokens.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 500 }}>
+                      Est. Tokens
+                    </Typography>
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={6} sm={3}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      p: 1.5, 
+                      borderRadius: 2,
+                      height: '100%',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                      bgcolor: alpha(theme.palette.background.paper, 0.5),
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.background.paper, 0.8),
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+                      }
+                    }}
+                  >
+                    <TimerIcon sx={{ color: theme.palette.primary.main, mb: 0.5, fontSize: isMobile ? '1.5rem' : '2rem' }} />
+                    <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem', whiteSpace: 'nowrap' }}>
+                      {dataStats.estimatedTrainingTime}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: isMobile ? '0.7rem' : '0.8rem', fontWeight: 500 }}>
+                      Training Time
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+              
+              <Divider sx={{ my: 2.5, opacity: 0.6 }} />
+              
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+                <HelpOutlineIcon sx={{ fontSize: '1rem', mr: 0.8, color: theme.palette.info.main }} />
+                A total of <Box component="span" sx={{ fontWeight: 600, mx: 0.5 }}>{dataStats.totalCharCount.toLocaleString()}</Box> 
+                characters will be processed during training to create your custom AI assistant.
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Data Sources Preview */}
+          <Box component={motion.div} variants={itemVariants} sx={{ mb: 4 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              flexDirection: isMobile ? 'column' : 'row',
+              mb: 2
+            }}>
+              <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <InsightsIcon color="primary" sx={{ fontSize: '1.2rem' }} />
+                Data Source Preview
+              </Typography>
             </Box>
 
             <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Learning Rate</span>
-                  <Tooltip title="Controls how quickly the model adapts to new data">
-                    <IconButton size="small">
-                      <HelpOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={config.learningRate}
-                    min={0.0001}
-                    max={0.01}
-                    step={0.0001}
-                    onChange={(_, value) => handleConfigChange("learningRate", value as number)}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => value.toFixed(4)}
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    value={config.learningRate}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (!isNaN(value)) {
-                        handleConfigChange("learningRate", value);
-                      }
-                    }}
-                    InputProps={{
-                      sx: { 
-                        width: 100, 
-                        fontWeight: 500,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Epochs</span>
-                  <Tooltip title="Number of complete passes through the training dataset">
-                    <IconButton size="small">
-                      <HelpOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={config.epochs}
-                    min={1}
-                    max={20}
-                    step={1}
-                    onChange={(_, value) => handleConfigChange("epochs", value as number)}
-                    valueLabelDisplay="auto"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    value={config.epochs}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value)) {
-                        handleConfigChange("epochs", value);
-                      }
-                    }}
-                    InputProps={{
-                      sx: { 
-                        width: 100, 
-                        fontWeight: 500,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Batch Size</span>
-                  <Tooltip title="Number of training examples used in one iteration">
-                    <IconButton size="small">
-                      <HelpOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={config.batchSize}
-                    min={8}
-                    max={128}
-                    step={8}
-                    onChange={(_, value) => handleConfigChange("batchSize", value as number)}
-                    valueLabelDisplay="auto"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    value={config.batchSize}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value)) {
-                        handleConfigChange("batchSize", value);
-                      }
-                    }}
-                    InputProps={{
-                      sx: { 
-                        width: 100, 
-                        fontWeight: 500,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Box>
-              </Grid>
-              
-              {showAdvanced && (
-                <React.Fragment>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }}>
-                      <Chip label="Advanced Options" size="small" />
-                    </Divider>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
-                      Optimizer
-                    </Typography>
-                    <TextField
-                      select
-                      fullWidth
-                      defaultValue="adam"
-                      size="small"
-                      SelectProps={{
-                        native: true,
-                      }}
-                    >
-                      <option value="adam">Adam</option>
-                      <option value="sgd">SGD</option>
-                      <option value="rmsprop">RMSprop</option>
-                    </TextField>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
-                      Loss Function
-                    </Typography>
-                    <TextField
-                      select
-                      fullWidth
-                      defaultValue="categorical_crossentropy"
-                      size="small"
-                      SelectProps={{
-                        native: true,
-                      }}
-                    >
-                      <option value="categorical_crossentropy">Categorical Crossentropy</option>
-                      <option value="binary_crossentropy">Binary Crossentropy</option>
-                      <option value="mse">Mean Squared Error</option>
-                    </TextField>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
-                      Data Split (Train/Validation)
-                    </Typography>
-                    <TextField
-                      select
-                      fullWidth
-                      defaultValue="80_20"
-                      size="small"
-                      SelectProps={{
-                        native: true,
-                      }}
-                    >
-                      <option value="80_20">80% / 20%</option>
-                      <option value="70_30">70% / 30%</option>
-                      <option value="90_10">90% / 10%</option>
-                    </TextField>
-                  </Grid>
-                </React.Fragment>
-              )}
+              {selectedSources.map((source) => (
+                <Grid item xs={12} md={source === "website" ? 12 : 6} key={source}>
+                  {renderSourcePreview(source)}
+                </Grid>
+              ))}
             </Grid>
-            
-            {/* Expected Outcomes */}
-            {showAdvanced && (
-              <Box sx={{ mt: 3 }}>
-                <Card 
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor: alpha(theme.palette.success.main, 0.05),
-                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <InsightsIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      Expected Model Performance
-                    </Typography>
-                  </Box>
-                  
-                  <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="caption" color="text.secondary">
-                        Expected Accuracy
-                      </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        85% - 95%
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="caption" color="text.secondary">
-                        Response Quality
-                      </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        High
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="caption" color="text.secondary">
-                        Contextual Understanding
-                      </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        Very Good
-                      </Typography>
-                    </Grid>
-                    
-                    <Grid item xs={6} sm={3}>
-                      <Typography variant="caption" color="text.secondary">
-                        Style Adaptation
-                      </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        Excellent
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Card>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      </Box>
+          </Box>
 
-      {/* Ready to Train Notice */}
-      <Box component={motion.div} variants={itemVariants}>
-        <Card
-          elevation={0}
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}
-        >
-          <CheckCircleIcon color="primary" />
-          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-            Your data and configuration are ready. Click "Start Training" to continue.
-          </Typography>
-        </Card>
-      </Box>
+          {/* Ready to Train Notice */}
+          <Box component={motion.div} variants={itemVariants}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.success.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2
+              }}
+            >
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: alpha(theme.palette.success.main, 0.1),
+              }}>
+                <CheckCircleIcon color="success" />
+              </Box>
+              <Box>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: alpha(theme.palette.success.main, 0.9), mb: 0.5 }}>
+                  Data Processing Complete
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your data has been processed and is ready for training. Click "Start Training" to continue.
+                </Typography>
+              </Box>
+            </Card>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

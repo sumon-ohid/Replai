@@ -234,7 +234,7 @@ router.post("/analyze-url", auth, async (req, res) => {
     
     // Wait a bit for any delayed JavaScript to execute
     await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
     // Extract metadata from the page
     const pageTitle = await page.title() || url.split('/').pop() || 'Untitled Page';
     
@@ -659,6 +659,63 @@ router.get("/get-urls", auth, async (req, res) => {
   } catch (error) {
     console.error("Error getting URLs:", error);
     res.status(500).json({ message: "Error getting URLs" });
+  }
+});
+
+// Improved get-training-data endpoint
+router.get("/get-training-data", auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get the user's text data
+    const textData = await TextData.findOne({ userId });
+    if (!textData) {
+      // Return empty data structure if no data found
+      return res.status(200).json({
+        textData: "",
+        fileData: "",
+        webData: ""
+      });
+    }
+    
+    // Get user information including the URLs array
+    const user = await User.findById(userId);
+    
+    // Format the response with all available data
+    const response = {
+      // Text data (plain text entries)
+      textData: textData.text || "",
+      
+      // File data (content from PDFs)
+      fileData: textData.fileData || "",
+      
+      // Web data (content from websites)
+      webData: textData.webData || "",
+      
+      // File metadata for better UI display
+      files: user?.files?.map(file => ({
+        name: file.fileName || "Unnamed Document",
+        charCount: file.charCount || 0,
+        pages: file.pages || 1,
+        lastUpdated: file.lastUpdated || new Date()
+      })) || [],
+      
+      // Website metadata for better UI display
+      urls: user?.urls?.map(url => ({
+        url: url.url,
+        title: url.title || url.url.split('/').pop() || "Untitled Page",
+        charCount: url.charCount || 0,
+        lastUpdated: url.lastUpdated || new Date()
+      })) || []
+    };
+    
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("Error getting training data:", error);
+    res.status(500).json({ 
+      message: "Error retrieving training data",
+      error: error.message 
+    });
   }
 });
 
