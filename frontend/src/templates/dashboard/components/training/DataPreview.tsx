@@ -388,7 +388,7 @@ export function DataPreview({
               fontWeight={600}
               sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
             >
-              <PictureAsPdfIcon color="error" fontSize="small" /> PDF Documents
+              <PictureAsPdfIcon color="info" fontSize="small" /> PDF Documents
               <Chip
                 size="small"
                 label={`${fileData.totalCharCount.toLocaleString()} characters`}

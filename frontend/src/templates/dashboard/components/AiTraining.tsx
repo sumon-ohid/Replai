@@ -18,6 +18,8 @@ import {
   Avatar,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 // Icons
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
@@ -133,12 +135,75 @@ export default function AITraining() {
   const [trainingError, setTrainingError] = React.useState("");
   const [selectedSources, setSelectedSources] = React.useState<string[]>([]);
   const [dataPreviewReady, setDataPreviewReady] = React.useState(false);
-  
+
+  // Training data
+  interface TrainingData {
+    textData: string;
+    fileData: string;
+    webData: string;
+    files: {
+      name: string;
+      charCount: number;
+      pages: number;
+      lastUpdated: Date;
+    }[];
+    urls: {
+      url: string;
+      title: string;
+      charCount: number;
+      lastUpdated: Date;
+    }[];
+  }
+
+  const [trainingData, setTrainingData] = useState<TrainingData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTrainingData() {
+      try {
+        setLoading(true);
+        const response = await axios.get("/api/get-training-data");
+
+        // Transform the response data to match our TrainingData interface
+        const data = response.data as {
+          textData?: string;
+          fileData?: string;
+          webData?: string;
+          files?: {
+            name: string;
+            charCount: number;
+            pages: number;
+            lastUpdated: Date;
+          }[];
+          urls?: {
+            url: string;
+            title: string;
+            charCount: number;
+            lastUpdated: Date;
+          }[];
+        };
+        setTrainingData({
+          textData: data.textData || "",
+          fileData: data.fileData || "",
+          webData: data.webData || "",
+          files: data.files || [],
+          urls: data.urls || [],
+        });
+      } catch (error) {
+        console.error("Failed to fetch training data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTrainingData();
+  }, []);
+
   // Training statistics
   const [trainingStats, setTrainingStats] = React.useState({
     dataSize: 0,
     duration: 0,
-    accuracy: 0
+    accuracy: 0,
   });
 
   // Pre-training configurations
@@ -153,7 +218,7 @@ export default function AITraining() {
     // Fix 1: Move to the next step first
     const nextStep = activeStep + 1;
     setActiveStep(nextStep);
-    
+
     // Fix 2: If we're now on the training step, start training
     if (nextStep === 2) {
       // We'll start training when the user clicks "Start Training" button
@@ -201,14 +266,14 @@ export default function AITraining() {
           setTrainingProgress((prevProgress) => {
             if (prevProgress >= 100) {
               clearInterval(interval);
-              
+
               // Set mock training stats
               setTrainingStats({
                 dataSize: 2048576 + Math.floor(Math.random() * 1000000), // 2MB + random bytes
                 duration: 60 + Math.floor(Math.random() * 120), // 1-3 minutes
-                accuracy: 92.5 + (Math.random() * 5.5), // 92.5-98% accuracy
+                accuracy: 92.5 + Math.random() * 5.5, // 92.5-98% accuracy
               });
-              
+
               setTrainingComplete(true);
               return 100;
             }
@@ -220,7 +285,9 @@ export default function AITraining() {
       simulateTraining();
     } catch (error) {
       console.error("Error during training:", error);
-      setTrainingError("There was an error during the training process. Please try again.");
+      setTrainingError(
+        "There was an error during the training process. Please try again."
+      );
     }
   };
 
@@ -228,7 +295,7 @@ export default function AITraining() {
   const handleConfigChange = (config: any) => {
     setTrainingConfig({
       ...trainingConfig,
-      ...config
+      ...config,
     });
   };
 
@@ -256,14 +323,14 @@ export default function AITraining() {
         );
       case 1:
         return (
-          <DataImportTabs 
+          <DataImportTabs
             selectedSources={selectedSources}
-            onDataPreviewReady={handleDataPreviewReady} 
+            onDataPreviewReady={handleDataPreviewReady}
           />
         );
       case 2:
         return (
-          <DataPreview 
+          <DataPreview
             selectedSources={selectedSources}
             config={trainingConfig}
             onConfigChange={handleConfigChange}
@@ -271,18 +338,20 @@ export default function AITraining() {
         );
       case 3:
         return trainingComplete ? (
-          <TrainingComplete 
-            dataSize={trainingStats.dataSize}
-            duration={trainingStats.duration}
-            accuracy={trainingStats.accuracy}
+          <TrainingComplete
+            trainingData={
+              trainingData || {
+                textData: "",
+                fileData: "",
+                webData: "",
+                files: [],
+                urls: [],
+              }
+            }
             onReset={handleReset}
-            onStart={handleStartUsingModel}
           />
         ) : (
-          <TrainingProgress 
-            progress={trainingProgress} 
-            error={trainingError} 
-          />
+          <TrainingProgress progress={trainingProgress} error={trainingError} />
         );
       default:
         return <div>Unknown step</div>;
@@ -330,10 +399,9 @@ export default function AITraining() {
                   width: 48,
                   height: 48,
                   mr: 2,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(
-                    theme.palette.primary.dark,
-                    0.8
-                  )})`,
+                  background: `linear-gradient(135deg, ${
+                    theme.palette.primary.main
+                  }, ${alpha(theme.palette.primary.dark, 0.8)})`,
                   boxShadow: `0 4px 14px ${alpha(
                     theme.palette.primary.main,
                     0.4
@@ -360,9 +428,9 @@ export default function AITraining() {
               color="text.secondary"
               sx={{ maxWidth: 700, mb: 2 }}
             >
-              Train your AI model with custom data to improve response accuracy and
-              personalization. Choose from multiple data sources and configure training
-              parameters to achieve optimal results.
+              Train your AI model with custom data to improve response accuracy
+              and personalization. Choose from multiple data sources and
+              configure training parameters to achieve optimal results.
             </Typography>
             <Box
               sx={{
@@ -489,7 +557,7 @@ export default function AITraining() {
                 justifyContent: "space-between",
                 alignItems: { xs: "stretch", sm: "center" },
                 gap: 2,
-                mt: 2
+                mt: 2,
               }}
             >
               {/* Left side - Back button */}
@@ -503,6 +571,7 @@ export default function AITraining() {
                       borderRadius: 2,
                       py: 1,
                       px: 3,
+                      display: { xs: "none", sm: "inline-flex" },
                     }}
                   >
                     Train New Model
@@ -526,14 +595,14 @@ export default function AITraining() {
                   )
                 )}
               </Box>
-            
+
               {/* Right side - Action buttons */}
               <Box
                 sx={{
                   display: "flex",
                   gap: 2,
                   justifyContent: { xs: "flex-end", sm: "flex-end" },
-                  width: { xs: "100%", sm: "auto" }
+                  width: { xs: "100%", sm: "auto" },
                 }}
               >
                 {activeStep === steps.length - 1 ? (
@@ -541,7 +610,7 @@ export default function AITraining() {
                     <Button
                       variant="contained"
                       endIcon={<RocketLaunchIcon />}
-                      onClick={handleStartUsingModel}
+                      onClick={handleReset}
                       sx={{
                         borderRadius: 2,
                         py: 1.2,
@@ -553,17 +622,25 @@ export default function AITraining() {
                         )}`,
                       }}
                     >
-                      Deploy Model
+                      Completed
                     </Button>
                   )
                 ) : (
                   <Button
                     variant="contained"
                     endIcon={
-                      activeStep === 2 ? <AutoFixHighIcon /> : <ArrowForwardIcon />
+                      activeStep === 2 ? (
+                        <AutoFixHighIcon />
+                      ) : (
+                        <ArrowForwardIcon />
+                      )
                     }
                     // Use different handler for step 2 (Start Training button)
-                    onClick={activeStep === 2 ? handleStartTrainingButtonClick : handleNext}
+                    onClick={
+                      activeStep === 2
+                        ? handleStartTrainingButtonClick
+                        : handleNext
+                    }
                     disabled={
                       (activeStep === 0 && selectedSources.length === 0) ||
                       (activeStep === 1 && !dataPreviewReady)
@@ -648,7 +725,8 @@ export default function AITraining() {
                       Quality Over Quantity
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Focus on high-quality, relevant data rather than large volumes of generic content.
+                      Focus on high-quality, relevant data rather than large
+                      volumes of generic content.
                     </Typography>
                   </Box>
                 </Box>
@@ -677,7 +755,8 @@ export default function AITraining() {
                       Diverse Examples
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Include varied communication styles and scenarios in your training data.
+                      Include varied communication styles and scenarios in your
+                      training data.
                     </Typography>
                   </Box>
                 </Box>
@@ -706,7 +785,8 @@ export default function AITraining() {
                       Regular Retraining
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Update your model periodically with new data to maintain relevance and accuracy.
+                      Update your model periodically with new data to maintain
+                      relevance and accuracy.
                     </Typography>
                   </Box>
                 </Box>
