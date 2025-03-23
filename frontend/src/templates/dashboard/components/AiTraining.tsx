@@ -103,6 +103,7 @@ const StepContentWrapper = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(3),
   marginBottom: theme.spacing(4),
   boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+  padding: theme.spacing(3),
 }));
 
 // Training steps
