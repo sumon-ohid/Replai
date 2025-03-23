@@ -79,57 +79,83 @@ router.get("/get-text", auth, async (req, res) => {
 // Upload file
 router.post("/upload-file", auth, upload.single("file"), async (req, res) => {
   const userId = req.user._id;
-  const filePath = req.file.path;
-
+  
   // if no file uploaded
   if (!req.file) {
     return res.status(400).json({ message: "File must be provided" });
   }
+  
+  const filePath = req.file.path;
 
   // if not pdf file
   if (req.file.mimetype !== "application/pdf") {
+    // Clean up the uploaded file
+    fs.unlinkSync(filePath);
     return res.status(400).json({ message: "File must be a PDF" });
   }
 
   // if size is greater than 4MB
   if (req.file.size > 4 * 1024 * 1024) {
+    // Clean up the uploaded file
+    fs.unlinkSync(filePath);
     return res.status(400).json({ message: "File must be smaller than 4MB" });
   }
 
   try {
     const user = await User.findById(userId);
     if (!user) {
+      // Clean up the uploaded file
+      fs.unlinkSync(filePath);
       return res.status(404).json({ message: "User not found" });
     }
 
-    const data = await extractTextFromPDF(filePath);
-    const text = data;
+    // Extract text from PDF
+    const text = await extractTextFromPDF(filePath);
+    
+    // Calculate character count
+    const charCount = text ? text.length : 0;
+    
+    // Keep track of initial character count for response
+    const initialCharCount = charCount;
 
+    // Look for existing file data for this user
     const existingFileData = await TextData.findOne({ userId });
 
     if (existingFileData) {
+      // Update existing record
       existingFileData.fileData = text;
       await existingFileData.save();
-      fs.unlinkSync(filePath);
-      return res
-        .status(201)
-        .json({ message: "File uploaded and data saved successfully" });
+    } else {
+      // Create new record
+      const newFileData = new TextData({
+        userId,
+        fileData: text,
+      });
+      await newFileData.save();
     }
-
-    const newFileData = new TextData({
-      userId,
-      fileData: text,
-    });
-
-    await newFileData.save();
-
+    
+    // Clean up the uploaded file
     fs.unlinkSync(filePath);
 
-    res
-      .status(201)
-      .json({ message: "File uploaded and data saved successfully" });
+    // Always return the character count in the response
+    return res.status(201).json({ 
+      message: "File uploaded and data saved successfully", 
+      totalCharCount: initialCharCount,
+      fileName: req.file.originalname
+    });
+    
   } catch (error) {
     console.error("Error uploading file:", error);
+    
+    // Try to clean up the file if it exists
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (cleanupError) {
+      console.error("Error cleaning up file:", cleanupError);
+    }
+    
     res.status(500).json({ message: "Error uploading file" });
   }
 });
