@@ -156,14 +156,14 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
   });
 
   const showAlert = (
-    type: "text" | "file" | "website",
+    type: "text" | "pdf" | "website",
     alertType: "success" | "error",
     message: string
   ) => {
     const setAlertFunc =
       type === "text"
         ? setTextAlert
-        : type === "file"
+        : type === "pdf"
         ? setFileAlert
         : setUrlAlert;
 
@@ -193,12 +193,12 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
 
       // Check if file is PDF and under 4MB
       if (file.type !== "application/pdf") {
-        showAlert("file", "error", "Only PDF files are supported.");
+        showAlert("pdf", "error", "Only PDF files are supported.");
         return;
       }
 
       if (file.size > 4 * 1024 * 1024) {
-        showAlert("file", "error", "File size must be less than 4MB.");
+        showAlert("pdf", "error", "File size must be less than 4MB.");
         return;
       }
 
@@ -244,7 +244,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
 
   const handleUploadFile = async () => {
     if (!selectedFile) {
-      showAlert("file", "error", "Please select a file to upload.");
+      showAlert("pdf", "error", "Please select a file to upload.");
       return;
     }
 
@@ -257,7 +257,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        showAlert("file", "error", "Authentication token not found.");
+        showAlert("pdf", "error", "Authentication token not found.");
         return;
       }
       const response = await axios.post(
@@ -280,7 +280,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
 
         // Show success message with character count
         showAlert(
-          "file",
+          "pdf",
           "success",
           `File uploaded successfully! ${
             totalCharCount?.toLocaleString() || 0
@@ -292,7 +292,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
     } catch (error) {
       console.error("Error uploading file:", error);
       showAlert(
-        "file",
+        "pdf",
         "error",
         "Failed to upload file. Please check file format and size."
       );

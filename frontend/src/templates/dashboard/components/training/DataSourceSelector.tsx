@@ -158,7 +158,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
                       sx={{
                         width: 48,
                         height: 48,
-                        borderRadius: "50%",
+                        borderRadius: 10,
                         backgroundColor: alpha(theme.palette.primary.main, 0.1),
                         display: "flex",
                         alignItems: "center",
