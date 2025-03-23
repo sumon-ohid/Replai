@@ -490,6 +490,7 @@ Response Guidelines:
 15. Always add a newline before signature and Best regards
 16. Never include [ e.g.,] in the response, if something is not clear, skip it.
 17. If asked for Time, Date, appointment, write that you will write get back in few hours with confirmation.
+18. Remember: Only generate a response for the body section of the email like a real human would do.
 
 Please generate a response:`;
     
