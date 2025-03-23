@@ -18,7 +18,7 @@ if (!process.env.GENERATIVE_AI_API_KEY) {
 
 // Initialize AI model
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 /**
  * Process email content to extract useful information
@@ -461,7 +461,7 @@ Key Phrases: ${(trainAI.keyPhrases || []).join(', ')}
 
     // Get custom prompt if available, enhanced with training data
     const customPrompt = textData 
-      ? (textData.text + (textData.fileData || '') + '\n' + trainingContext)
+      ? (textData.text + (textData.fileData || '') + '\n') // + trainingContext + (textData.webData || '') 
       : '';
     
     // Enhanced default prompt with more context
@@ -493,7 +493,7 @@ Response Guidelines:
 
 Please generate a response:`;
     
-    const prompt = defaultPrompt; // customPrompt + defaultPrompt;
+    const prompt = customPrompt + defaultPrompt;
     
     // Handle large prompts by breaking into chunks if needed
     const maxChunkSize = 4096;
@@ -506,6 +506,10 @@ Please generate a response:`;
       // Process each chunk and combine responses
       for (const chunk of chunks) {
         const chunkRes = await model.generateContent(chunk);
+        
+        // add a delay to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         finalResponse += chunkRes.response.text() + ' ';
       }
     } else {
