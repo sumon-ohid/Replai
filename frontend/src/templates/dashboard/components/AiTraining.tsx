@@ -30,6 +30,8 @@ import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ReplayIcon from "@mui/icons-material/Replay";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 // Components
 import { DataSourceSelector } from "./training/DataSourceSelector";
@@ -104,6 +106,11 @@ const StepContentWrapper = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(4),
   boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
   padding: theme.spacing(3),
+  alignContent: "center",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  gap: theme.spacing(2),
 }));
 
 // Training steps
@@ -482,10 +489,11 @@ export default function AITraining() {
                 justifyContent: "space-between",
                 alignItems: { xs: "stretch", sm: "center" },
                 gap: 2,
-                flexWrap: { xs: "wrap", sm: "nowrap" },
+                mt: 2
               }}
             >
-              <Box sx={{ order: { xs: 2, sm: 1 } }}>
+              {/* Left side - Back button */}
+              <Box>
                 {activeStep === steps.length - 1 && trainingComplete ? (
                   <Button
                     variant="outlined"
@@ -504,12 +512,13 @@ export default function AITraining() {
                     <Button
                       onClick={handleBack}
                       variant="outlined"
+                      startIcon={<ArrowBackIcon />}
                       sx={{
                         borderRadius: 2,
                         py: 1,
                         px: 3,
                       }}
-                      // Fix 4: Disable back button during training
+                      // Disable back button during training
                       disabled={activeStep === 3 && !trainingComplete}
                     >
                       Back
@@ -517,15 +526,14 @@ export default function AITraining() {
                   )
                 )}
               </Box>
-
+            
+              {/* Right side - Action buttons */}
               <Box
                 sx={{
                   display: "flex",
                   gap: 2,
-                  order: { xs: 1, sm: 2 },
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: { xs: "flex-end", sm: "flex-end" },
+                  width: { xs: "100%", sm: "auto" }
                 }}
               >
                 {activeStep === steps.length - 1 ? (
@@ -552,9 +560,9 @@ export default function AITraining() {
                   <Button
                     variant="contained"
                     endIcon={
-                      activeStep === 2 ? <AutoFixHighIcon /> : <CheckCircleIcon />
+                      activeStep === 2 ? <AutoFixHighIcon /> : <ArrowForwardIcon />
                     }
-                    // Fix 5: Use different handler for step 2 (Start Training button)
+                    // Use different handler for step 2 (Start Training button)
                     onClick={activeStep === 2 ? handleStartTrainingButtonClick : handleNext}
                     disabled={
                       (activeStep === 0 && selectedSources.length === 0) ||

@@ -801,13 +801,15 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                 sx={{
                   p: 2,
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: isMobile ? "center" : "space-between",
                   alignItems: "center",
                   bgcolor: alpha(theme.palette.background.default, 0.4),
+                  flexDirection: isMobile ? "column" : "row",
+                  gap: 2
                 }}
               >
                 <Typography variant="caption" color="text.secondary">
-                  Only crawls publicly accessible content
+                  Note: Only crawls publicly accessible content
                 </Typography>
                 <Button
                   variant="contained"
