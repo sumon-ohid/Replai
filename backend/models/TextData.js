@@ -12,12 +12,20 @@ const textDataSchema = new mongoose.Schema({
   fileData: {
     type: String,
   },
+  webData: {
+    type: String,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
 const TextData = mongoose.model('TextData', textDataSchema);
 
 export default TextData;
+

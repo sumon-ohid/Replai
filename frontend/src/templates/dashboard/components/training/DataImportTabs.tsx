@@ -130,7 +130,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
   const [value, setValue] = React.useState(0);
   const [textData, setTextData] = React.useState("");
   const [textAlert, setTextAlert] = React.useState<{
-    type: "success" | "error" | "";
+    type: "success" | "error" | "info" | "";
     message: string;
   }>({ type: "", message: "" });
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
@@ -140,12 +140,12 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
   }>({ type: "", message: "" });
   const [url, setUrl] = React.useState("");
   const [urlAlert, setUrlAlert] = React.useState<{
-    type: "success" | "error" | "";
+    type: "success" | "error" | "info" | "";
     message: string;
   }>({ type: "", message: "" });
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [analyzedUrls, setAnalyzedUrls] = React.useState<
-    { url: string; charCount: number }[]
+    { url: string; charCount: number; title?: string }[]
   >([]);
 
   // Track data readiness for each tab
@@ -301,6 +301,10 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
     }
   };
 
+  const [contentPreview, setContentPreview] = React.useState<string>("");
+  const [isPreviewVisible, setIsPreviewVisible] =
+    React.useState<boolean>(false);
+
   const handleAnalyzeUrl = async () => {
     if (!url) {
       showAlert("website", "error", "Please enter a URL.");
@@ -311,10 +315,19 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
     try {
       new URL(url);
     } catch (error) {
-      showAlert("website", "error", "Please enter a valid URL.");
+      showAlert(
+        "website",
+        "error",
+        "Please enter a valid URL including http:// or https://"
+      );
       return;
     }
 
+    // Reset any previous preview
+    setContentPreview("");
+    setIsPreviewVisible(false);
+
+    // Set analyzing state to show loading indicator
     setIsAnalyzing(true);
 
     try {
@@ -325,33 +338,86 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
         return;
       }
 
+      // Show a loading alert
+      setUrlAlert({
+        type: "info",
+        message: "Analyzing and extracting content from website...",
+      });
+
       const response = await axios.post(
         `${apiBaseUrl}/api/data/analyze-url`,
         { url },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          // Add timeout to prevent infinite loading on slow sites
+          timeout: 30000,
+        }
       );
 
       if (response.status === 200) {
-        const { charCount } = response.data as { charCount: number };
-        setAnalyzedUrls((prev) => [...prev, { url, charCount }]);
+        // Extract data from response
+        const { charCount, contentPreview: preview, title } = response.data as { charCount: number; contentPreview: string; title: string };
+
+        // Save the analyzed URL with comprehensive data
+        setAnalyzedUrls((prev) => [
+          ...prev,
+          {
+            url,
+            charCount: charCount || 0,
+            title:
+              title || url.replace(/^https?:\/\//, "").replace(/^www\./, ""),
+          },
+        ]);
+
+        // Set preview content if available
+        if (preview) {
+          setContentPreview(preview);
+          setIsPreviewVisible(true);
+        }
+
+        // Clear the URL input field for next entry
         setUrl("");
+
+        // Show success message with character count
         showAlert(
           "website",
           "success",
-          `Website analyzed successfully! ${charCount.toLocaleString()} characters extracted.`
+          `Website analyzed successfully! ${
+            charCount?.toLocaleString() || 0
+          } characters extracted.`
         );
 
-        // Update readiness
+        // Update readiness state
         setReadiness((prev) => ({ ...prev, website: true }));
         onDataPreviewReady();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing URL:", error);
-      showAlert(
-        "website",
-        "error",
-        "Failed to analyze website. Please check the URL or try again later."
-      );
+
+      // Provide more specific error messages based on the error type
+      let errorMessage =
+        "Failed to analyze website. Please check the URL or try again later.";
+
+      if (error.response) {
+        // Server responded with an error status
+        if (error.response.status === 404) {
+          errorMessage =
+            "The website could not be found. Please check the URL.";
+        } else if (error.response.status === 403) {
+          errorMessage =
+            "Access to this website is forbidden. Try a different URL.";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.code === "ECONNABORTED") {
+        errorMessage =
+          "Connection timed out. The website may be too large or slow to respond.";
+      } else if (!navigator.onLine) {
+        errorMessage =
+          "You appear to be offline. Please check your internet connection.";
+      }
+
+      showAlert("website", "error", errorMessage);
     } finally {
       setIsAnalyzing(false);
     }
@@ -1030,6 +1096,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                         alignItems: "center",
                         gap: 2,
                         overflow: "hidden",
+                        width: "100%",
                       }}
                     >
                       <Box
@@ -1041,24 +1108,50 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          flexShrink: 0,
                         }}
                       >
                         <LanguageIcon color="primary" />
                       </Box>
-                      <Box sx={{ overflow: "hidden" }}>
+                      <Box sx={{ overflow: "hidden", flexGrow: 1 }}>
                         <Typography
                           variant="body2"
-                          fontWeight={500}
-                          noWrap
+                          fontWeight={600}
                           sx={{
-                            maxWidth: { xs: 160, sm: 200, md: 320, lg: 400 },
+                            maxWidth: { xs: 160, sm: 200, md: "100%" },
+                            wordBreak: "break-word",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {item.title || item.url}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            display: "block",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: { xs: 160, sm: 300, md: "100%" },
                           }}
                         >
                           {item.url}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.charCount.toLocaleString()} characters extracted
-                        </Typography>
+                        <Chip
+                          label={`${item.charCount.toLocaleString()} characters`}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            mt: 0.5,
+                            height: 22,
+                            fontSize: "0.7rem",
+                            borderRadius: 1,
+                          }}
+                        />
                       </Box>
                     </Box>
 
@@ -1067,6 +1160,8 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                       color="error"
                       onClick={() => handleDeleteUrl(item.url)}
                       sx={{
+                        flexShrink: 0,
+                        ml: 1,
                         "&:hover": {
                           bgcolor: alpha(theme.palette.error.main, 0.1),
                         },
@@ -1077,6 +1172,87 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                   </Card>
                 ))}
               </Box>
+            </Box>
+          )}
+
+          {/* url data preview */}
+          {isPreviewVisible && contentPreview && (
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              sx={{
+                mt: 3,
+                mb: 3,
+                overflow: "hidden",
+              }}
+            >
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.03),
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    color="primary.main"
+                  >
+                    Content Preview
+                  </Typography>
+                  <Chip
+                    label="Latest Extraction"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    maxHeight: 200,
+                    overflow: "auto",
+                    p: 2,
+                    borderRadius: 1,
+                    backgroundColor: alpha(theme.palette.background.paper, 0.5),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                    fontSize: "0.85rem",
+                    fontFamily: "monospace",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    "&::-webkit-scrollbar": {
+                      width: "8px",
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                      borderRadius: "4px",
+                    },
+                  }}
+                >
+                  {contentPreview}
+                </Box>
+
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setIsPreviewVisible(false)}
+                  sx={{ mt: 2 }}
+                >
+                  Hide Preview
+                </Button>
+              </Paper>
             </Box>
           )}
 
