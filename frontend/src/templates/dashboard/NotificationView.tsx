@@ -742,8 +742,8 @@ const clearAllNotifications = async () => {
                   direction={{ xs: 'column', sm: 'row' }} 
                   spacing={2} 
                   sx={{ 
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    mb: 2 
+                    alignItems: { xs: 'center', sm: 'center' },
+                    mb: 2,
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
