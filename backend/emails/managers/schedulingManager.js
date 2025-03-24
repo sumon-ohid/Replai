@@ -12,6 +12,7 @@ import {
 import mongoose from "mongoose";
 import ConnectedEmail from "../../models/ConnectedEmail.js";
 import getConnectedEmailModels from "../../models/ConnectedEmailModels.js";
+import NotificationManager from './notificationManager.js';
 
 /**
  * Mark emails as processed after handling them
@@ -365,6 +366,18 @@ export const manuallyMarkAsProcessed = async (
     };
   }
 };
+
+// Run daily cleanup of notifications
+setInterval(async () => {
+  try {
+    console.log('Running scheduled notification cleanup...');
+    await NotificationManager.cleanupAllNotifications();
+    console.log('Notification cleanup completed successfully');
+  } catch (error) {
+    console.error('Error during scheduled notification cleanup:', error);
+  }
+}, 24 * 60 * 60 * 1000); // 24 hours
+
 
 export default {
   scheduleEmailChecks,

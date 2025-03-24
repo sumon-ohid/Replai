@@ -1,5 +1,7 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { format, formatDistanceToNow } from 'date-fns';
 import { 
   AppBar, 
   Stack, 
@@ -17,7 +19,8 @@ import {
   InputBase,
   Button,
   Chip,
-  useMediaQuery
+  useMediaQuery,
+  CircularProgress
 } from '@mui/material';
 import { alpha, styled, useTheme } from '@mui/material/styles';
 
@@ -32,6 +35,9 @@ import NotificationImportantIcon from '@mui/icons-material/NotificationImportant
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded';
 import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
 // Components
 import NavbarBreadcrumbs from './NavbarBreadcrumbs';
@@ -39,6 +45,45 @@ import CustomDatePicker from './CustomDatePicker';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
 import { useAuth } from "../../../AuthContext";
 import { useNavigate } from 'react-router-dom';
+
+// Types for notifications
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'info' | 'success';
+  read: boolean;
+  email?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+interface NotificationStats {
+  total: number;
+  unread: number;
+  errors: number;
+  warnings: number;
+}
+
+// Styled components
+// const StyledAppBar = styled(AppBar)(({ theme }) => ({
+//   display: 'none',
+//   [theme.breakpoints.up('md')]: {
+//     display: 'flex',
+//   },
+//   position: 'sticky',
+//   top: 0,
+//   zIndex: theme.zIndex.drawer + 1,
+//   backgroundColor: "transparent",
+//   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+//   borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+//   transition: 'all 0.3s ease',
+//   backdropFilter: 'blur(10px)',
+//   '&:hover': {
+//     backgroundColor: alpha(theme.palette.background.paper, 0.8),
+//   },
+//   mb: 3,
+// }));
 
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -166,29 +211,115 @@ export default function Header() {
   const [searchActive, setSearchActive] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { user, logout } = useAuth();
-
   
-  // Sample notifications
-  const notifications = [
-    { 
-      id: 1, 
-      title: "Welcome to Replai",
-      message: "You have successfully signed up", 
-      time: "Just now", 
-      read: true,
-      type: "success"
-    },
-    { 
-      id: 2, 
-      title: "System update", 
-      message: "New features are available",
-      time: "Just now", 
-      read: true,
-      type: "info"
-    }
-  ];
+  // State for notifications
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationStats, setNotificationStats] = useState<NotificationStats>({
+    total: 0,
+    unread: 0,
+    errors: 0,
+    warnings: 0
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const unreadNotifications = notifications.filter(n => !n.read).length;
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      interface NotificationsResponse {
+        success: boolean;
+        data: Notification[];
+        stats: NotificationStats;
+      }
+
+      const response = await axios.get<NotificationsResponse>('/api/notifications', {
+        params: {
+          limit: 5,
+          skip: 0
+        }
+      });
+
+      if ((response.data as NotificationsResponse).success) {
+        setNotifications(response.data.data);
+        setNotificationStats(response.data.stats);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Load notifications when menu opens
+  useEffect(() => {
+    if (notificationsAnchor) {
+      fetchNotifications();
+    }
+  }, [notificationsAnchor, fetchNotifications]);
+
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await axios.post(`/api/notifications/mark-read/${notificationId}`);
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification._id === notificationId 
+            ? { ...notification, read: true } 
+            : notification
+        )
+      );
+      
+      // Update unread count
+      setNotificationStats(prev => ({
+        ...prev,
+        unread: Math.max(0, prev.unread - 1)
+      }));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+      await axios.post('/api/notifications/mark-all-read');
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, read: true }))
+      );
+      
+      // Update stats
+      setNotificationStats(prev => ({
+        ...prev,
+        unread: 0
+      }));
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
+  // Format the notification time
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    // If less than 24 hours ago, show relative time
+    if (now.getTime() - date.getTime() < 24 * 60 * 60 * 1000) {
+      return formatDistanceToNow(date, { addSuffix: true });
+    }
+    
+    // Otherwise show the date
+    return format(date, 'MMM d, yyyy');
+  };
   
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
@@ -215,6 +346,37 @@ export default function Header() {
   };
 
   const navigate = useNavigate();
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'error':
+        return <ErrorIcon fontSize="small" sx={{ color: theme.palette.error.main }} />;
+      case 'warning':
+        return <WarningAmberRoundedIcon fontSize="small" sx={{ color: theme.palette.warning.main }} />;
+      case 'success':
+        return <CheckCircleIcon fontSize="small" sx={{ color: theme.palette.success.main }} />;
+      case 'info':
+      default:
+        return <InfoIcon fontSize="small" sx={{ color: theme.palette.info.main }} />;
+    }
+  };
+  
+  // Fetch unread count for badge on mount
+  useEffect(() => {
+    if (user) {
+      // Just fetch stats for the badge, not full notifications
+      axios.get<{ success: boolean; stats: NotificationStats }>('/api/notifications', { params: { limit: 1 } })
+        .then(response => {
+          if (response.data.success) {
+            setNotificationStats(response.data.stats);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch notification stats:', err);
+        });
+    }
+  }, [user]);
   
   return (
     <StyledAppBar elevation={0}>
@@ -239,21 +401,6 @@ export default function Header() {
             </IconButton>
           )}
           
-          {/* Logo */}
-          {/* <Box
-            component={motion.img}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            src={logo}
-            alt="Replai"
-            sx={{ 
-              height: 28,
-              filter: theme.palette.mode === 'dark' ? 'brightness(1.2)' : 'none',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          /> */}
-          
           {/* Breadcrumbs navigation */}
           {!isMobile && (
             <Box ml={2} sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -267,72 +414,26 @@ export default function Header() {
           spacing={{ xs: 0.5, md: 1.5 }}
           alignItems="center"
         >
-          {/* Search */}
-          {/* {!isMobile ? (
-            <Search>
-              <SearchIconWrapper>
-                <SearchRoundedIcon fontSize="small" />
-              </SearchIconWrapper>
-              <StyledInputBase
-                placeholder="Search…"
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
-          ) : searchActive ? (
-            <Box 
-              sx={{ 
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                height: '100%',
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: theme.palette.background.paper,
-                px: 2
-              }}
-            >
-              <IconButton onClick={toggleSearch} sx={{ mr: 1 }}>
-                <CloseRounded fontSize="small" />
-              </IconButton>
-              <StyledInputBase
-                autoFocus
-                fullWidth
-                placeholder="Search…"
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Box>
-          ) : (
-            <HeaderButton 
-              aria-label="search" 
-              onClick={toggleSearch}
-              sx={{ display: { xs: 'flex', md: 'none' } }}
-            >
-              <SearchRoundedIcon fontSize="small" />
-            </HeaderButton>
-          )} */}
-          
           {/* Date Picker */}
           {!isMobile && <CustomDatePicker />}
           
           {/* Notifications */}
           <Tooltip title="Notifications">
-            <HeaderButton 
+            <IconButton 
               aria-label="notifications" 
               onClick={handleOpenNotifications}
             >
-              <Badge badgeContent={unreadNotifications} color="error">
+              <Badge badgeContent={notificationStats.unread} color="error">
                 <NotificationsRoundedIcon fontSize="small" />
               </Badge>
-            </HeaderButton>
+            </IconButton>
           </Tooltip>
           
           {/* Theme toggle */}
           <ColorModeIconDropdown />
           
           {/* User profile */}
-          <UserChip
+          <Button
             onClick={handleOpenUserMenu}
             endIcon={<KeyboardArrowDownIcon fontSize="small" />}
             variant="outlined"
@@ -348,11 +449,11 @@ export default function Header() {
                 {user?.name.split(' ')[0]}
               </Typography>
             )}
-          </UserChip>
+          </Button>
         </Stack>
       </Box>
       
-      {/* User profile menu */}
+      {/* User profile menu - keeping unchanged */}
       <Menu
         anchorEl={userMenuAnchor}
         id="user-menu"
@@ -445,7 +546,7 @@ export default function Header() {
         </MenuItem>
       </Menu>
       
-      {/* Notifications menu */}
+      {/* Notifications menu - Updated to use real notifications */}
       <Menu
         anchorEl={notificationsAnchor}
         id="notifications-menu"
@@ -471,7 +572,7 @@ export default function Header() {
             Notifications
           </Typography>
           <Chip 
-            label={`${unreadNotifications} new`} 
+            label={`${notificationStats.unread} new`} 
             size="small"
             color="primary"
             sx={{ height: 22, fontWeight: 500 }}
@@ -480,10 +581,35 @@ export default function Header() {
         
         <Divider />
         
-        {notifications.length > 0 ? (
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : error ? (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="error">
+              {error}
+            </Typography>
+            <Button 
+              size="small" 
+              onClick={fetchNotifications}
+              sx={{ mt: 1 }}
+            >
+              Retry
+            </Button>
+          </Box>
+        ) : notifications.length > 0 ? (
           <>
             {notifications.map((notification) => (
-              <NotificationItem key={notification.id}>
+              <NotificationItem 
+                key={notification._id}
+                onClick={() => markAsRead(notification._id)}
+                sx={{
+                  backgroundColor: !notification.read 
+                    ? alpha(theme.palette.primary.main, 0.05) 
+                    : 'transparent'
+                }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                   <Avatar 
                     sx={{ 
@@ -492,19 +618,21 @@ export default function Header() {
                       mr: 1.5, 
                       backgroundColor: notification.type === 'success' 
                         ? alpha(theme.palette.success.main, 0.1) 
-                        : notification.type === 'important' 
+                        : notification.type === 'error' 
                           ? alpha(theme.palette.error.main, 0.1) 
-                          : alpha(theme.palette.info.main, 0.1),
+                          : notification.type === 'warning'
+                            ? alpha(theme.palette.warning.main, 0.1)
+                            : alpha(theme.palette.info.main, 0.1),
                       color: notification.type === 'success' 
                         ? theme.palette.success.main
-                        : notification.type === 'important' 
+                        : notification.type === 'error' 
                           ? theme.palette.error.main 
-                          : theme.palette.info.main,
+                          : notification.type === 'warning'
+                            ? theme.palette.warning.main
+                            : theme.palette.info.main,
                     }}
                   >
-                    {notification.type === 'success' && <CheckCircleIcon />}
-                    {notification.type === 'important' && <NotificationImportantIcon />}
-                    {notification.type === 'info' && <EmailRoundedIcon />}
+                    {getNotificationIcon(notification.type)}
                   </Avatar>
                   <Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -526,23 +654,48 @@ export default function Header() {
                     <Typography variant="body2" color="text.secondary">
                       {notification.message}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {notification.time}
+                    {notification.email && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {notification.email}
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      {formatNotificationTime(notification.createdAt)}
                     </Typography>
                   </Box>
                 </Box>
               </NotificationItem>
             ))}
-            <Box sx={{ py: 1, textAlign: 'center' }}>
+            <Box sx={{ 
+              py: 1.5, 
+              px: 2, 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+            }}>
               <Button 
                 size="small" 
+                onClick={markAllAsRead}
+                sx={{ 
+                  textTransform: 'none', 
+                  fontWeight: 500
+                }}
+              >
+                Mark All as Read
+              </Button>
+              <Button 
+                size="small" 
+                onClick={() => {
+                  navigate('/notifications');
+                  handleCloseNotifications();
+                }}
                 sx={{ 
                   textTransform: 'none', 
                   fontWeight: 500, 
                   color: theme.palette.primary.main 
                 }}
               >
-                View All Notifications
+                View All
               </Button>
             </Box>
           </>

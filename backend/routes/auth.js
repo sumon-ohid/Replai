@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import auth from "../middleware/auth.js";
 import nodemailer from "nodemailer";
 import util from "util";
+import NotificationManager from '../emails/managers/notificationManager.js';
 
 dotenv.config();
 
@@ -156,6 +157,9 @@ router.get("/verify-email", async (req, res) => {
 
     user.isVerified = true;
     await user.save();
+
+    // create a notification 
+    NotificationManager.createNotification(user._id, "Welcome to Replai", "Your email has been verified successfully!");
 
     // res.status(200).json({ message: 'Email verified successfully!' });
     res.send(`
