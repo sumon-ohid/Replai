@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import NotificationManager from '../emails/managers/notificationManager.js';
 
 dotenv.config();
 
@@ -40,8 +41,11 @@ router.get('/google/callback', async (req, res) => {
     const { id, email, name, picture } = googleUser.data;
 
     let user = await User.findOne({ email });
+    let isNewUser = false;
+    
     if (!user) {
       // New user signup
+      isNewUser = true;
       user = new User({ 
         googleId: id, 
         email, 
@@ -86,11 +90,81 @@ router.get('/google/callback', async (req, res) => {
     
     await user.save();
 
+    // Create welcome notifications
+    try {
+      if (isNewUser) {
+        // Welcome notification for new users
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'success',
+          title: 'Welcome to Replai!',
+          message: `Hello ${name.split(' ')[0]}, welcome to Replai! We're excited to have you on board.`,
+          metadata: {
+            category: 'onboarding',
+            action: 'signup',
+            method: 'google',
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Getting started notification
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'info',
+          title: 'Getting Started',
+          message: 'Check out our quick start guide to learn how to make the most of Replai.',
+          metadata: {
+            category: 'onboarding',
+            action: 'guide',
+            url: '/guide/getting-started',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } else {
+        // Welcome back notification for returning users
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'info',
+          title: 'Welcome Back!',
+          message: `Great to see you again, ${name.split(' ')[0]}!`,
+          metadata: {
+            category: 'session',
+            action: 'login',
+            method: 'google',
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Check if it's been more than 7 days since last login
+        const lastLogin = user.lastLogin || user.createdAt;
+        const daysSinceLastLogin = Math.floor((Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastLogin > 7) {
+          // Send a "what's new" notification for users returning after a while
+          await NotificationManager.createNotification({
+            userId: user._id,
+            type: 'info',
+            title: "What's New",
+            message: "We've added some exciting new features since your last visit!",
+            metadata: {
+              category: 'product',
+              action: 'whats-new',
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      }
+    } catch (notifError) {
+      // Log notification error but don't fail the login process
+      console.error('Error creating welcome notification:', notifError);
+    }
+
     // Create JWT token
     const token = jwt.sign(
       { 
         userId: user._id,
-        email: user.email
+        email: user.email,
+        name: user.name
       }, 
       process.env.JWT_SECRET, 
       { expiresIn: '24h' }
