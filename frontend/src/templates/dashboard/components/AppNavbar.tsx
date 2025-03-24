@@ -47,6 +47,9 @@ import ColorModeIconDropdown from "../../shared-theme/ColorModeIconDropdown";
 import { useAuth } from "../../../AuthContext";
 import Logo from "../../../../logo/logo_light.png";
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+
 const Toolbar = styled(MuiToolbar)(({ theme }) => ({
   width: "100%",
   padding: theme.spacing(0.75, 2),
@@ -137,10 +140,18 @@ export default function AppNavbar() {
         stats: NotificationStats;
       }
 
-      const response = await axios.get<NotificationsResponse>('/api/notifications', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      const response = await axios.get<NotificationsResponse>(`${apiBaseUrl}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         params: {
-          limit: 10,
-          skip: 0
+          limit: 5
         }
       });
       
@@ -159,7 +170,19 @@ export default function AppNavbar() {
   // Mark a notification as read
   const markAsRead = async (notificationId: string) => {
     try {
-      await axios.post(`/api/notifications/mark-read/${notificationId}`);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      await axios.post(`${apiBaseUrl}/api/notifications/mark-read/${notificationId}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       
       // Update local state
       setNotifications(prevNotifications => 
@@ -183,7 +206,19 @@ export default function AppNavbar() {
   // Mark all notifications as read
   const markAllAsRead = async () => {
     try {
-      await axios.post('/api/notifications/mark-all-read');
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      await axios.post(`${apiBaseUrl}/api/notifications/mark-all-read` ,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       
       // Update local state
       setNotifications(prevNotifications => 

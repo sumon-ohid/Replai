@@ -20,9 +20,6 @@ router.get('/', auth, async (req, res) => {
       skip = 0
     } = req.query;
 
-    console.log("Testing notifications");
-    console.log("email: ", email);
-
     // Parse boolean from string query parameter
     const unreadOnlyBool = unreadOnly === 'true';
     
