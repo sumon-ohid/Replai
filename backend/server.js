@@ -28,6 +28,7 @@ import { requireAuth } from './emails/middleware/emailAuthMiddleware.js';
 import connectionController from './emails/routes/connectionRoutes.js';
 import emailExtraRoutes from './emails/routes/index.js';
 import { errorMiddleware } from './emails/utils/errorHandler.js';
+import notificationRoutes from './emails/routes/notificationRoutes.js';
 
 
 // Define __dirname
@@ -257,6 +258,7 @@ app.use("/api/emails/v2", emailRoutes);
 app.use("/api/emails/auth", emailAuthRoutes);
 app.use("/api/emails/stats", emailStatsRoutes);
 app.use("/api/emails/connection", connectionController);
+app.use("/api/notifications", notificationRoutes);
 
 // Extra email routes for additional features
 app.use("/api/emails/extras", emailExtraRoutes);

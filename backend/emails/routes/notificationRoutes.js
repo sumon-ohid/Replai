@@ -1,5 +1,5 @@
 import express from 'express';
-import { auth } from '../../middleware/auth.js';
+import auth from '../../middleware/auth.js';
 import NotificationManager from '../managers/notificationManager.js';
 
 const router = express.Router();
@@ -19,6 +19,9 @@ router.get('/', auth, async (req, res) => {
       limit = 50,
       skip = 0
     } = req.query;
+
+    console.log("Testing notifications");
+    console.log("email: ", email);
 
     // Parse boolean from string query parameter
     const unreadOnlyBool = unreadOnly === 'true';
