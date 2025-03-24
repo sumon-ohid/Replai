@@ -180,6 +180,9 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
               {alert.message}
             </Alert>
           )}
+           <Alert severity="info">
+            Please note that this application is still under developement. Do not share any sensitive information.
+          </Alert>
           <Box
             component="form"
             onSubmit={handleSubmit}
