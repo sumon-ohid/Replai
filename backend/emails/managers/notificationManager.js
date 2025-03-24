@@ -2,13 +2,8 @@ import mongoose from 'mongoose';
 import ConnectedEmail from '../../models/ConnectedEmail.js';
 import { getMonitoringConfig } from '../config/emailConfig.js';
 
-// Define notification schema
-const notificationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User'
-  },
+// Base notification schema - template for user-specific schemas
+const baseNotificationSchema = {
   type: {
     type: String,
     enum: ['error', 'warning', 'info', 'success'],
@@ -33,14 +28,48 @@ const notificationSchema = new mongoose.Schema({
     default: Date.now,
     expires: '30d' // TTL index for automatic cleanup
   }
-});
+};
 
-// Create model if it doesn't exist
-const Notification = mongoose.models.Notification || 
-  mongoose.model('Notification', notificationSchema);
+// Cache for user-specific notification models
+const userNotificationModels = new Map();
 
 class NotificationManager {
-  /**
+    /**
+   * Get or create user-specific notification model
+   * @param {string} userId - The user ID
+   * @returns {mongoose.Model} - The notification model for this user
+   */
+  static getUserNotificationModel(userId) {
+    // Ensure userId is a string, not an object
+    const userIdStr = typeof userId === 'object' ? 
+      (userId._id ? userId._id.toString() : 'unknown') : 
+      String(userId);
+    
+    // Check if model already exists in cache
+    if (userNotificationModels.has(userIdStr)) {
+      return userNotificationModels.get(userIdStr);
+    }
+  
+    // Create collection name with user ID
+    const collectionName = `notifications_${userIdStr}`;
+    
+    // Create schema with all the base properties
+    const notificationSchema = new mongoose.Schema(baseNotificationSchema);
+    
+    // Create the model
+    const NotificationModel = mongoose.model(
+      collectionName, 
+      notificationSchema,
+      collectionName // Explicitly set collection name to ensure it's created correctly
+    );
+    
+    // Cache the model
+    userNotificationModels.set(userIdStr, NotificationModel);
+    
+    return NotificationModel;
+  }
+
+   /**
    * Create a new notification
    */
   static async createNotification({
@@ -52,20 +81,32 @@ class NotificationManager {
     metadata = {}
   }) {
     try {
-      const notification = await Notification.create({
-        userId,
+      // Ensure userId is a valid string
+      if (!userId || (typeof userId === 'object' && !userId._id)) {
+        console.error('Invalid userId provided to createNotification:', userId);
+        return null;
+      }
+      
+      // Extract ID string if userId is an object
+      const userIdStr = typeof userId === 'object' ? userId._id.toString() : String(userId);
+      
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userIdStr);
+      
+      // Create notification in user-specific collection
+      const notification = await UserNotification.create({
         type,
         title,
         message,
         email,
         metadata
       });
-
+  
       // If critical error, trigger alerts
       if (type === 'error') {
-        await this.handleCriticalError(notification);
+        await this.handleCriticalError(notification, userIdStr, email);
       }
-
+  
       return notification;
     } catch (error) {
       console.error('Failed to create notification:', error);
@@ -86,13 +127,16 @@ class NotificationManager {
     } = options;
 
     try {
-      const query = { userId };
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
+      const query = {};
       
       if (email) query.email = email;
       if (type) query.type = type;
       if (unreadOnly) query.read = false;
 
-      const notifications = await Notification.find(query)
+      const notifications = await UserNotification.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
@@ -109,8 +153,11 @@ class NotificationManager {
    */
   static async markNotificationAsRead(userId, notificationId) {
     try {
-      await Notification.findOneAndUpdate(
-        { _id: notificationId, userId },
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
+      await UserNotification.findOneAndUpdate(
+        { _id: notificationId },
         { $set: { read: true } }
       );
       return true;
@@ -125,10 +172,13 @@ class NotificationManager {
    */
   static async markAllNotificationsAsRead(userId, email = null) {
     try {
-      const query = { userId };
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
+      const query = {};
       if (email) query.email = email;
 
-      await Notification.updateMany(
+      await UserNotification.updateMany(
         query,
         { $set: { read: true } }
       );
@@ -144,7 +194,10 @@ class NotificationManager {
    */
   static async clearAllNotifications(userId) {
     try {
-      await Notification.deleteMany({ userId });
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
+      await UserNotification.deleteMany({});
       return true;
     } catch (error) {
       console.error('Failed to clear notifications:', error);
@@ -155,14 +208,14 @@ class NotificationManager {
   /**
    * Handle critical error notifications
    */
-  static async handleCriticalError(notification) {
+  static async handleCriticalError(notification, userId, email) {
     try {
       const config = getMonitoringConfig();
       
       // Update account status if email-related
-      if (notification.email) {
+      if (email) {
         await ConnectedEmail.findOneAndUpdate(
-          { email: notification.email },
+          { email, userId },
           { 
             $set: { status: 'error' },
             $inc: { 'stats.errorCount': 1 }
@@ -177,6 +230,7 @@ class NotificationManager {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'email_system_error',
+            userId,
             notification
           })
         });
@@ -184,6 +238,7 @@ class NotificationManager {
 
       // Log to monitoring system
       console.error('Critical Error:', {
+        userId,
         title: notification.title,
         message: notification.message,
         metadata: notification.metadata
@@ -201,7 +256,10 @@ class NotificationManager {
    */
   static async getNotificationStats(userId, email = null) {
     try {
-      const query = { userId };
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
+      const query = {};
       if (email) query.email = email;
 
       const [
@@ -210,10 +268,10 @@ class NotificationManager {
         errors,
         warnings
       ] = await Promise.all([
-        Notification.countDocuments(query),
-        Notification.countDocuments({ ...query, read: false }),
-        Notification.countDocuments({ ...query, type: 'error' }),
-        Notification.countDocuments({ ...query, type: 'warning' })
+        UserNotification.countDocuments(query),
+        UserNotification.countDocuments({ ...query, read: false }),
+        UserNotification.countDocuments({ ...query, type: 'error' }),
+        UserNotification.countDocuments({ ...query, type: 'warning' })
       ]);
 
       return {
@@ -234,20 +292,51 @@ class NotificationManager {
   }
 
   /**
-   * Clean up old notifications
+   * Clean up old notifications for all users
+   * This should be run as a periodic cleanup task
    */
-  static async cleanupNotifications() {
+  static async cleanupAllNotifications() {
     try {
+      // Get all collections that start with "notifications_"
+      const collections = await mongoose.connection.db
+        .listCollections({ name: /^notifications_/ })
+        .toArray();
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      // Delete old notifications from each collection
+      for (const collection of collections) {
+        await mongoose.connection.db
+          .collection(collection.name)
+          .deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to cleanup old notifications:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Clean up notifications for a specific user
+   */
+  static async cleanupUserNotifications(userId) {
+    try {
+      // Get the user-specific notification model
+      const UserNotification = this.getUserNotificationModel(userId);
+      
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      await Notification.deleteMany({
+      await UserNotification.deleteMany({
         createdAt: { $lt: thirtyDaysAgo }
       });
 
       return true;
     } catch (error) {
-      console.error('Failed to cleanup notifications:', error);
+      console.error(`Failed to cleanup notifications for user ${userId}:`, error);
       return false;
     }
   }
@@ -264,26 +353,34 @@ class NotificationManager {
  * @returns {Promise<Object|null>} The created notification or null on failure
  */
 export const notifyConnectionStatus = async (params) => {
-  const { userId, email, status, message, metadata = {} } = params;
-  
-  // Map status to notification type
-  let type = 'info';
-  let title = 'Email Connection Update';
-  
-  if (status === 'error') {
-    type = 'error';
-    title = 'Email Connection Error';
-  } else if (status === 'warning') {
-    type = 'warning';
-    title = 'Email Connection Warning';
-  } else if (status === 'active') {
-    type = 'success';
-    title = 'Email Connection Established';
-  }
-  
   try {
+    const { userId, email, status, message, metadata = {} } = params;
+    
+    // Safety check - ensure valid userId
+    if (!userId) {
+      console.error('Invalid userId provided to notifyConnectionStatus');
+      return null;
+    }
+    
+    // Map status to notification type
+    let type = 'info';
+    let title = 'Email Connection Update';
+    
+    if (status === 'error') {
+      type = 'error';
+      title = 'Email Connection Error';
+    } else if (status === 'warning') {
+      type = 'warning';
+      title = 'Email Connection Warning';
+    } else if (status === 'active') {
+      type = 'success';
+      title = 'Email Connection Established';
+    }
+    
+    const userIdStr = typeof userId === 'object' ? userId._id.toString() : String(userId);
+    
     const notification = await NotificationManager.createNotification({
-      userId,
+      userId: userIdStr,
       type,
       title,
       message,
@@ -299,7 +396,7 @@ export const notifyConnectionStatus = async (params) => {
     if (status === 'error' || status === 'active') {
       try {
         await ConnectedEmail.findOneAndUpdate(
-          { email },
+          { email, userId: userIdStr },
           { $set: { status } }
         );
       } catch (dbError) {

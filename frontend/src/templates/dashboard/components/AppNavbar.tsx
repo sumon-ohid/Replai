@@ -17,6 +17,9 @@ import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import CircularProgress from "@mui/material/CircularProgress";
+import axios from "axios";
+import { format, formatDistanceToNow } from "date-fns";
 
 // Icons
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
@@ -30,8 +33,12 @@ import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import CalendarTodayRoundedIcon from '@mui/icons-material/CalendarTodayRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
 
 // Components
 import SideMenuMobile from "./SideMenuMobile";
@@ -39,6 +46,9 @@ import MenuButton from "./MenuButton";
 import ColorModeIconDropdown from "../../shared-theme/ColorModeIconDropdown";
 import { useAuth } from "../../../AuthContext";
 import Logo from "../../../../logo/logo_light.png";
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 
 const Toolbar = styled(MuiToolbar)(({ theme }) => ({
   width: "100%",
@@ -80,24 +90,164 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 // Define notification types for better type safety
 interface Notification {
-  id: string;
+  _id: string;
   title: string;
   message: string;
-  time: string;
+  type: 'error' | 'warning' | 'info' | 'success';
   read: boolean;
-  type: "email" | "alert" | "warning" | "success";
+  email?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+interface NotificationStats {
+  total: number;
+  unread: number;
+  errors: number;
+  warnings: number;
 }
 
 export default function AppNavbar() {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [notificationsAnchor, setNotificationsAnchor] =
-    React.useState<null | HTMLElement>(null);
-  const [userMenuAnchor, setUserMenuAnchor] =
-    React.useState<null | HTMLElement>(null);
+  const [notificationsAnchor, setNotificationsAnchor] = React.useState<null | HTMLElement>(null);
+  const [userMenuAnchor, setUserMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [notificationStats, setNotificationStats] = React.useState<NotificationStats>({
+    total: 0,
+    unread: 0,
+    errors: 0,
+    warnings: 0
+  });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  
   const theme = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch notifications when notification menu opens
+  const fetchNotifications = React.useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      interface NotificationsResponse {
+        success: boolean;
+        data: Notification[];
+        stats: NotificationStats;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      const response = await axios.get<NotificationsResponse>(`${apiBaseUrl}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        params: {
+          limit: 5
+        }
+      });
+      
+      if (response.data.success) {
+        setNotifications(response.data.data);
+        setNotificationStats(response.data.stats);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Mark a notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      await axios.post(`${apiBaseUrl}/api/notifications/mark-read/${notificationId}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification._id === notificationId 
+            ? { ...notification, read: true } 
+            : notification
+        )
+      );
+      
+      // Update unread count
+      setNotificationStats(prev => ({
+        ...prev,
+        unread: Math.max(0, prev.unread - 1)
+      }));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found');
+        return;
+      }
+
+      await axios.post(`${apiBaseUrl}/api/notifications/mark-all-read` ,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, read: true }))
+      );
+      
+      // Update unread count
+      setNotificationStats(prev => ({
+        ...prev,
+        unread: 0
+      }));
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
+  // Format the notification time
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    // If less than 24 hours ago, show relative time
+    if (now.getTime() - date.getTime() < 24 * 60 * 60 * 1000) {
+      return formatDistanceToNow(date, { addSuffix: true });
+    }
+    
+    // Otherwise show the date
+    return format(date, 'MMM d, yyyy');
+  };
 
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
@@ -105,6 +255,7 @@ export default function AppNavbar() {
 
   const handleNotificationsOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationsAnchor(event.currentTarget);
+    fetchNotifications();
   };
 
   const handleNotificationsClose = () => {
@@ -129,40 +280,30 @@ export default function AppNavbar() {
     handleUserMenuClose();
   };
 
-   // Sample notifications
-   const notifications = [
-    {
-      id: 1,
-      title: "Welcome to Replai",
-      message: "You have successfully signed up",
-      time: "Just now",
-      read: true,
-      type: "success",
-    },
-    {
-      id: 2,
-      title: "System update",
-      message: "New features are available",
-      time: "Just now",
-      read: true,
-      type: "info",
-    },
-  ];
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Refresh notifications periodically when user is active
+  React.useEffect(() => {
+    if (!user) return;
+    
+    // Initial fetch
+    fetchNotifications();
+    
+    // Set up refresh interval (every 30 seconds)
+    const intervalId = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [user, fetchNotifications]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "email":
-        return <MarkEmailReadRoundedIcon fontSize="small" color="primary" />;
-      case "alert":
-        return <CampaignRoundedIcon fontSize="small" color="info" />;
-      case "warning":
-        return <WarningAmberRoundedIcon fontSize="small" color="warning" />;
-      case "success":
-        return <CheckCircleRoundedIcon fontSize="small" color="success" />;
+      case 'error':
+        return <ErrorIcon fontSize="small" sx={{ color: theme.palette.error.main }} />;
+      case 'warning':
+        return <WarningAmberRoundedIcon fontSize="small" sx={{ color: theme.palette.warning.main }} />;
+      case 'success':
+        return <CheckCircleIcon fontSize="small" sx={{ color: theme.palette.success.main }} />;
+      case 'info':
       default:
-        return <MarkEmailReadRoundedIcon fontSize="small" />;
+        return <InfoIcon fontSize="small" sx={{ color: theme.palette.info.main }} />;
     }
   };
 
@@ -188,16 +329,6 @@ export default function AppNavbar() {
     borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
   }));
 
-  const handleCloseNotifications = () => {
-    setNotificationsAnchor(null);
-  };
-
-  const unreadNotifications = notifications.filter((n) => !n.read).length;
-
-  const handleOpenNotifications = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationsAnchor(event.currentTarget);
-  };
-
   return (
     <AppBar
       position="fixed"
@@ -209,9 +340,6 @@ export default function AppNavbar() {
         WebkitBackdropFilter: "blur(6px)",
         backgroundImage: "none",
         top: "var(--template-frame-height, 0px)",
-        // borderRadius: 2,
-        // border: 1,
-        // borderColor: "divider",
       }}
     >
       <Toolbar variant="regular">
@@ -219,19 +347,6 @@ export default function AppNavbar() {
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <img src={Logo} alt="Replai" style={{ height: 36, maxWidth: 110 }} />
         </Box>
-
-        {/* Search Bar */}
-        {/* <SearchWrapper>
-          <Box sx={{ position: 'absolute', height: '100%', display: 'flex', alignItems: 'center', pl: 1 }}>
-            <SearchRoundedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-          </Box>
-          <StyledInputBase
-            placeholder="Search…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            inputProps={{ 'aria-label': 'search' }}
-          />
-        </SearchWrapper> */}
 
         {/* Right side actions */}
         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -267,7 +382,7 @@ export default function AppNavbar() {
             }}
           >
             <Badge
-              badgeContent={unreadCount}
+              badgeContent={notificationStats.unread}
               color="error"
               sx={{
                 "& .MuiBadge-badge": {
@@ -329,115 +444,164 @@ export default function AppNavbar() {
         {/* Mobile sidebar */}
         <SideMenuMobile open={open} toggleDrawer={toggleDrawer} />
 
-         {/* Notifications menu */}
-      <Menu
-        anchorEl={notificationsAnchor}
-        id="notifications-menu"
-        open={Boolean(notificationsAnchor)}
-        onClose={handleCloseNotifications}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        PaperProps={{
-          elevation: 3,
-          sx: {
-            minWidth: 320,
-            maxWidth: 360,
-            maxHeight: 480,
-            overflow: 'auto',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
-            mt: 1.5,
-            borderRadius: '10px',
-          },
-        }}
-      >
-        <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Notifications
-          </Typography>
-          <Chip 
-            label={`${unreadNotifications} new`} 
-            size="small"
-            color="primary"
-            sx={{ height: 22, fontWeight: 500 }}
-          />
-        </Box>
-        
-        <Divider />
-        
-        {notifications.length > 0 ? (
-          <>
-            {notifications.map((notification) => (
-              <NotificationItem key={notification.id}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                  <Avatar 
-                    sx={{ 
-                      width: 36, 
-                      height: 36, 
-                      mr: 1.5, 
-                      backgroundColor: notification.type === 'success' 
-                        ? alpha(theme.palette.success.main, 0.1) 
-                        : notification.type === 'important' 
-                          ? alpha(theme.palette.error.main, 0.1) 
-                          : alpha(theme.palette.info.main, 0.1),
-                      color: notification.type === 'success' 
-                        ? theme.palette.success.main
-                        : notification.type === 'important' 
-                          ? theme.palette.error.main 
-                          : theme.palette.info.main,
-                    }}
-                  >
-                    {notification.type === 'success' && <CheckCircleIcon />}
-                    {notification.type === 'important' && <NotificationImportantIcon />}
-                    {notification.type === 'info' && <EmailRoundedIcon />}
-                  </Avatar>
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600 }}>
-                        {notification.title}
-                      </Typography>
-                      {!notification.read && (
-                        <Box 
-                          sx={{ 
-                            width: 8, 
-                            height: 8, 
-                            borderRadius: '50%', 
-                            backgroundColor: theme.palette.primary.main,
-                            ml: 1
-                          }} 
-                        />
-                      )}
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {notification.message}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {notification.time}
-                    </Typography>
-                  </Box>
-                </Box>
-              </NotificationItem>
-            ))}
-            <Box sx={{ py: 1, textAlign: 'center' }}>
+        {/* Notifications menu */}
+        <Menu
+          anchorEl={notificationsAnchor}
+          id="notifications-menu"
+          open={Boolean(notificationsAnchor)}
+          onClose={handleNotificationsClose}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          PaperProps={{
+            elevation: 3,
+            sx: {
+              minWidth: 320,
+              maxWidth: 360,
+              maxHeight: 480,
+              overflow: 'auto',
+              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
+              mt: 1.5,
+              borderRadius: '10px',
+            },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Notifications
+            </Typography>
+            <Chip 
+              label={`${notificationStats.unread} new`} 
+              size="small"
+              color="primary"
+              sx={{ height: 22, fontWeight: 500 }}
+            />
+          </Box>
+          
+          <Divider />
+          
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : error ? (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="error">
+                {error}
+              </Typography>
               <Button 
                 size="small" 
-                sx={{ 
-                  textTransform: 'none', 
-                  fontWeight: 500, 
-                  color: theme.palette.primary.main 
-                }}
+                onClick={fetchNotifications}
+                sx={{ mt: 1 }}
               >
-                View All Notifications
+                Retry
               </Button>
             </Box>
-          </>
-        ) : (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              No notifications yet
-            </Typography>
-          </Box>
-        )}
-      </Menu>
+          ) : notifications.length > 0 ? (
+            <>
+              {notifications.map((notification) => (
+                <NotificationItem 
+                  key={notification._id}
+                  onClick={() => markAsRead(notification._id)}
+                  sx={{
+                    backgroundColor: !notification.read 
+                      ? alpha(theme.palette.primary.main, 0.05) 
+                      : 'transparent'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <Avatar 
+                      sx={{ 
+                        width: 36, 
+                        height: 36, 
+                        mr: 1.5, 
+                        backgroundColor: notification.type === 'success' 
+                          ? alpha(theme.palette.success.main, 0.1) 
+                          : notification.type === 'error' 
+                            ? alpha(theme.palette.error.main, 0.1) 
+                            : notification.type === 'warning'
+                              ? alpha(theme.palette.warning.main, 0.1)
+                              : alpha(theme.palette.info.main, 0.1),
+                        color: notification.type === 'success' 
+                          ? theme.palette.success.main
+                          : notification.type === 'error' 
+                            ? theme.palette.error.main 
+                            : notification.type === 'warning'
+                              ? theme.palette.warning.main
+                              : theme.palette.info.main,
+                      }}
+                    >
+                      {getNotificationIcon(notification.type)}
+                    </Avatar>
+                    <Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600 }}>
+                          {notification.title}
+                        </Typography>
+                        {!notification.read && (
+                          <Box 
+                            sx={{ 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: '50%', 
+                              backgroundColor: theme.palette.primary.main,
+                              ml: 1
+                            }} 
+                          />
+                        )}
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {notification.message}
+                      </Typography>
+                      {notification.email && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {notification.email}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {formatNotificationTime(notification.createdAt)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </NotificationItem>
+              ))}
+              <Box sx={{ 
+                py: 1.5, 
+                px: 2, 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+              }}>
+                <Button 
+                  size="small" 
+                  onClick={markAllAsRead}
+                  sx={{ 
+                    textTransform: 'none', 
+                    fontWeight: 500
+                  }}
+                >
+                  Mark All as Read
+                </Button>
+                <Button 
+                  size="small" 
+                  onClick={() => navigate('/notifications')}
+                  sx={{ 
+                    textTransform: 'none', 
+                    fontWeight: 500, 
+                    color: theme.palette.primary.main 
+                  }}
+                >
+                  View All
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No notifications yet
+              </Typography>
+            </Box>
+          )}
+        </Menu>
 
         {/* User Profile Menu */}
         <Menu
@@ -477,80 +641,73 @@ export default function AppNavbar() {
             },
           }}
         >
-          <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              {user?.profilePicture ? (
-                <Avatar
-                  src={user.profilePicture}
-                  alt={user.name || "User"}
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    border: "2px solid",
-                    borderColor: alpha(theme.palette.primary.main, 0.3),
-                  }}
-                />
-              ) : (
-                <Avatar
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  {getUserInitials()}
-                </Avatar>
-              )}
-              <Box>
-                <Typography variant="subtitle2" noWrap sx={{ fontWeight: 600 }}>
-                  {user?.name.substring(0, 15) || "Guest User"}
-                </Typography>
-                <Typography variant="caption" noWrap color="text.secondary">
-                  {user?.email.substring(0, 15) || "user@example.com"}
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-
-          <Divider />
-
-          <MenuItem
-            onClick={() => handleNavigate("/settings")}
-            sx={{ py: 1.5, px: 2 }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <SettingsRoundedIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Settings"
-              primaryTypographyProps={{ fontSize: "0.875rem" }}
-            />
-          </MenuItem>
-
-          <Divider />
-
-          <MenuItem
-            onClick={handleLogout}
-            sx={{
-              py: 1.5,
-              px: 2,
-              color: theme.palette.error.main,
+          {/* User profile menu content */}
+          <Box sx={{ px: 2, py: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Avatar 
+            src={user?.profilePicture}
+            alt={user?.name}
+            sx={{ 
+              width: 50, 
+              height: 50,
+              mb: 1,
+              boxShadow: `0 0 0 2px ${theme.palette.background.paper}, 0 0 0 4px ${alpha(theme.palette.primary.main, 0.3)}`
             }}
+          />
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {user?.name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {user?.email}
+          </Typography>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            sx={{ mt: 1, borderRadius: '8px', textTransform: 'none' }}
+            onClick={() => navigate('/settings')}
           >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <LogoutRoundedIcon fontSize="small" color="error" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Logout"
-              primaryTypographyProps={{
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "inherit",
-              }}
-            />
-          </MenuItem>
+            Manage Account
+          </Button>
+        </Box>
+        
+        <Divider />
+        
+        <MenuItem onClick={() => navigate('/dashboard')}>
+          <ListItemIcon>
+            <DashboardRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Dashboard" />
+        </MenuItem>
+        
+        <MenuItem onClick={() => navigate('/inbox')}>
+          <ListItemIcon>
+            <EmailRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="My Emails" />
+        </MenuItem>
+        
+        <MenuItem onClick={() => navigate('/calendar')}>
+          <ListItemIcon>
+            <CalendarTodayRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Calender" />
+        </MenuItem>
+        
+        <MenuItem onClick={() => navigate('/billing')}>
+          <ListItemIcon>
+            <CreditCardRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Plan & Billings" />
+        </MenuItem>
+        
+        <Divider />
+        
+        <MenuItem onClick={logout}>
+          <ListItemIcon>
+            <LogoutRoundedIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primary="Sign out" primaryTypographyProps={{ color: 'error' }} />
+        </MenuItem>
+
         </Menu>
       </Toolbar>
     </AppBar>

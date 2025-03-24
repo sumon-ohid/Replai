@@ -17,7 +17,7 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // API settings
-  apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${process.env.PORT_FRONT || 3001}`,
+  apiBaseUrl: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.PORT_FRONT || 3001}`,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
   
   // Database settings
@@ -38,8 +38,8 @@ const config = {
   
   // Google settings
   google: {
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     redirectUrl: process.env.GOOGLE_REDIRECT_URI || 
       `${process.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/calendar/auth/google/callback`
   },

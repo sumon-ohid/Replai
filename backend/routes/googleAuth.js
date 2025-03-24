@@ -1,10 +1,9 @@
 import express from 'express';
 import { google } from 'googleapis';
 import User from '../models/User.js';
-import ConnectedEmail from '../models/ConnectedEmail.js';
-import getConnectedEmailModels from '../models/ConnectedEmailModels.js';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import NotificationManager from '../emails/managers/notificationManager.js';
 
 dotenv.config();
 
@@ -15,19 +14,16 @@ const oauth2Client = new google.auth.OAuth2(
   `${process.env.VITE_API_BASE_URL}/api/auth/google/callback`
 );
 
-const SCOPES = [
+// Reduced scope - only what's needed for authentication
+const AUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/gmail.compose',
-  'https://www.googleapis.com/auth/gmail.modify'
+  'https://www.googleapis.com/auth/userinfo.profile'
 ];
 
 router.get('/login/google', (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: SCOPES,
+    scope: AUTH_SCOPES,
     prompt: 'consent'
   });
   res.json({ authUrl });
@@ -45,7 +41,11 @@ router.get('/google/callback', async (req, res) => {
     const { id, email, name, picture } = googleUser.data;
 
     let user = await User.findOne({ email });
+    let isNewUser = false;
+    
     if (!user) {
+      // New user signup
+      isNewUser = true;
       user = new User({ 
         googleId: id, 
         email, 
@@ -59,10 +59,20 @@ router.get('/google/callback', async (req, res) => {
           name: name
         }
       });
+      
+      // Set account creation metadata
+      user.createdAt = new Date();
+      user.authMethod = 'google';
+      
+      // Log signup
+      console.log(`New user signup via Google: ${email}`);
     } else {
+      // Existing user login
       user.googleId = id;
       if (!user.name) user.name = name;
       if (!user.profilePicture) user.profilePicture = picture;
+      
+      // Update auth tokens
       user.googleAuth = {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
@@ -70,52 +80,108 @@ router.get('/google/callback', async (req, res) => {
         email: email,
         name: name
       };
+      
+      // Update last login timestamp
+      user.lastLogin = new Date();
+      
+      // Log login
+      console.log(`User logged in via Google: ${email}`);
     }
+    
     await user.save();
 
-    // Create or update connected email account for Gmail
-    let connectedEmail = await ConnectedEmail.findOne({ userId: user._id, email });
-    if (!connectedEmail) {
-      connectedEmail = new ConnectedEmail({
-        userId: user._id,
-        email,
-        provider: 'google',
-        name: name || email.split('@')[0],
-        tokens: {
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          expiry: new Date(tokens.expiry_date)
-        },
-        status: 'active',
-        syncConfig: {
-          enabled: true,
-          folders: ['INBOX', 'SENT', 'DRAFTS'],
-          interval: 60
-        }
-      });
-      await connectedEmail.save();
-
-      // Initialize email collections
-      getConnectedEmailModels(connectedEmail._id.toString());
-
-      // Add to user's connected emails array if not already present
-      if (!user.connectedEmails.find(e => e.email === email)) {
-        user.connectedEmails.push({
-          email,
-          provider: 'google',
-          name: name || email.split('@')[0],
-          type: 'primary',
-          status: 'active'
+    // Create welcome notifications
+    try {
+      if (isNewUser) {
+        // Welcome notification for new users
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'success',
+          title: 'Welcome to Replai!',
+          message: `Hello ${name.split(' ')[0]}, welcome to Replai! We're excited to have you on board.`,
+          metadata: {
+            category: 'onboarding',
+            action: 'signup',
+            method: 'google',
+            timestamp: new Date().toISOString()
+          }
         });
-        await user.save();
+        
+        // Getting started notification
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'info',
+          title: 'Getting Started',
+          message: 'Check out our quick start guide to learn how to make the most of Replai.',
+          metadata: {
+            category: 'onboarding',
+            action: 'guide',
+            url: '/guide/getting-started',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } else {
+        // Welcome back notification for returning users
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'info',
+          title: 'Welcome Back!',
+          message: `Great to see you again, ${name.split(' ')[0]}!`,
+          metadata: {
+            category: 'session',
+            action: 'login',
+            method: 'google',
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Check if it's been more than 7 days since last login
+        const lastLogin = user.lastLogin || user.createdAt;
+        const daysSinceLastLogin = Math.floor((Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastLogin > 7) {
+          // Send a "what's new" notification for users returning after a while
+          await NotificationManager.createNotification({
+            userId: user._id,
+            type: 'info',
+            title: "What's New",
+            message: "We've added some exciting new features since your last visit!",
+            metadata: {
+              category: 'product',
+              action: 'whats-new',
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
       }
+    } catch (notifError) {
+      // Log notification error but don't fail the login process
+      console.error('Error creating welcome notification:', notifError);
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Create JWT token
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        email: user.email,
+        name: user.name
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '24h' }
+    );
+    
+    // Redirect to frontend with token
     res.redirect(`${process.env.FRONTEND_URL}/signin?token=${token}`);
   } catch (error) {
     console.error('Error during Google authentication:', error);
-    res.status(500).send('Authentication failed.');
+    
+    // More detailed error logging
+    if (error.response) {
+      console.error('API response error:', error.response.data);
+    }
+    
+    // Redirect to frontend with error message
+    res.redirect(`${process.env.FRONTEND_URL}/signin?error=auth_failed`);
   }
 });
 

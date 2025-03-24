@@ -19,6 +19,7 @@
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
     "cheerio": "^1.0.0",
+    "commander": "^13.1.0",
     "compression": "^1.8.0",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",

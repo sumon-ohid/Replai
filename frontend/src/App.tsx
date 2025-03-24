@@ -28,6 +28,7 @@ const Documentations = React.lazy(() => import('./templates/homepage/Documentati
 const BlogPage = React.lazy(() => import('./templates/homepage/BlogPage'));
 const AboutUsPage = React.lazy(() => import('./templates/homepage/AboutUsPage'));
 const ContactUsPage = React.lazy(() => import('./templates/homepage/ContactUsPage'));
+const NotificationView = React.lazy(() => import('./templates/dashboard/NotificationView'));
 
 // ScrollToTop component that scrolls the window to the top on route changes
 function ScrollToTop() {
@@ -125,6 +126,11 @@ export default function App() {
             <Route path="/feedback" element={
               <ProtectedRoute>
                 <FeedbackPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <NotificationView />
               </ProtectedRoute>
             } />
             
