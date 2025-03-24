@@ -1,8 +1,6 @@
 import express from 'express';
 import { google } from 'googleapis';
 import User from '../models/User.js';
-import ConnectedEmail from '../models/ConnectedEmail.js';
-import getConnectedEmailModels from '../models/ConnectedEmailModels.js';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
@@ -15,19 +13,16 @@ const oauth2Client = new google.auth.OAuth2(
   `${process.env.VITE_API_BASE_URL}/api/auth/google/callback`
 );
 
-const SCOPES = [
+// Reduced scope - only what's needed for authentication
+const AUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/gmail.compose',
-  'https://www.googleapis.com/auth/gmail.modify'
+  'https://www.googleapis.com/auth/userinfo.profile'
 ];
 
 router.get('/login/google', (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: SCOPES,
+    scope: AUTH_SCOPES,
     prompt: 'consent'
   });
   res.json({ authUrl });
@@ -46,6 +41,7 @@ router.get('/google/callback', async (req, res) => {
 
     let user = await User.findOne({ email });
     if (!user) {
+      // New user signup
       user = new User({ 
         googleId: id, 
         email, 
@@ -59,10 +55,20 @@ router.get('/google/callback', async (req, res) => {
           name: name
         }
       });
+      
+      // Set account creation metadata
+      user.createdAt = new Date();
+      user.authMethod = 'google';
+      
+      // Log signup
+      console.log(`New user signup via Google: ${email}`);
     } else {
+      // Existing user login
       user.googleId = id;
       if (!user.name) user.name = name;
       if (!user.profilePicture) user.profilePicture = picture;
+      
+      // Update auth tokens
       user.googleAuth = {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
@@ -70,52 +76,38 @@ router.get('/google/callback', async (req, res) => {
         email: email,
         name: name
       };
+      
+      // Update last login timestamp
+      user.lastLogin = new Date();
+      
+      // Log login
+      console.log(`User logged in via Google: ${email}`);
     }
+    
     await user.save();
 
-    // Create or update connected email account for Gmail
-    let connectedEmail = await ConnectedEmail.findOne({ userId: user._id, email });
-    if (!connectedEmail) {
-      connectedEmail = new ConnectedEmail({
+    // Create JWT token
+    const token = jwt.sign(
+      { 
         userId: user._id,
-        email,
-        provider: 'google',
-        name: name || email.split('@')[0],
-        tokens: {
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          expiry: new Date(tokens.expiry_date)
-        },
-        status: 'active',
-        syncConfig: {
-          enabled: true,
-          folders: ['INBOX', 'SENT', 'DRAFTS'],
-          interval: 60
-        }
-      });
-      await connectedEmail.save();
-
-      // Initialize email collections
-      getConnectedEmailModels(connectedEmail._id.toString());
-
-      // Add to user's connected emails array if not already present
-      if (!user.connectedEmails.find(e => e.email === email)) {
-        user.connectedEmails.push({
-          email,
-          provider: 'google',
-          name: name || email.split('@')[0],
-          type: 'primary',
-          status: 'active'
-        });
-        await user.save();
-      }
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        email: user.email
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '24h' }
+    );
+    
+    // Redirect to frontend with token
     res.redirect(`${process.env.FRONTEND_URL}/signin?token=${token}`);
   } catch (error) {
     console.error('Error during Google authentication:', error);
-    res.status(500).send('Authentication failed.');
+    
+    // More detailed error logging
+    if (error.response) {
+      console.error('API response error:', error.response.data);
+    }
+    
+    // Redirect to frontend with error message
+    res.redirect(`${process.env.FRONTEND_URL}/signin?error=auth_failed`);
   }
 });
 
