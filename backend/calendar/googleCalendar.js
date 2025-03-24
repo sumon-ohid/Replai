@@ -13,7 +13,7 @@ const createOAuth2Client = () => {
   return new OAuth2(
     config.google.clientId,
     config.google.clientSecret,
-    config.google.redirectUrl
+    `${config.apiBaseUrl}/api/calendar/auth/google/callback` 
   );
 };
 
