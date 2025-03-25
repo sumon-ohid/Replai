@@ -170,6 +170,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
   const [language, setLanguage] = useState('en');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPicture, setIsChangingPicture] = useState(false);
+  const [deletionConfirmation, setDeletionConfirmation] = useState('');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -1050,33 +1051,321 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
         </Alert>
       </Snackbar>
       
-      {/* Delete Account Dialog */}
+            {/* Delete Account Dialog - Enhanced Version */}
       <Dialog
         open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
+        onClose={() => deletionStatus !== 'deleting' && setOpenDeleteDialog(false)}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
+          },
+          component: motion.div,
+          initial: { opacity: 0, y: 20 },
+          animate: { opacity: 1, y: 0 },
+          transition: { type: "spring", duration: 0.5 }
+        }}
       >
-        <DialogTitle>
-          Are you sure you want to delete your account?
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            This action cannot be undone. Your data will be permanently deleted.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDeleteAccount} 
-            color="error" 
-            disabled={deletionStatus === 'deleting'}
-          >
-            {deletionStatus === 'deleting' ? 'Deleting...' : 'Delete Account'}
-          </Button>
-        </DialogActions>
+        <AnimatePresence mode="wait">
+          {deletionStatus === 'success' ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box sx={{ 
+                p: 4, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 260, 
+                    damping: 20 
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: '50%',
+                      backgroundColor: alpha(theme.palette.success.main, 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 3
+                    }}
+                  >
+                    <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 40 }} />
+                  </Box>
+                </motion.div>
+                
+                <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
+                  Account Deleted
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Your account has been successfully deleted. You will be redirected shortly.
+                </Typography>
+                
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 2 }}
+                  style={{ width: '100%', transformOrigin: 'left' }}
+                >
+                  <LinearProgress sx={{ 
+                    height: 6, 
+                    borderRadius: 3,
+                    my: 2,
+                    backgroundColor: alpha(theme.palette.success.main, 0.2),
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: theme.palette.success.main
+                    }
+                  }} />
+                </motion.div>
+              </Box>
+            </motion.div>
+          ) : deletionStatus === 'error' ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box sx={{ 
+                p: 4, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: '50%',
+                      backgroundColor: alpha(theme.palette.error.main, 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 3
+                    }}
+                  >
+                    <ErrorIcon sx={{ color: theme.palette.error.main, fontSize: 40 }} />
+                  </Box>
+                </motion.div>
+                
+                <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
+                  Error Occurred
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  We couldn't delete your account. Please try again later or contact support.
+                </Typography>
+                
+                <Button 
+                  variant="contained"
+                  color="primary"
+                  onClick={() => setDeletionStatus('idle')}
+                  sx={{ borderRadius: 2, px: 3 }}
+                >
+                  Try Again
+                </Button>
+              </Box>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="confirmation"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  backgroundColor: alpha(theme.palette.error.light, 0.08),
+                  pt: 3, px: 3
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", delay: 0.2 }}
+                >
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: '50%',
+                      backgroundColor: alpha(theme.palette.error.main, 0.15),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 2
+                    }}
+                  >
+                    <DeleteIcon sx={{ color: theme.palette.error.main, fontSize: 30 }} />
+                  </Box>
+                </motion.div>
+                
+                <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+                  Delete Account
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: '90%' }}>
+                  This will permanently delete your account and all associated data from our systems.
+                </Typography>
+                
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: 'auto' }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Alert severity="warning" variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
+                    <Typography variant="body2" fontWeight={500}>
+                      Before proceeding, please be aware:
+                    </Typography>
+                    <Box component="ul" sx={{ pl: 2, mt: 1, mb: 0 }}>
+                      <motion.li
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <Typography variant="body2">All your data will be immediately deleted</Typography>
+                      </motion.li>
+                      <motion.li
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <Typography variant="body2">This action cannot be reversed</Typography>
+                      </motion.li>
+                      <motion.li
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <Typography variant="body2">Any active subscriptions will be canceled</Typography>
+                      </motion.li>
+                    </Box>
+                  </Alert>
+                </motion.div>
+              </Box>
+              
+              <DialogContent sx={{ pt: 3, pb: 2, backgroundColor: alpha(theme.palette.error.main, 0.08), }}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 1 }}>
+                    To confirm, type "DELETE" below:
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="DELETE"
+                    size="small"
+                    onChange={(e) => {
+                      setDeletionConfirmation(e.target.value);
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        borderColor: alpha(theme.palette.error.main, 0.3),
+                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                        '&.Mui-focused': {
+                          borderColor: theme.palette.error.main,
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+              </DialogContent>
+              
+              <DialogActions sx={{ px: 3, pb: 3, pt: 1, backgroundColor: alpha(theme.palette.error.light, 0.08), }}>
+                <Button 
+                  onClick={() => setOpenDeleteDialog(false)} 
+                  variant="outlined"
+                  disabled={deletionStatus === 'deleting'}
+                  sx={{ 
+                    borderRadius: 2,
+                    px: 3
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleDeleteAccount} 
+                  color="error" 
+                  variant="contained"
+                  disabled={deletionStatus === 'deleting' || deletionConfirmation !== 'DELETE'}
+                  sx={{ 
+                    borderRadius: 2, 
+                    px: 3,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {deletionStatus === 'deleting' ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <CircularProgress 
+                        size={20} 
+                        color="inherit" 
+                        sx={{ mr: 1 }}
+                      />
+                      <motion.span
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        Deleting...
+                      </motion.span>
+                    </Box>
+                  ) : (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      Delete Account
+                    </motion.span>
+                  )}
+                  <Box
+                    component={motion.div}
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 3,
+                      backgroundColor: 'rgba(255,255,255,0.4)',
+                    }}
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    animate={deletionStatus === 'deleting' ? { 
+                      scaleX: 1, 
+                      opacity: 1,
+                      transition: { duration: 2 }
+                    } : { scaleX: 0, opacity: 0 }}
+                    style={{ transformOrigin: 'left' }}
+                  />
+                </Button>
+              </DialogActions>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Dialog>
     </AppTheme>
   );

@@ -128,7 +128,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
   const isDark = theme.palette.mode === "dark";
 
   const [value, setValue] = React.useState(0);
-  const [textData, setTextData] = React.useState("");
+  const [textData, setTextData] = React.useState<string>("");
   const [textAlert, setTextAlert] = React.useState<{
     type: "success" | "error" | "info" | "";
     message: string;
@@ -176,10 +176,11 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTextData(e.target.value);
+    const text = e.target.value || "";
+    setTextData(text);
 
     // Update readiness if text has content
-    if (e.target.value.trim().length > 0) {
+    if (text.trim().length > 0) {
       setReadiness((prev) => ({ ...prev, text: true }));
       onDataPreviewReady();
     } else {
@@ -616,14 +617,14 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
               />
               <Typography
                 variant="caption"
-                color={textData.length > 2000 ? "error" : "text.secondary"}
+                color={(textData?.length > 2000 || 0) ? "error" : "text.secondary"}
                 sx={{
                   position: "absolute",
                   bottom: 16,
                   right: 16,
                 }}
               >
-                {textData.length}/2000
+                {(textData?.length > 2000 || 0)}/2000
               </Typography>
             </Box>
 
@@ -651,7 +652,7 @@ export const DataImportTabs: React.FC<DataImportTabsProps> = ({
                 disableElevation
                 endIcon={<KeyboardArrowRightIcon />}
                 onClick={handleSaveText}
-                disabled={!textData.trim()}
+                disabled={!textData?.trim()}
                 sx={{ borderRadius: "8px" }}
               >
                 Save Data

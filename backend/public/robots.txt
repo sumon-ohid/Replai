@@ -1,5 +1,5 @@
 # Robots.txt file for Replai.tech
-# Generated on: 2025-03-24
+# Generated on: 2025-03-25
 
 # Allow all search engines to index the site
 User-agent: *

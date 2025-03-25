@@ -18,7 +18,7 @@ if (!process.env.GENERATIVE_AI_API_KEY) {
 
 // Initialize AI model
 const genAI = new GoogleGenerativeAI(process.env.GENERATIVE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 /**
  * Process email content to extract useful information
@@ -461,7 +461,7 @@ Key Phrases: ${(trainAI.keyPhrases || []).join(', ')}
 
     // Get custom prompt if available, enhanced with training data
     const customPrompt = textData 
-      ? (textData.text + (textData.fileData || '') + '\n') // + trainingContext + (textData.webData || '') 
+      ? (textData.text + '\n') // + trainingContext + (textData.webData || '') + (textData.fileData || '')
       : '';
     
     // Enhanced default prompt with more context
