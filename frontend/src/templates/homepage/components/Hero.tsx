@@ -14,12 +14,22 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 // Lazily load non-critical icons
 const AutoAwesomeIcon = lazy(() => import("@mui/icons-material/AutoAwesome"));
 const CheckCircleIcon = lazy(() => import("@mui/icons-material/CheckCircle"));
-const CalendarMonthIcon = lazy(() => import("@mui/icons-material/CalendarMonth"));
-const GoogleIcon = lazy(() => import('@mui/icons-material/Google'));
-const EmailIcon = lazy(() => import('@mui/icons-material/Email'));
-const ArrowForwardIcon = lazy(() => import('@mui/icons-material/ArrowForward'));
-const WavingHandIcon = lazy(() => import('@mui/icons-material/WavingHand'));
-const Badge = lazy(() => import('@mui/material/Badge'));
+const CalendarMonthIcon = lazy(
+  () => import("@mui/icons-material/CalendarMonth")
+);
+const GoogleIcon = lazy(() => import("@mui/icons-material/Google"));
+const EmailIcon = lazy(() => import("@mui/icons-material/Email"));
+const ArrowForwardIcon = lazy(() => import("@mui/icons-material/ArrowForward"));
+const WavingHandIcon = lazy(() => import("@mui/icons-material/WavingHand"));
+const Badge = lazy(() => import("@mui/material/Badge"));
+
+// Video modal component
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { useRef } from "react";
 
 // Import assets
 import heroBackground from "../../../assets/animations/hero-grid.svg"; // Create or download this asset
@@ -352,6 +362,24 @@ export default function Hero() {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [isRendered, setIsRendered] = React.useState(false);
 
+  // Video modal state
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const watchDemoButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleCloseVideoModal = () => {
+    setVideoModalOpen(false);
+    // Return focus to the button that opened the modal
+    setTimeout(() => {
+      if (watchDemoButtonRef.current) {
+        watchDemoButtonRef.current.focus();
+      }
+    }, 0);
+  };
+
+  const handleOpenVideoModal = () => {
+    setVideoModalOpen(true);
+  };
+
   useEffect(() => {
     setIsRendered(true);
   }, []);
@@ -435,7 +463,10 @@ export default function Hero() {
         }}
       />
 
-      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1, mt: isMobile ? 5 : 0, }}>
+      <Container
+        maxWidth="lg"
+        sx={{ position: "relative", zIndex: 1, mt: isMobile ? 5 : 0 }}
+      >
         <Stack
           direction={{ xs: "column", md: "row" }}
           spacing={{ xs: 6, md: 4 }}
@@ -490,7 +521,7 @@ export default function Hero() {
             <Typography
               variant="h2"
               component={motion.div}
-              transition={{ duration: 0.3}}
+              transition={{ duration: 0.3 }}
               sx={{
                 fontSize: { xs: "2.5rem", sm: "3rem", md: "3.5rem" },
                 fontWeight: 800,
@@ -564,9 +595,12 @@ export default function Hero() {
               </GlowingButton>
 
               <Button
+                ref={watchDemoButtonRef}
                 variant="outlined"
                 size="large"
                 color="primary"
+                onClick={handleOpenVideoModal}
+                aria-haspopup="dialog"
                 sx={{
                   borderRadius: "12px",
                   px: 3,
@@ -601,6 +635,93 @@ export default function Hero() {
                 Terms & Conditions
               </Link>
             </Typography>
+
+            {/* Video modal */}
+            <Dialog
+              open={videoModalOpen}
+              onClose={handleCloseVideoModal}
+              maxWidth="lg"
+              aria-labelledby="video-modal-title"
+              keepMounted={false}
+              fullWidth
+              sx={{ zIndex: theme.zIndex.modal + 1 }}
+              container={document.body}
+              BackdropProps={{
+                sx: { backdropFilter: "blur(4px)" },
+              }}
+              PaperProps={{
+                elevation: 24,
+                sx: {
+                  bgcolor: "background.paper",
+                  backgroundImage:
+                    theme.palette.mode === "dark"
+                      ? "linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0))"
+                      : "linear-gradient(rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0))",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  boxShadow: theme.shadows[24],
+                  width: "100%",
+                },
+              }}
+            >
+              <Box sx={{ position: "relative", bgcolor: "black" }}>
+                <Typography
+                  variant="h6"
+                  id="video-modal-title"
+                  sx={{ position: "absolute", left: -9999, width: 1 }}
+                >
+                  Replai Demo Video
+                </Typography>
+                <IconButton
+                  aria-label="close video"
+                  onClick={handleCloseVideoModal}
+                  sx={{
+                    position: "absolute",
+                    right: 12,
+                    top: 12,
+                    color: "white",
+                    bgcolor: alpha(theme.palette.common.black, 0.5),
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.black, 0.7),
+                    },
+                    zIndex: 2,
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+
+                <DialogContent
+                  sx={{
+                    p: 0,
+                    overflow: "hidden",
+                    "&::-webkit-scrollbar": {
+                      display: "none",
+                    },
+                    bgcolor: "black", // Ensure black background for videos
+                  }}
+                >
+                  <Box
+                    sx={{ position: "relative", pt: "56.25%", width: "100%" }}
+                  >
+                    {/* Direct video embed rather than iframe for better compatibility */}
+                    <iframe
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                      }}
+                      src="https://www.youtube.com/embed/Ep3bE4bkTwA?autoplay=1&rel=0&modestbranding=1"
+                      title="Replai Demo Video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </Box>
+                </DialogContent>
+              </Box>
+            </Dialog>
           </Box>
 
           {/* Right content: Interactive mail UI mockup */}
@@ -921,9 +1042,7 @@ export default function Hero() {
                           transform: `scale(${isMobile ? 0.8 : 1})`,
                         }}
                       >
-                        <GoogleIcon
-                          sx={{ color: theme.palette.info.main }}
-                        />
+                        <GoogleIcon sx={{ color: theme.palette.info.main }} />
                         <Typography variant="body2" fontWeight={500}>
                           Connect Gmail Account
                         </Typography>

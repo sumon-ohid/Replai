@@ -56,17 +56,17 @@ const tiers = [
     subheader: "Most Popular",
     price: "5",
     priceDetails: {
-      monthly: "15",
-      yearly: "120",
+      monthly: "19.99",
+      yearly: "180",
     },
-    savings: "€30",
+    savings: "€60",
     buttonText: "Start Pro Plan",
     buttonVariant: "contained",
     buttonColor: "primary",
     highlighted: true,
     features: [
       { title: "2 email accounts", included: true },
-      { title: "Unlimited emails", included: true },
+      { title: "1000 emails", included: true },
       { title: "Advanced AI responses", included: true },
       { title: "Custom email signatures", included: true },
       { title: "Priority email support", included: true },
@@ -461,7 +461,7 @@ export default function Pricing() {
                     fontWeight: 600,
                   }}
                 >
-                  Save 20%
+                  Save 25%
                 </Box>
               )}
             </Box>
