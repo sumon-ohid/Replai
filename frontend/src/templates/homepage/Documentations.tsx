@@ -436,7 +436,6 @@ async function processIncomingEmail(emailData) {
             transition={{ delay: 0.5 }}
             sx={{ 
               maxWidth: 650, 
-              mb: 6 
             }}
           >
             <Paper
@@ -447,13 +446,10 @@ async function processIncomingEmail(emailData) {
                 alignItems: 'center',
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: theme.palette.divider,
+                borderColor: theme.palette.primary.main,
                 boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
               }}
             >
-              <IconButton sx={{ p: '10px' }} aria-label="search">
-                <SearchIcon />
-              </IconButton>
               <InputBase
                 sx={{ ml: 1, flex: 1 }}
                 placeholder="Search documentation..."
@@ -461,6 +457,9 @@ async function processIncomingEmail(emailData) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              <IconButton sx={{ p: '10px', border: "none" }} aria-label="search">
+                <SearchIcon />
+              </IconButton>
             </Paper>
           </Box>
         </Container>
@@ -721,6 +720,7 @@ async function processIncomingEmail(emailData) {
                           height: '100%',
                           borderRadius: 2,
                           boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.15 : 0.05),
                         }}
                       >
                         <CardContent>
@@ -743,6 +743,7 @@ async function processIncomingEmail(emailData) {
                           height: '100%',
                           borderRadius: 2,
                           boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.15 : 0.05),
                         }}
                       >
                         <CardContent>
@@ -753,7 +754,7 @@ async function processIncomingEmail(emailData) {
                             <Chip label="Gmail" color="primary" size="small" />
                             <Chip label="Google Workspace" size="small" />
                             <Chip label="Outlook (Coming Soon)" size="small" variant="outlined" />
-                            <Chip label="Exchange (Coming Soon)" size="small" variant="outlined" />
+                            <Chip label="Custom (Coming Soon)" size="small" variant="outlined" />
                           </Box>
                         </CardContent>
                       </Card>
@@ -1037,7 +1038,7 @@ async function processIncomingEmail(emailData) {
                 </Typography>
 
                 <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }} id="team-management">
-                    Team Management
+                    Team Management (Coming Soon)
                 </Typography>
                 <Typography 
                     variant="body1" 
@@ -1077,7 +1078,7 @@ async function processIncomingEmail(emailData) {
                         sx={{ mr: 2 }}
                     />
                     <Typography variant="h3" fontWeight={700} id="api-reference">
-                        API Reference
+                        API Reference (Coming Soon)
                     </Typography>
                 </Box>
 
