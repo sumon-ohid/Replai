@@ -199,6 +199,77 @@ router.get("/verify-email", async (req, res) => {
       console.error("Error creating welcome notification:", notifError);
     }
 
+    // Send a welcome email
+                const welcomeEmailHTML = `
+              <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 30px; border-radius: 10px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <img src="https://www.replai.tech/assets/png/logo_light-D9vxx0CA.png" alt="Replai" style="width: 160px; height: 60px;">
+                </div>
+                
+                <h2 style="color: #333; margin-bottom: 20px;">Welcome to Replai, ${user.name}!</h2>
+                
+                <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Thank you for verifying your email. Your Replai account is now fully activated and ready to transform your email workflow.</p>
+                
+                <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 25px;">With Replai's AI-powered email automation, you can reclaim valuable time while maintaining authentic communication with your audience. Connect your email, train our AI with your custom data, and choose between automatic replies or draft mode.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                  <h3 style="color: #333; margin-top: 0;">Quick Start Guide</h3>
+                  <ul style="color: #555; font-size: 15px; line-height: 1.5; padding-left: 20px;">
+                    <li><strong>Connect your email account</strong> - Seamlessly integrate with your existing email provider</li>
+                    <li><strong>Train your AI assistant</strong> - Upload documents or examples that reflect your communication style</li>
+                    <li><strong>Configure your preferences</strong> - Choose between automatic replies or draft review mode</li>
+                    <li><strong>Monitor performance</strong> - Track engagement metrics and fine-tune your settings</li>
+                  </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="https://replai.tech/signin" style="display: inline-block; background-color: rgb(12, 88, 195); color: white; text-decoration: none; padding: 14px 30px; border-radius: 5px; font-size: 16px; font-weight: bold;">Access Your Dashboard</a>
+                </div>
+                
+                <p style="color: #555; font-size: 15px;">If the button above doesn't work, you can copy and paste this link into your browser:</p>
+                <p style="background-color: #f4f4f4; padding: 12px; word-break: break-all; border-radius: 5px; font-size: 14px; margin-bottom: 25px;">https://replai.tech/signin</p>
+                
+                <div style="background-color: #f0f7ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid rgb(12, 88, 195);">
+                  <h3 style="color: #333; margin-top: 0;">Pro Tip</h3>
+                  <p style="color: #555; font-size: 15px; line-height: 1.5; margin-bottom: 0;">Start with draft mode to review AI-generated responses before they're sent. This helps you fine-tune the AI to match your communication style perfectly.</p>
+                </div>
+                
+                <p style="color: #555; font-size: 15px; line-height: 1.5; margin-bottom: 20px;">Our support team is ready to assist you with any questions at <a href="mailto:support@replai.tech" style="color: rgb(12, 88, 195); text-decoration: none;">support@replai.tech</a>.</p>
+                
+                <hr style="border: none; border-top: 1px solid #eaeaea; margin: 25px 0;">
+                
+                <div style="text-align: center;">
+                  <p style="color: #888; font-size: 14px; margin-bottom: 10px;">© ${new Date().getFullYear()} Replai Tech. All rights reserved.</p>
+                  <p style="color: #888; font-size: 14px;">This is an automated message, please do not reply to this email.</p>
+                  
+                  <div style="margin-top: 20px;">
+                    <a href="https://replai.tech/privacy" style="color: #888; text-decoration: none; font-size: 14px; margin: 0 10px;">Privacy Policy</a>
+                    <a href="https://replai.tech/privacy" style="color: #888; text-decoration: none; font-size: 14px; margin: 0 10px;">Terms of Service</a>
+                  </div>
+                </div>
+              </div>
+        `;
+
+    const welcomeMailOptions = {
+      from: `"Replai Tech" <${process.env.EMAIL || "no-reply@replai.tech"}>`,
+      to: user.email,
+      subject: "Welcome to Replai - Account Verified",
+      html: welcomeEmailHTML,
+      headers: {
+        "X-Priority": "1", // High priority
+        Importance: "high",
+      },
+    };
+
+    try {
+      console.log("🔄 Sending welcome email to:", user.email);
+      const info = await sendMailAsync(welcomeMailOptions);
+      console.log("📧 Welcome email sent successfully:", info.messageId);
+    } catch (emailError) {
+      console.error("📧 Error sending welcome email:", emailError);
+      // Continue with the response even if welcome email fails
+    }
+
     // res.status(200).json({ message: 'Email verified successfully!' });
     res.send(`
       <!DOCTYPE html>
