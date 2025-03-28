@@ -749,7 +749,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                     edge="end"
-                                    sx={{ borderRadius: 10 }}
+                                    sx={{}}
                                   >
                                     {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
@@ -772,7 +772,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowNewPassword(!showNewPassword)}
                                     edge="end"
-                                    sx={{ borderRadius: 10 }}
+                                    sx={{}}
                                   >
                                     {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
@@ -830,7 +830,7 @@ export default function SettingsPage(props: { disableCustomTheme?: boolean }) {
                                   <IconButton
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     edge="end"
-                                    sx={{ borderRadius: 10 }}
+                                    sx={{ }}
                                   >
                                     {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                   </IconButton>
