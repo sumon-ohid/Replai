@@ -8,7 +8,12 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import EmailIcon from "@mui/icons-material/Email";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 // Components
 import AppNavbar from "./components/AppNavbar";
@@ -24,6 +29,7 @@ import {
 import Footer from "./components/Footer";
 import CustomizedDataGrid from "./components/CustomizedDataGrid";
 import EmailClient from "./components/mailbox/EmailClient";
+import axios from "axios";
 
 // Main component
 export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
@@ -32,6 +38,74 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
     ...dataGridCustomizations,
     ...datePickersCustomizations,
     ...treeViewCustomizations,
+  };
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const token = localStorage.getItem("token");
+  const theme = useTheme();
+  
+  // Track if user has connected email accounts
+  const [hasConnectedEmail, setHasConnectedEmail] = React.useState(false);
+  const navigate = useNavigate();
+  
+       // Check if user has connected email accounts
+    interface ConnectedEmail {
+      id: string;
+      email: string;
+      provider: string;
+      name: string;
+      status: string;
+      syncEnabled: boolean;
+      lastSync?: Date;
+      aiEnabled: boolean;
+    }
+    
+    React.useEffect(() => {
+      const checkEmailConnections = async () => {
+        try {
+          if (!token) {
+            console.log("No authentication token found");
+            setHasConnectedEmail(false);
+            return;
+          }
+    
+          const response = await axios.get(`${apiBaseUrl}/api/emails/auth/connected`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+    
+          // The response is directly an array of connected emails
+          const connectedEmails = response.data as ConnectedEmail[];
+          console.log("Connected emails:", connectedEmails);
+    
+          // Check if there are any connected emails with "active" status
+          if (connectedEmails && connectedEmails.length > 0) {
+            const activeEmails = connectedEmails.filter(
+              emailAccount => emailAccount.status === "active"
+            );
+            
+            if (activeEmails.length > 0) {
+              console.log("Active connected emails:", activeEmails);
+              setHasConnectedEmail(true);
+            } else {
+              console.log("No active email connections found.");
+              setHasConnectedEmail(false);
+            }
+          } else {
+            console.log("No connected emails found.");
+            setHasConnectedEmail(false);
+          }
+        } catch (error) {
+          console.error('Failed to fetch email connections:', error);
+          setHasConnectedEmail(false);
+        }
+      };
+      
+      checkEmailConnections();
+    }, [apiBaseUrl, token]);
+  
+  // Handler to navigate to email manager
+  const handleConnectEmail = () => {
+    navigate('/email-manager');
   };
 
   return (
@@ -84,7 +158,6 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
                 justifyContent: "space-between",
                 gap: 2,
                 mb: 3,
-                backgroundColor: 'linear-gradient(90deg,rgb(0, 98, 255),rgb(43, 156, 255))',
                 mt: 2,
               }}
             >
@@ -115,8 +188,61 @@ export default function InboxEmail(props: { disableCustomTheme?: boolean }) {
                 mb: 2,
               }}
             > 
-            {/* <CustomizedDataGrid /> */}
-            <EmailClient />
+            {hasConnectedEmail ? (
+              <EmailClient />
+            ) : (
+              <Paper 
+                elevation={0}
+                sx={{
+                  p: 5, 
+                  width: '100%', 
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  textAlign: 'center',
+                  py: 8
+                }}
+              >
+                <EmailIcon 
+                  sx={{ 
+                    fontSize: 80, 
+                    color: 'primary.main',
+                    mb: 3,
+                    opacity: 0.8
+                  }} 
+                />
+                <Typography variant="h5" gutterBottom fontWeight="medium">
+                  No Email Accounts Connected
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  color="text.secondary" 
+                  sx={{ maxWidth: 450, mb: 4 }}
+                >
+                  Connect your email account to start using Replai's AI-powered email automation.
+                  Train the AI with your communication style and choose between automatic replies or draft mode.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddCircleIcon />}
+                  size="large"
+                  onClick={handleConnectEmail}
+                  sx={{ 
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600
+                  }}
+                >
+                  Connect Email Account
+                </Button>
+              </Paper>
+            )}
             </Box>
           </Box>
           <Footer />

@@ -412,6 +412,9 @@ class ConnectionController {
       // Update sync start in stats
       account.stats = account.stats || {};
       account.stats.lastSync = new Date();
+
+      delete account.lastProcessed?.status; 
+
       await account.save();
 
       res.json({
@@ -434,26 +437,26 @@ class ConnectionController {
     }
   });
 
-  /**
+   /**
    * Toggle connection status (pause/resume)
    */
   static toggleConnectionStatus = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { email } = req.params;
     const { enabled } = req.body;
-
+  
     const account = await ConnectedEmail.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: "Email account not found" });
     }
-
+  
     try {
       // Update sync config in the database
       account.syncConfig = account.syncConfig || {};
       account.syncConfig.enabled = enabled;
       account.status = enabled ? "active" : "paused";
       await account.save();
-
+  
       // Handle connection based on enabled status
       if (enabled) {
         // If enabling, make sure connection is active and update its config
@@ -471,7 +474,7 @@ class ConnectionController {
           console.log(
             `Initializing connection for ${email} after enabling sync`
           );
-          await ConnectionManager.initializeConnection(
+          await ConnectionManager.initializeAllConnections(
             userId,
             email,
             account.provider,
@@ -480,12 +483,16 @@ class ConnectionController {
           );
         }
       } else {
-        // If disabling, stop the connection service
-        console.log(`Stopping connection service for ${email}`);
+        // If disabling, PAUSE the connection service instead of stopping it
+        console.log(`Pausing connection service for ${email}`);
         const connectionKey = `${userId}:${email}`;
-        await ConnectionManager.stopConnection(connectionKey);
+        
+        // Instead of stopping connection, try to update connection config to paused state
+        await ConnectionManager.updateConnectionConfig(userId, email, {
+          syncConfig: { ...account.syncConfig, enabled: false }
+        });
       }
-
+  
       res.json({
         success: true,
         email,
@@ -494,7 +501,7 @@ class ConnectionController {
       });
     } catch (error) {
       console.error(`Error toggling connection status for ${email}:`, error);
-
+  
       // Update error in database but don't change the enabled status
       // This way, the frontend and database stay in sync even if the operation fails
       await ConnectedEmail.findOneAndUpdate(
@@ -509,7 +516,7 @@ class ConnectionController {
           },
         }
       );
-
+  
       res.status(500).json({
         error: `Failed to ${enabled ? "enable" : "disable"} connection: ${
           error.message
@@ -519,6 +526,7 @@ class ConnectionController {
       });
     }
   });
+
   // refreshConnection method
   static refreshConnection = asyncHandler(async (req, res) => {
     const userId = req.user._id;

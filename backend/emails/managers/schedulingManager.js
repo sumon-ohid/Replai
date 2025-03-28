@@ -133,6 +133,12 @@ export const scheduleEmailChecks = async (userId, email) => {
           throw new Error('No active connection found');
         }
         
+        // If email status is paused, skip checking
+        if (currentConnection.status === 'paused') {
+          console.log(`[${email}] Connection is paused, skipping check`);
+          return;
+        }
+
         const result = await checkEmails(userId, email);
 
         if (result.success && result.count > 0) {

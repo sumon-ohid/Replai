@@ -200,13 +200,15 @@ router.get("/verify-email", async (req, res) => {
     }
 
     // Send a welcome email
-                const welcomeEmailHTML = `
+    const welcomeEmailHTML = `
               <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #eaeaea; padding: 30px; border-radius: 10px;">
                 <div style="text-align: center; margin-bottom: 30px;">
                   <img src="https://www.replai.tech/assets/png/logo_light-D9vxx0CA.png" alt="Replai" style="width: 160px; height: 60px;">
                 </div>
                 
-                <h2 style="color: #333; margin-bottom: 20px;">Welcome to Replai, ${user.name}!</h2>
+                <h2 style="color: #333; margin-bottom: 20px;">Welcome to Replai, ${
+                  user.name.split(" ")[0]
+                }!</h2>
                 
                 <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Thank you for verifying your email. Your Replai account is now fully activated and ready to transform your email workflow.</p>
                 

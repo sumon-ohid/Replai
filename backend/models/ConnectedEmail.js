@@ -107,8 +107,7 @@ const connectedEmailSchema = new mongoose.Schema({
     date: Date,
     status: {
       type: String,
-      enum: ['success', 'error', 'draft', 'pending', 'ignored', 'draft_created'], // Add 'draft_created' here
-      default: 'pending'
+      enum: ['success', 'error', 'draft', 'pending', 'ignored', 'draft_created', 'replied'],
     },
     error: String
   },

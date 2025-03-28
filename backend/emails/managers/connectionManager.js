@@ -441,7 +441,7 @@ export const disconnectGoogleEmail = async (userId, email) => {
     await User.findByIdAndUpdate(userId, {
       $set: { [`emailPreferences.${email}.syncEnabled`]: false }
     });
-    
+
     // Send notification
     await notifyConnectionStatus({
       userId,
