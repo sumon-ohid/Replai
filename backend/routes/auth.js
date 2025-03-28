@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import auth from "../middleware/auth.js";
 import nodemailer from "nodemailer";
 import util from "util";
-import NotificationManager from '../emails/managers/notificationManager.js';
+import NotificationManager from "../emails/managers/notificationManager.js";
 
 dotenv.config();
 
@@ -20,10 +20,10 @@ const smtpConfig = {
   secure: process.env.EMAIL_SECURE === "false" ? false : true,
   auth: {
     user: process.env.EMAIL || "hello@replai.tech",
-    pass: process.env.EMAIL_PASSWORD
+    pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   },
   debug: true,
   // logger: true // Enable built-in logger
@@ -36,11 +36,12 @@ const transporter = nodemailer.createTransport(smtpConfig);
 const sendMailAsync = util.promisify(transporter.sendMail.bind(transporter));
 
 // Test SMTP connection on startup
-transporter.verify()
-  .then(success => {
+transporter
+  .verify()
+  .then((success) => {
     console.log("✅ SMTP Server is ready to send emails");
   })
-  .catch(error => {
+  .catch((error) => {
     console.error("❌ SMTP connection error:", error);
     console.error("Please check your email credentials and server settings");
   });
@@ -57,23 +58,26 @@ router.post("/register", async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: "User with this email already exists" });
+      return res
+        .status(400)
+        .json({ error: "User with this email already exists" });
     }
 
     // Create new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
-    
+
     // Generate verification token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
     // Build verification URL
-    const frontendUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const frontendUrl =
+      process.env.VITE_API_BASE_URL || "http://localhost:3000";
     const verificationLink = `${frontendUrl}/api/auth/verify-email?token=${token}`;
-    
+
     console.log("Verification link:", verificationLink);
 
     // Email template
@@ -98,38 +102,40 @@ router.post("/register", async (req, res) => {
 
     // Prepare email
     const mailOptions = {
-      from: `"Replai Tech" <${process.env.EMAIL || 'hello@replai.tech'}>`,
+      from: `"Replai Tech" <${process.env.EMAIL || "hello@replai.tech"}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
       headers: {
-        'X-Priority': '1', // High priority
-        'Importance': 'high'
-      }
+        "X-Priority": "1", // High priority
+        Importance: "high",
+      },
     };
 
     try {
       console.log("🔄 Sending verification email to:", email);
-      
+
       // Replace the callback version with the Promise-based version
       // This eliminates the race condition with the response
       const info = await sendMailAsync(mailOptions);
       console.log("📧 Email sent successfully:", info.messageId);
-      
+
       return res.status(201).json({
-        message: "Registration successful! Please check your email to verify your account.",
+        message:
+          "Registration successful! Please check your email to verify your account.",
         emailSent: true,
-        userId: user._id
+        userId: user._id,
       });
     } catch (emailError) {
       console.error("📧 Email sending failed:", emailError);
-      
+
       // Still return success since user was created
       return res.status(201).json({
-        message: "Account created but verification email couldn't be sent. Please request a new verification email.",
+        message:
+          "Account created but verification email couldn't be sent. Please request a new verification email.",
         emailSent: false,
         userId: user._id,
-        error: emailError.message
+        error: emailError.message,
       });
     }
   } catch (error) {
@@ -137,7 +143,6 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ error: "Error registering user" });
   }
 });
-
 
 // Send verification email
 router.get("/verify-email", async (req, res) => {
@@ -158,8 +163,41 @@ router.get("/verify-email", async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    // create a notification 
-    NotificationManager.createNotification(user._id, "Welcome to Replai", "Your email has been verified successfully!");
+    // Sent a welcome notification if user is logging in for the first time
+    try {
+      // Welcome notification for new users
+      await NotificationManager.createNotification({
+        userId: user._id,
+        type: "success",
+        title: "Welcome to Replai!",
+        message: `Hello ${
+          user.name.split(" ")[0]
+        }, welcome to Replai! We're excited to have you on board.`,
+        metadata: {
+          category: "onboarding",
+          action: "signup",
+          method: "google",
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Getting started notification
+      await NotificationManager.createNotification({
+        userId: user._id,
+        type: "info",
+        title: "Getting Started",
+        message:
+          "Check out our quick start guide to learn how to make the most of Replai.",
+        metadata: {
+          category: "onboarding",
+          action: "guide",
+          url: "/guide/getting-started",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (notifError) {
+      console.error("Error creating welcome notification:", notifError);
+    }
 
     // res.status(200).json({ message: 'Email verified successfully!' });
     res.send(`
@@ -245,46 +283,6 @@ router.post("/login", async (req, res) => {
         .json({ message: "Please verify your email to login" });
     }
 
-    let name = user.name || "User"; // Use 'User' as fallback if name is undefined
-
-    // Sent a welcome notification if user is logging in for the first time
-    try {
-      if (!user.lastLogin) {
-         // Welcome notification for new users
-        await NotificationManager.createNotification({
-          userId: user._id,
-          type: 'success',
-          title: 'Welcome to Replai!',
-          message: `Hello ${name.split(' ')[0]}, welcome to Replai! We're excited to have you on board.`,
-          metadata: {
-            category: 'onboarding',
-            action: 'signup',
-            method: 'google',
-            timestamp: new Date().toISOString()
-          }
-        });
-        
-        // Getting started notification
-        await NotificationManager.createNotification({
-          userId: user._id,
-          type: 'info',
-          title: 'Getting Started',
-          message: 'Check out our quick start guide to learn how to make the most of Replai.',
-          metadata: {
-            category: 'onboarding',
-            action: 'guide',
-            url: '/guide/getting-started',
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
-    } catch (notifError) {
-      console.error('Error creating welcome notification:', notifError);
-    }
-    // Update last login time
-    user.lastLogin = new Date();
-    await user.save();
-
     // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
@@ -340,41 +338,41 @@ router.post("/resend-verification", async (req, res) => {
     `;
 
     const mailOptions = {
-      from: `"Replai Tech" <${process.env.EMAIL || 'hello@replai.tech'}>`,
+      from: `"Replai Tech" <${process.env.EMAIL || "hello@replai.tech"}>`,
       to: email,
       subject: "Verify Your Email - Replai",
       html: emailHTML,
       headers: {
-        'X-Priority': '1', // High priority
-        'Importance': 'high'
-      }
+        "X-Priority": "1", // High priority
+        Importance: "high",
+      },
     };
 
     try {
       console.log("🔄 Sending verification email to:", email);
-      
+
       // Use the Promise-based approach instead of callbacks
       const info = await sendMailAsync(mailOptions);
       console.log("📧 Verification email resent successfully:", info.messageId);
-      
-      return res.status(200).json({ 
+
+      return res.status(200).json({
         message: "Verification email resent successfully!",
-        emailSent: true
+        emailSent: true,
       });
     } catch (emailError) {
       console.error("📧 Error sending verification email:", emailError);
-      
-      return res.status(500).json({ 
+
+      return res.status(500).json({
         message: "Error sending verification email. Please try again later.",
         emailSent: false,
-        error: emailError.message
+        error: emailError.message,
       });
     }
   } catch (error) {
     console.error("Error resending verification email:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Error resending verification email.",
-      error: error.message 
+      error: error.message,
     });
   }
 });
