@@ -245,9 +245,51 @@ router.post("/login", async (req, res) => {
         .json({ message: "Please verify your email to login" });
     }
 
+    let name = user.name || "User"; // Use 'User' as fallback if name is undefined
+
+    // Sent a welcome notification if user is logging in for the first time
+    try {
+      if (!user.lastLogin) {
+         // Welcome notification for new users
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'success',
+          title: 'Welcome to Replai!',
+          message: `Hello ${name.split(' ')[0]}, welcome to Replai! We're excited to have you on board.`,
+          metadata: {
+            category: 'onboarding',
+            action: 'signup',
+            method: 'google',
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Getting started notification
+        await NotificationManager.createNotification({
+          userId: user._id,
+          type: 'info',
+          title: 'Getting Started',
+          message: 'Check out our quick start guide to learn how to make the most of Replai.',
+          metadata: {
+            category: 'onboarding',
+            action: 'guide',
+            url: '/guide/getting-started',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    } catch (notifError) {
+      console.error('Error creating welcome notification:', notifError);
+    }
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "24h",
     });
+
     res.json({ token });
   } catch (error) {
     console.error("Error logging in:", error);

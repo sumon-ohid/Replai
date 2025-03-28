@@ -121,19 +121,6 @@ router.get('/google/callback', async (req, res) => {
           }
         });
       } else {
-        // Welcome back notification for returning users
-        await NotificationManager.createNotification({
-          userId: user._id,
-          type: 'info',
-          title: 'Welcome Back!',
-          message: `Great to see you again, ${name.split(' ')[0]}!`,
-          metadata: {
-            category: 'session',
-            action: 'login',
-            method: 'google',
-            timestamp: new Date().toISOString()
-          }
-        });
         
         // Check if it's been more than 7 days since last login
         const lastLogin = user.lastLogin || user.createdAt;
