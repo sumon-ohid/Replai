@@ -420,7 +420,10 @@ export async function processGoogleMessage(
         });
         console.log(`Marked email ${messageId} as read in Gmail`);
       } catch (markReadError) {
-        console.error(`Failed to mark email ${messageId} as read:`, markReadError);
+        console.error(
+          `Failed to mark email ${messageId} as read:`,
+          markReadError
+        );
       }
     }
 
@@ -583,19 +586,28 @@ export async function initializeGoogleConnection(
 
     // Start sync process
     if (config.syncEnabled !== false) {
-      const interval = setInterval(
-        () => checkForNewGoogleEmails(gmail, userId, email, config),
-        60000
-      );
-
-      // Do initial sync
+      // Do initial sync first
       await checkForNewGoogleEmails(gmail, userId, email, config);
+
+      // Then set up interval for future checks (will start after 60 seconds)
+      const interval = setTimeout(function runCheck() {
+        checkForNewGoogleEmails(gmail, userId, email, config)
+          .then(() => {
+            // Schedule the next check only after this one completes
+            setTimeout(runCheck, 60000);
+          })
+          .catch((error) => {
+            console.error(`Error in scheduled email check: ${error}`);
+            // Still schedule the next check even if this one fails
+            setTimeout(runCheck, 60000);
+          });
+      }, 60000); // First scheduled check after 60 seconds
 
       // Register connection
       connectionManager.addConnection(userId, email, "google", {
         gmail,
         oauth2Client,
-        interval,
+        interval, // Store the timeout ID instead
         config,
       });
     }
@@ -982,9 +994,10 @@ export async function sendEmail(connection, email) {
 export async function saveSentEmail(gmail, email, messageId = null) {
   try {
     // Debug the email object structure
-    console.log("Saving sent email - Object structure:", 
+    console.log(
+      "Saving sent email - Object structure:",
       Object.keys(email),
-      "Content fields:", 
+      "Content fields:",
       {
         hasContent: !!email.content,
         hasBodyHtml: !!(email.body && email.body.html),
@@ -993,23 +1006,23 @@ export async function saveSentEmail(gmail, email, messageId = null) {
         hasHtmlResponse: !!(email.response && email.response.html),
         hasTextResponse: !!(email.response && email.response.text),
         hasText: !!email.text,
-        hasHtml: !!email.html
+        hasHtml: !!email.html,
       }
     );
 
     // Get content - try all possible locations
     let content = "";
-    
+
     // Try direct content property
     if (typeof email.content === "string" && email.content.trim() !== "") {
       console.log("Using email.content");
       content = email.content;
-    } 
+    }
     // Try body.html
     else if (email.body && email.body.html && email.body.html.trim() !== "") {
       console.log("Using email.body.html");
       content = email.body.html;
-    } 
+    }
     // Try body.text
     else if (email.body && email.body.text && email.body.text.trim() !== "") {
       console.log("Using email.body.text");
@@ -1029,20 +1042,26 @@ export async function saveSentEmail(gmail, email, messageId = null) {
     else if (email.html && email.html.trim() !== "") {
       console.log("Using email.html");
       content = email.html;
-    }
-    else if (email.text && email.text.trim() !== "") {
+    } else if (email.text && email.text.trim() !== "") {
       console.log("Using email.text");
       content = email.text;
     }
 
     // Check if we have content after all attempts
     if (!content || content.trim() === "") {
-      console.error("Empty content in email object:", JSON.stringify(email, null, 2));
+      console.error(
+        "Empty content in email object:",
+        JSON.stringify(email, null, 2)
+      );
       throw new Error("Email content cannot be empty when saving sent email");
     }
 
     // Convert plain text to HTML if it's not already HTML
-    if (!content.includes("<html") && !content.includes("<body") && !content.includes("<div")) {
+    if (
+      !content.includes("<html") &&
+      !content.includes("<body") &&
+      !content.includes("<div")
+    ) {
       content = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -1083,18 +1102,22 @@ export async function saveSentEmail(gmail, email, messageId = null) {
         }
         return address;
       }
-      
+
       if (Array.isArray(address)) {
-        return address.map(addr => {
-          if (typeof addr === "string") return formatEmailAddress(addr);
-          return `${addr.name || addr.email.split("@")[0]} <${addr.email}>`;
-        }).join(", ");
+        return address
+          .map((addr) => {
+            if (typeof addr === "string") return formatEmailAddress(addr);
+            return `${addr.name || addr.email.split("@")[0]} <${addr.email}>`;
+          })
+          .join(", ");
       }
-      
+
       if (address && address.email) {
-        return `${address.name || address.email.split("@")[0]} <${address.email}>`;
+        return `${address.name || address.email.split("@")[0]} <${
+          address.email
+        }>`;
       }
-      
+
       return "";
     }
 
@@ -1115,27 +1138,27 @@ export async function saveSentEmail(gmail, email, messageId = null) {
     });
 
     console.log("Email saved to Gmail's sent folder:", result.data);
-    
+
     // Mark as read in Gmail
     await gmail.users.messages.modify({
       userId: "me",
       id: result.data.id,
       requestBody: {
         removeLabelIds: ["UNREAD"],
-        addLabelIds: []
-      }
+        addLabelIds: [],
+      },
     });
-    
+
     // Save the sent email to the local database
     if (email.userId) {
       try {
         // Find connected email account
-        const ConnectedEmail = await import("../../models/ConnectedEmail.js").then(
-          module => module.default
-        );
-        const getConnectedEmailModels = await import("../../models/ConnectedEmailModels.js").then(
-          module => module.default
-        );
+        const ConnectedEmail = await import(
+          "../../models/ConnectedEmail.js"
+        ).then((module) => module.default);
+        const getConnectedEmailModels = await import(
+          "../../models/ConnectedEmailModels.js"
+        ).then((module) => module.default);
 
         let senderEmail = "";
         if (typeof email.from === "string") {
@@ -1152,7 +1175,9 @@ export async function saveSentEmail(gmail, email, messageId = null) {
 
         if (connectedEmail) {
           // Get models for this account
-          const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+          const emailModels = getConnectedEmailModels(
+            connectedEmail._id.toString()
+          );
 
           // Save to database
           const savedEmail = await emailModels.Email.findOneAndUpdate(
@@ -1184,12 +1209,14 @@ export async function saveSentEmail(gmail, email, messageId = null) {
             { upsert: true, new: true }
           );
 
-          console.log(`Email saved to local database with ID: ${savedEmail._id}`);
-          
+          console.log(
+            `Email saved to local database with ID: ${savedEmail._id}`
+          );
+
           // Update stats
           await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
             $inc: { "stats.totalSent": 1 },
-            $set: { "stats.lastSent": new Date() }
+            $set: { "stats.lastSent": new Date() },
           });
         }
       } catch (dbError) {
