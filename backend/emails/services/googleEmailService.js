@@ -216,7 +216,7 @@ export async function processGoogleMessage(
   config = {}
 ) {
   try {
-    // Get the connected email account with more lenient status check
+    // Ensure connected email exists and is active
     const connectedEmail = await ConnectedEmail.findOne({
       userId,
       email: userEmail,
@@ -228,9 +228,7 @@ export async function processGoogleMessage(
       throw new Error("Connected email account not found");
     }
 
-    // If account exists but status isn't active, try to reactivate
     if (connectedEmail.status !== "active") {
-      // check if status is paused then skipping reactivation
       if (connectedEmail.status === "paused") {
         console.log(`Skipping reactivation for paused account: ${userEmail}`);
         return;
@@ -239,18 +237,16 @@ export async function processGoogleMessage(
       await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
         status: "active",
         lastConnected: new Date(),
-        $unset: {
-          disconnectedAt: "",
-          lastError: "",
-        },
+        $unset: { disconnectedAt: "", lastError: "" },
       });
     }
 
-    // Get models for this email account
     const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
 
     // Check if message already exists
-    const existingEmail = await emailModels.Email.findOne({ messageId });
+    const existingEmail = await emailModels.Email.findOne({
+      $or: [{ messageId }, { externalMessageId: messageId }],
+    });
     if (existingEmail) {
       console.log(`Email with messageId ${messageId} already exists`);
       return existingEmail;
@@ -266,15 +262,15 @@ export async function processGoogleMessage(
     });
 
     const message = messageResponse.data;
-    const headers = message.payload.headers || [];
+    if (!message.payload) {
+      console.warn(`Message payload is undefined for messageId: ${messageId}`);
+      return;
+    }
 
-    // Extract headers more safely
-    const getHeaderValue = (name) => {
-      const header = headers.find(
-        (h) => h.name.toLowerCase() === name.toLowerCase()
-      );
-      return header ? header.value : "";
-    };
+    const headers = message.payload.headers || [];
+    const getHeaderValue = (name) =>
+      headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ||
+      "";
 
     const subject = getHeaderValue("subject");
     const from = getHeaderValue("from");
@@ -287,50 +283,31 @@ export async function processGoogleMessage(
 
     console.log(`Parsing email: ${from} -> ${to} (${subject})`);
 
-    // Parse email addresses
     const parsedFrom = parseEmailAddressImproved(from);
     const parsedTo = parseEmailList(to);
     const parsedCc = parseEmailList(cc);
     const parsedBcc = parseEmailList(bcc);
     const parsedReplyTo = parseEmailAddressImproved(replyTo);
 
-    // Get message bodies
     const { text: bodyText, html: bodyHtml } = extractEmailBodies(message);
 
-    console.log(
-      `Body sizes - Text: ${bodyText?.length || 0} chars, HTML: ${
-        bodyHtml?.length || 0
-      } chars`
-    );
-
-    // Sanitize the bodies
-    const sanitizedText = sanitizeForMongoDB(bodyText, 50000);
-    const sanitizedHtml = sanitizeForMongoDB(bodyHtml, 100000);
-
-    // Extract a snippet for preview (safely)
-    let snippet = "";
-    try {
-      snippet =
-        message.snippet ||
-        sanitizedText.substring(0, 150).replace(/\s+/g, " ").trim();
-    } catch (e) {
-      console.warn("Error creating snippet:", e);
-      snippet = "(No preview available)";
+    if (!bodyText && !bodyHtml) {
+      console.warn(`Email body is undefined for messageId: ${messageId}`);
     }
 
-    // Process labels and determine folder
+    const sanitizedText = sanitizeForMongoDB(bodyText || "", 50000);
+    const sanitizedHtml = sanitizeForMongoDB(bodyHtml || "", 100000);
+
+    const snippet =
+      message.snippet ||
+      sanitizedText.substring(0, 150).replace(/\s+/g, " ").trim() ||
+      "(No preview available)";
+
     const gmailLabels = message.labelIds || [];
-    let folder = "inbox";
+    const folder = determineEmailCategory(message);
 
-    if (gmailLabels.includes("SENT")) folder = "sent";
-    else if (gmailLabels.includes("DRAFT")) folder = "drafts";
-    else if (gmailLabels.includes("TRASH")) folder = "trash";
-    else if (gmailLabels.includes("SPAM")) folder = "spam";
-
-    // Process attachments
     const attachments = processAttachments(message);
 
-    // Create email data with sanitized fields
     const emailData = {
       userId,
       messageId: message.id,
@@ -338,7 +315,6 @@ export async function processGoogleMessage(
       externalMessageId: messageIdHeader || message.id,
       provider: "google",
       providerId: message.id,
-
       from: {
         email: parsedFrom.email || "unknown@example.com",
         name: sanitizeForMongoDB(
@@ -346,7 +322,6 @@ export async function processGoogleMessage(
           100
         ),
       },
-
       to: parsedTo.map((recipient) => ({
         email: recipient.email || "",
         name: sanitizeForMongoDB(
@@ -354,7 +329,6 @@ export async function processGoogleMessage(
           100
         ),
       })),
-
       cc: parsedCc.map((recipient) => ({
         email: recipient.email || "",
         name: sanitizeForMongoDB(
@@ -362,7 +336,6 @@ export async function processGoogleMessage(
           100
         ),
       })),
-
       bcc: parsedBcc.map((recipient) => ({
         email: recipient.email || "",
         name: sanitizeForMongoDB(
@@ -370,7 +343,6 @@ export async function processGoogleMessage(
           100
         ),
       })),
-
       replyTo: parsedReplyTo.email
         ? {
             email: parsedReplyTo.email,
@@ -380,27 +352,16 @@ export async function processGoogleMessage(
             ),
           }
         : null,
-
       subject: sanitizeForMongoDB(subject || "(No Subject)", 500),
       date: new Date(date || Date.now()),
       receivedAt: new Date(),
-
-      body: {
-        text: sanitizedText,
-        html: sanitizedHtml,
-      },
-
-      // Set html_preview for frontend display - with safe truncation
+      body: { text: sanitizedText, html: sanitizedHtml },
       html_preview: sanitizedHtml ? sanitizedHtml.substring(0, 1000) : "",
-
       snippet: sanitizeForMongoDB(snippet, 200),
-
       read: !gmailLabels.includes("UNREAD"),
       starred: gmailLabels.includes("STARRED"),
-
       folder,
       labels: gmailLabels,
-
       attachments: attachments || [],
     };
 
@@ -408,7 +369,6 @@ export async function processGoogleMessage(
       `Prepared email for saving: ${emailData.from.name} <${emailData.from.email}> - ${emailData.subject}`
     );
 
-    // Process email content if enabled
     if (config.processContent !== false) {
       try {
         const processedData = await processEmailContent({
@@ -416,9 +376,7 @@ export async function processGoogleMessage(
           userEmail,
         });
 
-        // Make sure category is valid before assigning
         if (processedData.category) {
-          // Define valid categories from schema
           const validCategories = [
             "inbox",
             "sent",
@@ -434,118 +392,39 @@ export async function processGoogleMessage(
             "personal",
           ];
 
-          // Only use category if it's valid, otherwise keep the original
-          if (validCategories.includes(processedData.category)) {
-            emailData.category = processedData.category;
-          } else {
-            console.warn(
-              `Ignoring invalid category "${processedData.category}" from processing`
-            );
-            // Use folder as fallback for category
-            emailData.category = validCategories.includes(emailData.folder)
-              ? emailData.folder
-              : "inbox";
-          }
+          emailData.category = validCategories.includes(processedData.category)
+            ? processedData.category
+            : emailData.folder;
         }
 
-        // Copy other processed fields (except category which we've handled)
-        const { category, ...otherProcessedData } = processedData;
-        Object.assign(emailData, otherProcessedData);
+        Object.assign(emailData, processedData);
       } catch (processError) {
         console.error("Error processing email content:", processError);
-        // Continue without content processing
       }
     }
 
-    // Save or update email in database
-    try {
-      // Try to find existing email first
-      const existingEmail = await emailModels.Email.findOne({
-        $or: [
-          { messageId: message.id },
-          { externalMessageId: messageIdHeader },
-        ],
-      });
+    const savedEmail = await emailModels.Email.findOneAndUpdate(
+      { messageId: message.id },
+      { $set: emailData },
+      { upsert: true, new: true }
+    );
 
-      if (existingEmail) {
-        // Update existing email
-        const updatedEmail = await emailModels.Email.findByIdAndUpdate(
-          existingEmail._id,
-          {
-            $set: {
-              ...emailData,
-              updatedAt: new Date(),
-              lastSync: new Date(),
-              read: true,
-            },
-          },
-          { new: true }
-        );
-        console.log(`Email updated successfully with ID: ${updatedEmail._id}`);
-        return updatedEmail;
-      } else {
-        // Save new email
-        const emailDoc = new emailModels.Email({
-          ...emailData,
-          read: true, // Mark as read in our database
+    console.log(`Email saved successfully with ID: ${savedEmail._id}`);
+
+    if (!gmailLabels.includes("UNREAD")) {
+      try {
+        await gmail.users.messages.modify({
+          userId: "me",
+          id: messageId,
+          requestBody: { removeLabelIds: ["UNREAD"] },
         });
-        const savedEmail = await emailDoc.save();
-        console.log(`Email saved successfully with ID: ${savedEmail._id}`);
-
-        // Update sync stats
-        await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-          $inc: { "stats.totalEmails": 1 },
-          $set: { "stats.lastSync": new Date() },
-        });
-
-        // Mark email as read in Gmail to prevent it from showing up in future syncs
-        try {
-          console.log(`Marking email ${messageId} as read in Gmail`);
-
-          await gmail.users.messages.modify({
-            userId: "me",
-            id: messageId,
-            requestBody: {
-              removeLabelIds: ["UNREAD"],
-              addLabelIds: [], // No need to add any labels
-            },
-          });
-
-          console.log(
-            `Successfully marked email ${messageId} as read in Gmail`
-          );
-        } catch (markReadError) {
-          console.error(
-            `Failed to mark email ${messageId} as read in Gmail:`,
-            markReadError
-          );
-          // Continue execution even if marking as read in Gmail fails
-        }
-
-        
-
-        return savedEmail;
+        console.log(`Marked email ${messageId} as read in Gmail`);
+      } catch (markReadError) {
+        console.error(`Failed to mark email ${messageId} as read:`, markReadError);
       }
-    } catch (saveError) {
-      console.error("Error saving email:", saveError);
-
-      if (saveError.code === 11000) {
-        // Handle duplicate key more gracefully
-        try {
-          const email = await emailModels.Email.findOne({
-            messageId: message.id,
-          });
-          if (email) {
-            console.log(`Found existing email with ID: ${email._id}`);
-            return email;
-          }
-        } catch (findError) {
-          console.error("Error finding existing email:", findError);
-        }
-      }
-
-      throw new Error(`Unable to save email: ${saveError.message}`);
     }
+
+    return savedEmail;
   } catch (error) {
     console.error("Error processing Google message:", error);
     throw error;
@@ -1098,20 +977,126 @@ export async function sendEmail(connection, email) {
 }
 
 /**
- * Save sent email to Gmail's sent folder
+ * Save sent email to Gmail's sent folder and local database
  */
 export async function saveSentEmail(gmail, email, messageId = null) {
   try {
+    // Debug the email object structure
+    console.log("Saving sent email - Object structure:", 
+      Object.keys(email),
+      "Content fields:", 
+      {
+        hasContent: !!email.content,
+        hasBodyHtml: !!(email.body && email.body.html),
+        hasBodyText: !!(email.body && email.body.text),
+        hasResponse: !!email.response,
+        hasHtmlResponse: !!(email.response && email.response.html),
+        hasTextResponse: !!(email.response && email.response.text),
+        hasText: !!email.text,
+        hasHtml: !!email.html
+      }
+    );
+
+    // Get content - try all possible locations
+    let content = "";
+    
+    // Try direct content property
+    if (typeof email.content === "string" && email.content.trim() !== "") {
+      console.log("Using email.content");
+      content = email.content;
+    } 
+    // Try body.html
+    else if (email.body && email.body.html && email.body.html.trim() !== "") {
+      console.log("Using email.body.html");
+      content = email.body.html;
+    } 
+    // Try body.text
+    else if (email.body && email.body.text && email.body.text.trim() !== "") {
+      console.log("Using email.body.text");
+      content = email.body.text;
+    }
+    // Try response object (often used in automated responses)
+    else if (email.response) {
+      if (email.response.html && email.response.html.trim() !== "") {
+        console.log("Using email.response.html");
+        content = email.response.html;
+      } else if (email.response.text && email.response.text.trim() !== "") {
+        console.log("Using email.response.text");
+        content = email.response.text;
+      }
+    }
+    // Try direct html/text properties
+    else if (email.html && email.html.trim() !== "") {
+      console.log("Using email.html");
+      content = email.html;
+    }
+    else if (email.text && email.text.trim() !== "") {
+      console.log("Using email.text");
+      content = email.text;
+    }
+
+    // Check if we have content after all attempts
+    if (!content || content.trim() === "") {
+      console.error("Empty content in email object:", JSON.stringify(email, null, 2));
+      throw new Error("Email content cannot be empty when saving sent email");
+    }
+
+    // Convert plain text to HTML if it's not already HTML
+    if (!content.includes("<html") && !content.includes("<body") && !content.includes("<div")) {
+      content = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+  ${content
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br>")
+    .replace(/^(.+)$/, "<p>$1</p>")}
+</body>
+</html>`;
+    }
+
     // Create email message in base64 format
     const messageParts = [
-      `From: ${email.from}`,
-      `To: ${email.to}`,
-      `Subject: ${email.subject}`,
-      `Date: ${email.sentAt.toUTCString()}`,
+      `From: ${formatEmailAddress(email.from)}`,
+      `To: ${formatEmailAddress(email.to)}`,
+      `Subject: ${email.subject || "(No Subject)"}`,
+      `Date: ${email.sentAt?.toUTCString() || new Date().toUTCString()}`,
       "Content-Type: text/html; charset=utf-8",
       "",
-      email.content,
+      content,
     ];
+
+    // Helper function to format email addresses
+    function formatEmailAddress(address) {
+      if (typeof address === "string") {
+        // If already in the right format
+        if (address.includes("<") && address.includes(">")) {
+          return address;
+        }
+        // If just an email
+        if (address.includes("@")) {
+          const name = address.split("@")[0];
+          return `${name} <${address}>`;
+        }
+        return address;
+      }
+      
+      if (Array.isArray(address)) {
+        return address.map(addr => {
+          if (typeof addr === "string") return formatEmailAddress(addr);
+          return `${addr.name || addr.email.split("@")[0]} <${addr.email}>`;
+        }).join(", ");
+      }
+      
+      if (address && address.email) {
+        return `${address.name || address.email.split("@")[0]} <${address.email}>`;
+      }
+      
+      return "";
+    }
 
     const message = messageParts.join("\r\n");
     const encodedMessage = Buffer.from(message)
@@ -1120,14 +1105,98 @@ export async function saveSentEmail(gmail, email, messageId = null) {
       .replace(/\//g, "_")
       .replace(/=+$/, "");
 
-    // Insert the message into the sent folder
+    // Insert the message into Gmail's sent folder
     const result = await gmail.users.messages.insert({
       userId: "me",
-      resource: {
+      requestBody: {
         raw: encodedMessage,
         labelIds: ["SENT"],
       },
     });
+
+    console.log("Email saved to Gmail's sent folder:", result.data);
+    
+    // Mark as read in Gmail
+    await gmail.users.messages.modify({
+      userId: "me",
+      id: result.data.id,
+      requestBody: {
+        removeLabelIds: ["UNREAD"],
+        addLabelIds: []
+      }
+    });
+    
+    // Save the sent email to the local database
+    if (email.userId) {
+      try {
+        // Find connected email account
+        const ConnectedEmail = await import("../../models/ConnectedEmail.js").then(
+          module => module.default
+        );
+        const getConnectedEmailModels = await import("../../models/ConnectedEmailModels.js").then(
+          module => module.default
+        );
+
+        let senderEmail = "";
+        if (typeof email.from === "string") {
+          const match = email.from.match(/<([^>]+)>/);
+          senderEmail = match ? match[1] : email.from;
+        } else if (email.from && email.from.email) {
+          senderEmail = email.from.email;
+        }
+
+        const connectedEmail = await ConnectedEmail.findOne({
+          email: senderEmail,
+          userId: email.userId,
+        });
+
+        if (connectedEmail) {
+          // Get models for this account
+          const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
+
+          // Save to database
+          const savedEmail = await emailModels.Email.findOneAndUpdate(
+            { messageId: result.data.id },
+            {
+              $set: {
+                userId: email.userId,
+                messageId: result.data.id,
+                threadId: result.data.threadId || messageId || email.threadId,
+                externalMessageId: result.data.id,
+                provider: "google",
+                from: email.from,
+                to: email.to,
+                cc: email.cc || [],
+                bcc: email.bcc || [],
+                subject: email.subject || "(No Subject)",
+                sentAt: email.sentAt || new Date(),
+                body: {
+                  text: content.replace(/<[^>]*>/g, ""),
+                  html: content,
+                },
+                read: true,
+                category: "sent",
+                folder: "sent",
+                labels: ["SENT"],
+                sent: true,
+              },
+            },
+            { upsert: true, new: true }
+          );
+
+          console.log(`Email saved to local database with ID: ${savedEmail._id}`);
+          
+          // Update stats
+          await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+            $inc: { "stats.totalSent": 1 },
+            $set: { "stats.lastSent": new Date() }
+          });
+        }
+      } catch (dbError) {
+        console.error("Error saving sent email to database:", dbError);
+        // Continue since the email was saved to Gmail's sent folder
+      }
+    }
 
     return result.data;
   } catch (error) {
@@ -1151,11 +1220,16 @@ export const createDraft = async (connection, emailData) => {
     // Extract necessary data
     const { to, subject, content, from } = emailData;
 
+    // Ensure content is not empty
+    if (!content || content.trim() === "") {
+      throw new Error("Email content cannot be empty when creating a draft");
+    }
+
     // Prepare email content
     const emailContent =
       `From: ${from}\n` +
       `To: ${to}\n` +
-      `Subject: ${subject}\n\n` +
+      `Subject: ${subject || "(No Subject)"}\n\n` +
       `${content}`;
 
     // Base64 encode the email content

@@ -183,6 +183,11 @@ class AutomationController {
     const { messageId, content } = req.body;
     const userId = req.user._id;
 
+    // Validate content
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ error: 'Email content cannot be empty' });
+    }
+
     const account = await EmailAccount.findOne({ userId, email });
     if (!account) {
       return res.status(404).json({ error: 'Email account not found' });

@@ -368,6 +368,12 @@ class AutomatedResponseService {
             }
           }
 
+          // IN red color print emailResponse
+          // console.log(
+          //   "\x1b[31m%s\x1b[0m",
+          //   `Email response: ${JSON.stringify(emailResponse, null, 2)}`
+          // );
+
           // Try to save to Gmail sent folder
           try {
             console.log(`Saving response to sent folder for email: ${emailId}`);
