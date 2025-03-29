@@ -3,6 +3,7 @@ import { shouldProcessEmail } from "./emailProcessingService.js";
 import ConnectionManager from "../managers/connectionManager.js";
 import ConnectedEmail from "../../models/ConnectedEmail.js";
 import { asyncHandler } from "../utils/errorHandler.js";
+import { content } from "googleapis/build/src/apis/content/index.js";
 
 /**
  * Service to handle automated email responses
@@ -99,7 +100,7 @@ class AutomatedResponseService {
     const emailsToProcess = unprocessedEmails.filter((e) => e);
 
     // Add delay between processing each email to prevent rate limits
-    const PROCESSING_DELAY = 2000; // 2 seconds
+    const PROCESSING_DELAY = 10000; // 10 seconds
     console.log(
       `Found ${emailsToProcess.length} unprocessed emails out of ${newEmails.length}`
     );
@@ -240,10 +241,26 @@ class AutomatedResponseService {
           continue;
         }
 
-        const responseContent =
-          typeof response === "string"
-            ? response
-            : response.content || "";
+        // Extract response content safely
+        let responseContent = "";
+        if (typeof response === "string") {
+          responseContent = response;
+        } else if (response.content) {
+          responseContent = response.content;
+        } else if (response.text) {
+          responseContent = response.text;
+        } else if (response.html) {
+          responseContent = response.html;
+        } else if (response.body) {
+          responseContent = response.body.html || response.body.text || "";
+        }
+
+        if (!responseContent.trim()) {
+          console.error("Empty response content from AI");
+          continue;
+        }
+
+        console.log("Response content length:", responseContent.length);
 
         // Check AI settings mode (draft or auto)
         const aiSettings = account.aiSettings || {};
@@ -252,6 +269,7 @@ class AutomatedResponseService {
         // Save response regardless of mode
         const emailResponse = {
           messageId: emailId,
+          content: responseContent,
           body: {
             text: responseContent,
             html: responseContent,
@@ -287,6 +305,16 @@ class AutomatedResponseService {
           console.log(`Sending auto for email: ${emailId}`);
           let sendResult;
           try {
+            // Log the emailResponse structure before sending
+            console.log("Email response structure:", {
+              hasContent: !!emailResponse.content,
+              contentLength: emailResponse.content?.length || 0,
+              hasBodyHtml: !!(emailResponse.body && emailResponse.body.html),
+              bodyHtmlLength: emailResponse.body?.html?.length || 0,
+              hasBodyText: !!(emailResponse.body && emailResponse.body.text),
+              bodyTextLength: emailResponse.body?.text?.length || 0
+            });
+            
             sendResult = await emailService.sendEmail(
               account.connection,
               emailResponse
@@ -313,6 +341,12 @@ class AutomatedResponseService {
           emailResponse.messageId = sendResult.messageId;
           emailResponse.threadId = sendResult.threadId;
           emailResponse.provider = account.provider || "google";
+          emailResponse.content = responseContent;
+          emailResponse.body = {
+            text: responseContent,
+            html: responseContent,
+          };
+          emailResponse.sentAt = new Date();
 
           // Save sent email using the Sent model with proper defaults
           const sentEmail = new account.emailModels.Sent({
@@ -330,6 +364,7 @@ class AutomatedResponseService {
               },
             ],
             subject: emailResponse.subject,
+            content: emailResponse.content,
             body: {
               text: emailResponse.content,
               html: emailResponse.content,
