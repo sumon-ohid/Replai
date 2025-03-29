@@ -228,9 +228,14 @@ export async function processGoogleMessage(
 
     // If account exists but status isn't active, try to reactivate
     if (connectedEmail.status !== "active") {
-      console.log(
-        `Found inactive account for ${userEmail}, attempting to reactivate...`
-      );
+
+      // check if status is paused then skipping reactivation
+      if (connectedEmail.status === "paused") {
+        console.log(
+          `Skipping reactivation for paused account: ${userEmail}`
+        );
+        return;
+      }
 
       await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
         status: "active",
