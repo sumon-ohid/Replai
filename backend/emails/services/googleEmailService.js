@@ -10,6 +10,7 @@ import {
 } from "../utils/emailParser.js";
 import connectionManager from "../managers/connectionManager.js";
 import NotificationManager from "../managers/notificationManager.js";
+import { read } from "fs";
 
 /**
  * Improved email address parser
@@ -229,12 +230,9 @@ export async function processGoogleMessage(
 
     // If account exists but status isn't active, try to reactivate
     if (connectedEmail.status !== "active") {
-
       // check if status is paused then skipping reactivation
       if (connectedEmail.status === "paused") {
-        console.log(
-          `Skipping reactivation for paused account: ${userEmail}`
-        );
+        console.log(`Skipping reactivation for paused account: ${userEmail}`);
         return;
       }
 
@@ -478,6 +476,7 @@ export async function processGoogleMessage(
               ...emailData,
               updatedAt: new Date(),
               lastSync: new Date(),
+              read: true,
             },
           },
           { new: true }
@@ -486,7 +485,10 @@ export async function processGoogleMessage(
         return updatedEmail;
       } else {
         // Save new email
-        const emailDoc = new emailModels.Email(emailData);
+        const emailDoc = new emailModels.Email({
+          ...emailData,
+          read: true, // Mark as read in our database
+        });
         const savedEmail = await emailDoc.save();
         console.log(`Email saved successfully with ID: ${savedEmail._id}`);
 
@@ -495,6 +497,32 @@ export async function processGoogleMessage(
           $inc: { "stats.totalEmails": 1 },
           $set: { "stats.lastSync": new Date() },
         });
+
+        // Mark email as read in Gmail to prevent it from showing up in future syncs
+        try {
+          console.log(`Marking email ${messageId} as read in Gmail`);
+
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: messageId,
+            requestBody: {
+              removeLabelIds: ["UNREAD"],
+              addLabelIds: [], // No need to add any labels
+            },
+          });
+
+          console.log(
+            `Successfully marked email ${messageId} as read in Gmail`
+          );
+        } catch (markReadError) {
+          console.error(
+            `Failed to mark email ${messageId} as read in Gmail:`,
+            markReadError
+          );
+          // Continue execution even if marking as read in Gmail fails
+        }
+
+        
 
         return savedEmail;
       }
@@ -693,21 +721,20 @@ export async function initializeGoogleConnection(
       });
     }
 
-     // Send a notification to the user
-     await NotificationManager.createNotification({
-      userId: userId,
-      type: "info",
-      title: "New Email Account Connected",
-      message:
-        `Your Google account ${email} has been successfully connected.`,
-      metadata: {
-        category: "email",
-        action: "connected",
-        url: "/email-manager",
-        timestamp: new Date().toISOString(),
-      },
-    });
-
+    // Send a notification to the user
+    //  await NotificationManager.createNotification({
+    //   userId: userId,
+    //   type: "info",
+    //   title: "New Email Account Connected",
+    //   message:
+    //     `Your Google account ${email} has been successfully connected.`,
+    //   metadata: {
+    //     category: "email",
+    //     action: "connected",
+    //     url: "/email-manager",
+    //     timestamp: new Date().toISOString(),
+    //   },
+    // });
 
     return true;
   } catch (error) {
@@ -763,29 +790,47 @@ export async function checkForNewGoogleEmails(
 
     // If account exists but status isn't active, try to reactivate
     if (connectedEmail.status !== "active") {
+      // Skip paused accounts
+      if (connectedEmail.status === "paused") {
+        console.log(`Skipping sync for paused account: ${email}`);
+        return [];
+      }
+
       console.log(
         `Found inactive account for ${email}, attempting to reactivate...`
       );
 
-      await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-        status: "active",
-        lastConnected: new Date(),
-        $unset: {
-          disconnectedAt: "",
-          lastError: "",
-        },
-      });
+      // Re-activate the account
+      // await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
+      //   status: "active",
+      //   lastConnected: new Date(),
+      //   $unset: {
+      //     disconnectedAt: "",
+      //     lastError: "",
+      //   },
+      // });
     }
 
-    // List recent messages with a more flexible query
+    // Get connection time or last sync time to use as reference point
+    const referenceTime =
+      connectedEmail.lastConnected || connectedEmail.createdAt;
+
+    // Format the date for Gmail query (RFC 3339 format)
+    const afterDateStr = referenceTime.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+    // Build Gmail query to get only unread emails after the connection time
+    const query = `is:unread after:${afterDateStr}`;
+    console.log(`[${email}] Querying emails with: ${query}`);
+
+    // List recent unread messages that arrived after connection time
     const response = await gmail.users.messages.list({
       userId: "me",
       maxResults: 20,
-      q: "newer_than:1d", // Less restrictive query
+      q: query,
     });
 
     if (!response.data.messages || response.data.messages.length === 0) {
-      console.log("No new emails to sync");
+      console.log(`[${email}] No new unread emails to sync`);
 
       // Update last sync time even if no messages
       await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
@@ -795,7 +840,9 @@ export async function checkForNewGoogleEmails(
       return [];
     }
 
-    console.log(`Found ${response.data.messages.length} messages to sync`);
+    console.log(
+      `[${email}] Found ${response.data.messages.length} new unread messages to sync`
+    );
 
     // Process messages
     const processedMessages = [];
@@ -812,7 +859,10 @@ export async function checkForNewGoogleEmails(
         );
         if (processed) processedMessages.push(processed);
       } catch (error) {
-        console.error(`Error processing message ${message.id}:`, error);
+        console.error(
+          `[${email}] Error processing message ${message.id}:`,
+          error
+        );
         errors.push({
           messageId: message.id,
           error: error.message,
@@ -828,12 +878,15 @@ export async function checkForNewGoogleEmails(
 
     // Log any errors for debugging
     if (errors.length > 0) {
-      console.warn(`${errors.length} messages had errors during sync:`, errors);
+      console.warn(
+        `[${email}] ${errors.length} messages had errors during sync:`,
+        errors
+      );
     }
 
     return processedMessages;
   } catch (error) {
-    console.error("Error checking Google emails:", error);
+    console.error(`[${email}] Error checking Google emails:`, error);
 
     // Update error status in database
     try {
@@ -850,7 +903,7 @@ export async function checkForNewGoogleEmails(
         }
       );
     } catch (dbError) {
-      console.error("Failed to update error status:", dbError);
+      console.error(`[${email}] Failed to update error status:`, dbError);
     }
 
     throw error;

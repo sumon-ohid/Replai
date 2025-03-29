@@ -304,7 +304,7 @@ class ConnectionController {
           console.log(
             `Found database record for ${email}, reinitializing connection...`
           );
-          await ConnectionManager.initializeConnection(
+          await ConnectionManager.initializeAllConnections(
             userId,
             email,
             connectedEmail.provider,
