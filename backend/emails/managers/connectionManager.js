@@ -159,7 +159,7 @@ export const addConnection = async (userId, email, provider, connection) => {
     });
 
     console.log(`Added ${provider} connection for ${email}`);
-    
+
     return key;
   } catch (error) {
     console.error(`Error adding connection for ${email}:`, error);
@@ -431,27 +431,59 @@ export const disconnectGoogleEmail = async (userId, email) => {
     const key = `${userId}:${email}`;
     await stopConnection(key);
     
-    // Update the database record
-    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-      status: 'disconnected',
-      disconnectedAt: new Date(),
-      'tokens.refreshToken': null, // Clear tokens for security
-      'tokens.accessToken': null
-    });
+    // Get the email ID to delete collections first (important to do this before deleting the record)
+    const emailId = connectedEmail._id.toString();
     
-    // Update user preferences
+    try {
+      // Delete all associated email collections
+      console.log(`Deleting email collections for ${emailId}`);
+      const emailModels = getConnectedEmailModels(emailId);
+      if (emailModels) {
+        // Drop the collections if they exist
+        const collections = [
+          `email_${emailId}_emails`,
+          `email_${emailId}_drafts`,
+          `email_${emailId}_sent`,
+          `email_${emailId}_sents`,
+        ];
+        
+        for (const collection of collections) {
+          if (mongoose.connection.collections[collection]) {
+            await mongoose.connection.dropCollection(collection);
+            console.log(`Dropped collection: ${collection}`);
+          }
+        }
+      }
+    } catch (collectionError) {
+      console.error(`Error deleting email collections: ${collectionError.message}`);
+      // Continue with deletion even if collections can't be dropped
+    }
+    
+    // Delete the connected email record completely
+    await ConnectedEmail.findByIdAndDelete(connectedEmail._id);
+    console.log(`Deleted ConnectedEmail record for ${email}`);
+    
+    // Update user model by pulling this email from emailPreferences
     await User.findByIdAndUpdate(userId, {
-      $set: { [`emailPreferences.${email}.syncEnabled`]: false }
+      $unset: { [`emailPreferences.${email}`]: "" },
+      $pull: { connectedEmails: email }
+    });
+    console.log(`Removed email from User preferences: ${email}`);
+
+    // Send notification to the user
+    await NotificationManager.createNotification({
+      userId: userId,
+      type: "info",
+      title: "Email Account Disconnected",
+      message: `Your Google account ${email} has been successfully disconnected.`,
+      metadata: {
+        category: "email",
+        action: "disconnected",
+        url: "/email-manager",
+        timestamp: new Date().toISOString(),
+      },
     });
 
-    // Send notification
-    await notifyConnectionStatus({
-      userId,
-      email,
-      status: 'info',
-      message: `Email account ${email} has been disconnected`
-    });
-    
     console.log(`Successfully disconnected Google email ${email}`);
     return { success: true };
   } catch (error) {
