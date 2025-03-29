@@ -36,6 +36,7 @@ import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 import RssFeedOutlinedIcon from "@mui/icons-material/RssFeedOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import TextField from "@mui/material/TextField";
+import PaymentsIcon from '@mui/icons-material/Payments';
 
 // Navigation click handler
 const handleNavClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -86,6 +87,11 @@ const navItems = [
     label: "Blogs",
     href: "/blog",
     icon: <RssFeedOutlinedIcon fontSize="small" />,
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+    icon: <PaymentsIcon fontSize="small" />,
   },
 ];
 

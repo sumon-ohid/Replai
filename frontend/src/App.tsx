@@ -28,6 +28,7 @@ const Documentations = React.lazy(() => import('./templates/homepage/Documentati
 const BlogPage = React.lazy(() => import('./templates/homepage/BlogPage'));
 const AboutUsPage = React.lazy(() => import('./templates/homepage/AboutUsPage'));
 const ContactUsPage = React.lazy(() => import('./templates/homepage/ContactUsPage'));
+const PricePage = React.lazy(() => import('./templates/homepage/PricePage'));
 const NotificationView = React.lazy(() => import('./templates/dashboard/NotificationView'));
 
 // ScrollToTop component that scrolls the window to the top on route changes
@@ -140,6 +141,7 @@ export default function App() {
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/about-us" element={<AboutUsPage />} />
             <Route path="/contact" element={<ContactUsPage />} />
+            <Route path="/pricing" element={<PricePage />} />
             
             {/* 404 route */}
             <Route path="*" element={<NotFoundPage />} />
