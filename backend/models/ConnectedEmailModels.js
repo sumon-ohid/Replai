@@ -272,6 +272,24 @@ const sentEmailSchema = new mongoose.Schema({
     index: true
   },
   threadId: String,
+  from: {
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true
+    },
+    name: { 
+      type: String, 
+      trim: true 
+    }
+  },
+  provider: { 
+    type: String, 
+    required: true,
+    enum: ['google', 'outlook', 'smtp', 'imap'],
+    index: true
+  },
   
   to: [{
     email: { 
@@ -329,7 +347,7 @@ const sentEmailSchema = new mongoose.Schema({
       default: '' 
     }
   },
-  
+  inReplyTo: String,
   attachments: [{
     filename: String,
     contentType: String,

@@ -276,8 +276,19 @@ class AutomatedResponseService {
           },
           sentAt: new Date(),
           mode: mode,
-          from: email, // The account sending the response
-          to: newEmail.from?.email,
+          from: {
+            email: email,
+            name: account.name || email.split("@")[0],
+          },
+          to: [
+            {
+              email: newEmail.from?.email,
+              name: newEmail.from?.name || newEmail.from?.email.split("@")[0],
+            },
+          ],
+          cc: [],
+          bcc: [],
+          inReplyTo: newEmail.externalMessageId || emailId,
           subject: `${newEmail.subject || "No Subject"}`,
           autoResponse: true,
         };
