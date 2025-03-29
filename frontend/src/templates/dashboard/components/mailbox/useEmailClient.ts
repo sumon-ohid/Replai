@@ -240,6 +240,14 @@ export const useEmailClient = (): UseEmailClientReturn => {
             endpoint = `/api/emails/v2/${accountEmail}/sent`;
             params = { folder, timestamp: now };
             break;
+          case "trash":
+            endpoint = `/api/emails/v2/${accountEmail}/trash`;
+            params = { folder, timestamp: now };
+            break;
+          case "starred":
+            endpoint = `/api/emails/v2/${accountEmail}/starred`;
+            params = { folder, timestamp: now };
+            break;
           default:
             endpoint = `/api/emails/v2/${accountEmail}/emails`;
             params = { folder, timestamp: now };

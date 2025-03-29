@@ -40,4 +40,10 @@ router.patch('/:email/emails/mark-all-read', auth, EmailController.markAllAsRead
 // send email
 router.post('/:email/send', auth, EmailController.sendEmail);
 
+// get trash emails
+router.get('/:email/trash', auth, EmailController.getTrashedEmails);
+
+// get starred emails
+router.get('/:email/starred', auth, EmailController.getStarredEmails);
+
 export default router;

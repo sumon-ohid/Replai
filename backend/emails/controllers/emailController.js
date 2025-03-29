@@ -1720,4 +1720,58 @@ EmailController.extractTextFromHtml = function (html) {
     .trim();
 };
 
+// get trashed emails
+EmailController.getTrashedEmails = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { email } = req.params;
+
+  logger.info("Getting trashed emails", { email });
+
+  // Get the connected email account
+  const account = await ConnectedEmail.findOne({ userId, email });
+  if (!account) {
+    return res.status(404).json({ error: "Connected email not found" });
+  }
+
+  // Get models for this email account
+  const emailModels = getConnectedEmailModels(account._id.toString());
+
+  // Find trashed emails
+  const trashedEmails = await emailModels.Email.find({
+    folder: "trash",
+    userId,
+  }).lean();
+
+  logger.info(`Found ${trashedEmails.length} trashed emails`);
+
+  res.json(trashedEmails);
+});
+
+// get starred emails
+EmailController.getStarredEmails = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { email } = req.params;
+
+  logger.info("Getting starred emails", { email });
+
+  // Get the connected email account
+  const account = await ConnectedEmail.findOne({ userId, email });
+  if (!account) {
+    return res.status(404).json({ error: "Connected email not found" });
+  }
+
+  // Get models for this email account
+  const emailModels = getConnectedEmailModels(account._id.toString());
+
+  // Find starred emails
+  const starredEmails = await emailModels.Email.find({
+    starred: true,
+    userId,
+  }).lean();
+
+  logger.info(`Found ${starredEmails.length} starred emails`);
+
+  res.json(starredEmails);
+});
+
 export default EmailController;
