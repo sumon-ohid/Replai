@@ -379,18 +379,20 @@ export const notifyConnectionStatus = async (params) => {
     
     const userIdStr = typeof userId === 'object' ? userId._id.toString() : String(userId);
     
-    const notification = await NotificationManager.createNotification({
-      userId: userIdStr,
-      type,
-      title,
-      message,
-      email,
-      metadata: {
-        ...metadata,
-        connectionStatus: status,
-        timestamp: new Date().toISOString()
-      }
-    });
+    const notification = "";
+
+    // const notification = await NotificationManager.createNotification({
+    //   userId: userIdStr,
+    //   type,
+    //   title,
+    //   message,
+    //   email,
+    //   metadata: {
+    //     ...metadata,
+    //     connectionStatus: status,
+    //     timestamp: new Date().toISOString()
+    //   }
+    // });
     
     // Update email connection status in database if needed
     if (status === 'error' || status === 'active') {

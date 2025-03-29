@@ -92,9 +92,24 @@ class ConnectionController {
 
     console.log("New email account added:", account.email);
 
+      // // Send a notification to the user
+      // await NotificationManager.createNotification({
+      //   userId: userId,
+      //   type: "info",
+      //   title: "New Email Account Connected",
+      //   message:
+      //     `Your ${account.provider} account ${account.email} has been successfully connected.`,
+      //   metadata: {
+      //     category: "email",
+      //     action: "connected",
+      //     url: "/email-manager",
+      //     timestamp: new Date().toISOString(),
+      //   },
+      // });
+
     // Initialize the connection
     try {
-      const connectionKey = await ConnectionManager.initializeConnection(
+      const connectionKey = await ConnectionManager.initializeAllConnections(
         userId,
         email,
         provider,

@@ -5,6 +5,7 @@ import getConnectedEmailModels, { validateEmailCollections } from '../../models/
 import { initializeGoogleConnection } from '../services/googleEmailService.js';
 import { notifyConnectionStatus, notifyConnectionError } from './notificationManager.js';
 import { getSyncConfig } from '../config/emailConfig.js';
+import NotificationManager from './notificationManager.js';
 
 // Store active connections
 const activeConnections = new Map();
@@ -158,6 +159,7 @@ export const addConnection = async (userId, email, provider, connection) => {
     });
 
     console.log(`Added ${provider} connection for ${email}`);
+    
     return key;
   } catch (error) {
     console.error(`Error adding connection for ${email}:`, error);

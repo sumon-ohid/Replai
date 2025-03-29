@@ -9,6 +9,7 @@ import {
   extractHtmlBody,
 } from "../utils/emailParser.js";
 import connectionManager from "../managers/connectionManager.js";
+import NotificationManager from "../managers/notificationManager.js";
 
 /**
  * Improved email address parser
@@ -691,6 +692,22 @@ export async function initializeGoogleConnection(
         config,
       });
     }
+
+     // Send a notification to the user
+     await NotificationManager.createNotification({
+      userId: userId,
+      type: "info",
+      title: "New Email Account Connected",
+      message:
+        `Your Google account ${email} has been successfully connected.`,
+      metadata: {
+        category: "email",
+        action: "connected",
+        url: "/email-manager",
+        timestamp: new Date().toISOString(),
+      },
+    });
+
 
     return true;
   } catch (error) {
