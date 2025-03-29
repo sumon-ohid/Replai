@@ -4,6 +4,7 @@ import ConnectionManager from "../managers/connectionManager.js";
 import ConnectedEmail from "../../models/ConnectedEmail.js";
 import { asyncHandler } from "../utils/errorHandler.js";
 import { content } from "googleapis/build/src/apis/content/index.js";
+import { read } from "fs";
 
 /**
  * Service to handle automated email responses
@@ -291,6 +292,8 @@ class AutomatedResponseService {
           inReplyTo: newEmail.externalMessageId || emailId,
           subject: `${newEmail.subject || "No Subject"}`,
           autoResponse: true,
+          read: true,
+          starred: false,
         };
 
         if (mode === "draft") {
@@ -611,7 +614,9 @@ class AutomatedResponseService {
           messageId: draftResult.messageId || `draft-${Date.now()}`,
           draftId: draftResult.draftId,
           threadId: draftResult.threadId || newEmail.threadId || emailId,
-
+          read: true,
+          starred: false,
+          
           // Store sender info
           from: {
             email: email,
