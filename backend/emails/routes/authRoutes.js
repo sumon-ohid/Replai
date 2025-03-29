@@ -12,6 +12,7 @@ import customEmailService from '../services/customEmailService.js';
 import connectionManager from '../managers/connectionManager.js';
 import dotenv from 'dotenv';
 import auth from '../../middleware/auth.js';
+import NotificationManager from '../managers/notificationManager.js';
 
 dotenv.config();
 const dashboardUrl = process.env.DASHBOARD_URL;
@@ -156,7 +157,23 @@ router.get('/google/callback', async (req, res) => {
         }
       }
     });
-    
+
+    // Send initial notification that email connection has started
+     await NotificationManager.createNotification({
+      userId: userId,
+      type: "info",
+      title: "Email Account Connected",
+      message: `Your Google account ${googleUserEmail} has been successfully connected.`,
+      metadata: {
+        category: "email",
+        action: "connected",
+        provider: "google",
+        email: googleUserEmail,
+        url: "/email-manager",
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     // Initialize the Google connection in the background
     setTimeout(async () => {
       try {
@@ -207,6 +224,7 @@ router.post('/disconnect', auth, async (req, res) => {
     }
     
     console.log(`Found connected email: ${connectedEmail.provider} - ${email}`);
+    const connectedEmailId = connectedEmail._id;
     
     // Call the appropriate disconnect function based on provider
     let disconnectResult;
@@ -235,6 +253,60 @@ router.post('/disconnect', auth, async (req, res) => {
         error: 'Failed to disconnect email', 
         details: disconnectResult.error 
       });
+    }
+    
+    // COMPLETE CLEANUP STEPS
+    try {
+      // 1. Remove from user's connectedEmails array
+      await User.updateOne(
+        { _id: userId },
+        { $pull: { connectedEmails: { email: email } } }
+      );
+      
+      console.log(`Removed ${email} from user's connectedEmails array`);
+      
+      // 2. Delete email collections directly using Mongoose connection
+      const mongoose = (await import('mongoose')).default;
+      const connectedEmailIdStr = connectedEmailId.toString();
+      
+      // Define collection names based on the ID
+      const collectionNames = [
+        `email_${connectedEmailIdStr}_emails`,
+        `email_${connectedEmailIdStr}_drafts`, 
+        `email_${connectedEmailIdStr}_sent`
+      ];
+      
+      // Drop each collection if it exists
+      for (const collectionName of collectionNames) {
+        try {
+          const collectionExists = await mongoose.connection.db
+            .listCollections({ name: collectionName })
+            .hasNext();
+            
+          if (collectionExists) {
+            console.log(`Dropping collection: ${collectionName}`);
+            await mongoose.connection.db.collection(collectionName).drop();
+            console.log(`Successfully dropped collection: ${collectionName}`);
+          } else {
+            console.log(`Collection ${collectionName} does not exist, skipping`);
+          }
+        } catch (dropError) {
+          console.error(`Error dropping collection ${collectionName}:`, dropError);
+          // Continue with other collections
+        }
+      }
+      
+      // 3. Clean up any scheduled jobs or intervals related to this email
+      connectionManager.removeAllIntervals(userId, email);
+      
+      // 4. Delete the ConnectedEmail document entirely
+      await ConnectedEmail.findByIdAndDelete(connectedEmailId);
+      console.log(`Deleted ConnectedEmail document for ${email}`);
+      
+    } catch (cleanupError) {
+      console.error(`Error during cleanup for ${email}:`, cleanupError);
+      // Don't fail the request if cleanup has issues
+      // We've already disconnected the main service, so this is secondary
     }
     
     console.log(`Successfully disconnected ${email}`);

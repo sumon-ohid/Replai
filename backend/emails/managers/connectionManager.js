@@ -434,31 +434,6 @@ export const disconnectGoogleEmail = async (userId, email) => {
     // Get the email ID to delete collections first (important to do this before deleting the record)
     const emailId = connectedEmail._id.toString();
     
-    try {
-      // Delete all associated email collections
-      console.log(`Deleting email collections for ${emailId}`);
-      const emailModels = getConnectedEmailModels(emailId);
-      if (emailModels) {
-        // Drop the collections if they exist
-        const collections = [
-          `email_${emailId}_emails`,
-          `email_${emailId}_drafts`,
-          `email_${emailId}_sent`,
-          `email_${emailId}_sents`,
-        ];
-        
-        for (const collection of collections) {
-          if (mongoose.connection.collections[collection]) {
-            await mongoose.connection.dropCollection(collection);
-            console.log(`Dropped collection: ${collection}`);
-          }
-        }
-      }
-    } catch (collectionError) {
-      console.error(`Error deleting email collections: ${collectionError.message}`);
-      // Continue with deletion even if collections can't be dropped
-    }
-    
     // Delete the connected email record completely
     await ConnectedEmail.findByIdAndDelete(connectedEmail._id);
     console.log(`Deleted ConnectedEmail record for ${email}`);
@@ -624,6 +599,47 @@ export const getUserConnections = (userId) => {
   }
 };
 
+/**
+ * Remove all intervals and timeouts for a specific connection
+ * @param {string} userId - User ID
+ * @param {string} email - Email address
+ */
+export const removeAllIntervals = async (userId, email) => {
+  console.log(`Removing all intervals for ${email}`);
+  
+  const userConnectionKey = `${userId}:${email}`;
+  const connection = activeConnections.get(userConnectionKey);  // Use activeConnections instead of this.connections
+  
+  if (connection) {
+    // Clear any timeouts or intervals in the connection object
+    if (connection.connection) {
+      if (connection.connection.interval) {
+        console.log(`Clearing main interval for ${email}`);
+        clearTimeout(connection.connection.interval);
+        connection.connection.interval = null;
+      }
+      
+      if (connection.connection.syncInterval) {
+        console.log(`Clearing sync interval for ${email}`);
+        clearTimeout(connection.connection.syncInterval);
+        connection.connection.syncInterval = null;
+      }
+      
+      if (connection.connection.refreshInterval) {
+        console.log(`Clearing refresh interval for ${email}`);
+        clearTimeout(connection.connection.refreshInterval);
+        connection.connection.refreshInterval = null;
+      }
+    }
+    
+    // Remove the connection from the map
+    activeConnections.delete(userConnectionKey);
+    console.log(`Removed connection for ${email} from connection manager`);
+  } else {
+    console.log(`No active connection found for ${email}, nothing to clean up`);
+  }
+};
+
 // Make sure to add the function to the default export
 export default {
   initializeAllConnections,
@@ -639,4 +655,5 @@ export default {
   updateLastSync,
   forceSyncAllAccounts,
   getUserConnections,
+  removeAllIntervals,
 };
