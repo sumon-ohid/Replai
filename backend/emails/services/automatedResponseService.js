@@ -264,7 +264,7 @@ class AutomatedResponseService {
 
         // Check AI settings mode (draft or auto)
         const aiSettings = account.aiSettings || {};
-        const mode = aiSettings.mode || "draft";
+        const mode = aiSettings.mode || "normal";
 
         // Save response regardless of mode
         const emailResponse = {
