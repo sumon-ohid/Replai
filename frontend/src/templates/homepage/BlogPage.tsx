@@ -46,20 +46,24 @@ import AppTheme from "../shared-theme/AppTheme";
 import Footer from "./components/Footer";
 import AppAppBar from "./components/AppAppBar";
 import { useState, useRef, useEffect } from "react";
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from "@mui/icons-material/Close";
+import { border, margin } from "@mui/system";
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   display: "flex",
   flexDirection: "column",
-  borderRadius: 16,
+  borderRadius: 6,
   overflow: "hidden",
   boxShadow: "0 8px 20px rgba(0, 0, 0, 0.05)",
   transition: "transform 0.2s ease-in-out",
+  backgroundColor: "transparent",
   "&:hover": {
     transform: "translateY(-8px)",
-    boxShadow: "0 16px 40px rgba(0, 0, 0, 0.12)",
+    boxShadow: "0 6px 15px rgba(0, 119, 255, 0.22)",
+    border: `.5px solid ${alpha(theme.palette.primary.main, 1)}`,
+    backgroundColor: "rgba(0, 119, 255, 0)",
   },
 }));
 
@@ -71,12 +75,14 @@ const ColorBlock = styled(Box)<{ color?: string }>`
   align-items: center;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme, color }) =>
-    color || theme.palette.primary.main};
+  background-color: theme.palette.mode === "dark"
+                ? "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.7) 0%, rgba(0, 0, 0, 0) 60%)"
+                : "radial-gradient(circle at 20% 20%, rgba(41, 98, 255, 0.7) 0%, rgba(255, 255, 255, 0) 60%)",
   color: ${({ theme }) => theme.palette.common.white};
   position: relative;
   overflow: hidden;
   border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.palette.divider};
 `;
 
 // Array of colors for the blog post backgrounds
@@ -786,7 +792,7 @@ export default function BlogPage() {
                                 component="h3"
                                 fontWeight="bold"
                                 sx={{
-                                  textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                  // textShadow: "0 2px 4px rgba(0,0,0,0.2)",
                                   wordBreak: "break-word",
                                 }}
                               >
@@ -952,9 +958,9 @@ export default function BlogPage() {
             justifyContent: "space-between",
             alignItems: "center",
             borderBottom: `1px solid ${theme.palette.divider}`,
+            bgcolor: "background.default",
           }}
         >
-          
           <Typography
             variant="caption"
             color="text.secondary"
@@ -971,10 +977,9 @@ export default function BlogPage() {
           >
             <CloseIcon />
           </IconButton>
-          
         </DialogTitle>
 
-        <DialogContent sx={{ px: { xs: 2, sm: 4 }, py: 4 }}>
+        <DialogContent sx={{ px: { xs: 2, sm: 4 }, py: 4, bgcolor: "background.default" }}>
           {currentPost && (
             <Box>
               <Typography
