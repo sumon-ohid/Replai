@@ -3,7 +3,7 @@ import type {} from '@mui/x-date-pickers/themeAugmentation';
 import type {} from '@mui/x-charts/themeAugmentation';
 import type {} from '@mui/x-data-grid-pro/themeAugmentation';
 import type {} from '@mui/x-tree-view/themeAugmentation';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -19,10 +19,43 @@ import {
 } from './theme/customizations';
 import {
   Typography,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Grid,
+  Paper,
+  Divider,
+  Avatar,
+  Badge,
+  Tab,
+  Tabs,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  LinearProgress,
+  useMediaQuery,
 } from '@mui/material';
 import Footer from './components/Footer';
+import { motion, AnimatePresence } from "framer-motion";
 
-import UnderConstruction from './components/ComingSoon';
+// Icons
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import BusinessCenterOutlinedIcon from "@mui/icons-material/BusinessCenterOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined";
+import PaymentIcon from '@mui/icons-material/Payment';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import CreditScoreIcon from '@mui/icons-material/CreditScore';
+import HistoryIcon from '@mui/icons-material/History';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import EventIcon from '@mui/icons-material/Event';
+import WarningIcon from '@mui/icons-material/Warning';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -31,11 +64,124 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function PlanBillingManagement(props: { disableCustomTheme?: boolean }) {
-  const [tabValue, setTabValue] = React.useState(0);
+// Sample data for payment history
+const paymentHistory = [
+  { id: '923456', date: '2025-03-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+  { id: '856234', date: '2025-02-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+  { id: '723954', date: '2025-01-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+  { id: '612487', date: '2024-12-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+];
 
+// Pricing tiers
+const tiers = [
+  {
+    title: "Free",
+    icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
+    price: "0",
+    priceDetails: {
+      monthly: "0",
+      yearly: "0",
+    },
+    buttonText: "Get Started",
+    buttonVariant: "outlined",
+    buttonColor: "primary",
+    highlighted: false,
+    features: [
+      { title: "1 email account", included: true },
+      { title: "10 emails per month", included: true },
+      { title: "Basic AI responses", included: true },
+      { title: "Help center access", included: true },
+      { title: "Email support", included: true },
+      { title: "Advanced analytics", included: false },
+      { title: "Customizable templates", included: false },
+      { title: "Priority support", included: false },
+    ],
+  },
+  {
+    title: "Pro",
+    icon: <DiamondOutlinedIcon sx={{ fontSize: 28 }} />,
+    subheader: "Most Popular",
+    price: "5",
+    priceDetails: {
+      monthly: "19.99",
+      yearly: "180",
+    },
+    savings: "€60",
+    buttonText: "Start Pro Plan",
+    buttonVariant: "contained",
+    buttonColor: "primary",
+    highlighted: true,
+    features: [
+      { title: "2 email accounts", included: true },
+      { title: "1000 emails", included: true },
+      { title: "Advanced AI responses", included: true },
+      { title: "Custom email signatures", included: true },
+      { title: "Priority email support", included: true },
+      { title: "Advanced analytics", included: true },
+      { title: "Customizable templates", included: true },
+    ],
+  },
+  {
+    title: "Business",
+    icon: <BusinessCenterOutlinedIcon sx={{ fontSize: 28 }} />,
+    price: "Custom",
+    priceDetails: {
+      monthly: "Custom",
+      yearly: "Custom",
+    },
+    buttonText: "Contact Sales",
+    buttonVariant: "outlined",
+    buttonColor: "primary",
+    highlighted: false,
+    features: [
+      { title: "Unlimited email accounts", included: true },
+      { title: "Unlimited emails", included: true },
+      { title: "Enterprise AI responses", included: true },
+      { title: "Custom integrations", included: true },
+      { title: "Dedicated account manager", included: true },
+      { title: "Advanced analytics & reporting", included: true },
+      { title: "White-labeling options", included: true },
+      { title: "Priority 24/7 support", included: true },
+    ],
+  },
+];
+
+export default function PlanBillingManagement(props: { disableCustomTheme?: boolean }) {
+  const theme = useTheme();
+  const [tabValue, setTabValue] = React.useState(0);
+  const [billingCycle, setBillingCycle] = React.useState<"monthly" | "yearly">("monthly");
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // Current subscription data (in a real app, this would come from an API)
+  const currentPlan = tiers[1]; // Pro plan
+  const usageData = {
+    emails: {
+      used: 746,
+      total: 1000,
+      percentage: 74.6
+    },
+    accounts: {
+      used: 2,
+      total: 2,
+      percentage: 100
+    }
+  };
+  
+  // Next billing date
+  const nextBillingDate = new Date('2025-04-15');
+  
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+  
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
   };
 
   return (
@@ -59,20 +205,502 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
             sx={{
               alignItems: 'center',
               mx: 3,
-              pb: 5,
+              pb: 3,
               mt: { xs: 8, md: 0 },
             }}
           >
-          <Header/>
+            <Header/>
           </Stack>
-          <Box sx={{ mx: 3, mb: 3 }}>
-            <Typography variant="h4" ml={1}>Plan & Billing</Typography>
-            <Typography variant="body1" color="textSecondary" align='left' ml={1}>
-              Manage your subscription and billing details
-            </Typography>
-            <UnderConstruction />
+
+          <Box sx={{ mx: 3, mb: 5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="h4" sx={{ mb: 1 }}>Plan & Billing</Typography>
+                <Typography variant="body1" color="textSecondary">
+                  Manage your subscription and billing details
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mt: { xs: 2, sm: 0 } }}>
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  startIcon={<ReceiptIcon />}
+                  sx={{ mr: 2 }}
+                >
+                  View Invoices
+                </Button>
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  startIcon={<PaymentIcon />}
+                  href="https://buy.stripe.com/5kA6qP9YoaN5g92aEE"
+                  target="_blank"
+                >
+                  Update Payment
+                </Button>
+              </Box>
+            </Box>
+
+            {/* Tabs for different sections */}
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant={isMobile ? "scrollable" : "fullWidth"}
+              scrollButtons={isMobile ? "auto" : false}
+              sx={{ 
+                mb: 4,
+                '& .MuiTab-root': { 
+                  minHeight: '64px',
+                  fontSize: '0.95rem'
+                },
+              }}
+            >
+              <Tab 
+                icon={<CreditScoreIcon />} 
+                iconPosition="start"
+                label="Current Subscription" 
+              />
+              <Tab 
+                icon={<HistoryIcon />} 
+                iconPosition="start"
+                label="Payment History" 
+              />
+            </Tabs>
+
+            <AnimatePresence mode="wait">
+              {tabValue === 0 && (
+                <motion.div 
+                  key="subscription"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: '100%'}}
+                >
+                  <Grid container spacing={4}>
+                    {/* Current Plan Details */}
+                    <Grid item xs={12} md={8}>
+                      <Card 
+                        elevation={0}
+                        variant="outlined"
+                        sx={{ 
+                          borderRadius: 2,
+                          height: '100%',
+                          position: 'relative',
+                          overflow: 'visible',
+                          bgColor: 'background.default',
+                        }}
+                      >
+                        {/* Plan Badge */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -16,
+                            left: 24,
+                            backgroundColor: 'primary.main',
+                            color: 'common.white',
+                            py: 0.75,
+                            px: 3,
+                            borderRadius: 1,
+                            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                          }}
+                        >
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            Current Plan
+                          </Typography>
+                        </Box>
+                        
+                        <CardContent sx={{ pt: 4, pb: 3, px: 3 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            flexWrap: 'wrap',
+                            mb: 2,
+                          }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                              <Avatar 
+                                sx={{ 
+                                  bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                                  color: 'primary.main',
+                                  width: 56,
+                                  height: 56,
+                                  mr: 2
+                                }}
+                              >
+                                {currentPlan.icon}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h5" fontWeight="bold">
+                                  {currentPlan.title} Plan
+                                </Typography>
+                                <Typography variant="subtitle1" color="text.secondary">
+                                  Billed {billingCycle === "monthly" ? "monthly" : "annually"}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            
+                            <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, mt: { xs: 2, sm: 0 }, ml: { xs: 0, sm: 2 } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
+                                <Typography variant="h4" component="span" fontWeight="bold" color="primary.main">
+                                  €{billingCycle === "monthly" 
+                                    ? currentPlan.priceDetails.monthly 
+                                    : currentPlan.priceDetails.yearly}
+                                </Typography>
+                                <Typography variant="subtitle1" component="span" color="text.secondary" ml={1}>
+                                  {billingCycle === "monthly" ? "/month" : "/year"}
+                                </Typography>
+                              </Box>
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                <CalendarTodayIcon 
+                                  fontSize="small" 
+                                  color="action"
+                                  sx={{ mr: 1 }}
+                                />
+                                <Typography variant="body2" color="text.secondary">
+                                  Next billing: {nextBillingDate.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  })}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                          
+                          <Divider sx={{ my: 3 }} />
+                          
+                          {/* Usage Stats */}
+                          <Typography variant="h6" sx={{ mb: 2 }}>Usage Statistics</Typography>
+                          
+                          <Grid container spacing={3}>
+                            <Grid item xs={12} sm={6}>
+                              <Box sx={{ mb: 3 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">Email usage</Typography>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {usageData.emails.used} / {usageData.emails.total}
+                                  </Typography>
+                                </Box>
+                                <LinearProgress 
+                                  variant="determinate" 
+                                  value={usageData.emails.percentage} 
+                                  sx={{ 
+                                    height: 10, 
+                                    borderRadius: 5,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                  }} 
+                                />
+                              </Box>
+                            </Grid>
+                            
+                            <Grid item xs={12} sm={6}>
+                              <Box sx={{ mb: 3 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">Email accounts</Typography>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {usageData.accounts.used} / {usageData.accounts.total}
+                                  </Typography>
+                                </Box>
+                                <LinearProgress 
+                                  variant="determinate" 
+                                  value={usageData.accounts.percentage} 
+                                  sx={{ 
+                                    height: 10, 
+                                    borderRadius: 5,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                    '& .MuiLinearProgress-bar': {
+                                      backgroundColor: usageData.accounts.percentage === 100 
+                                        ? 'warning.main' 
+                                        : 'primary.main'
+                                    }
+                                  }} 
+                                />
+                                {usageData.accounts.percentage === 100 && (
+                                  <Typography 
+                                    variant="caption" 
+                                    color="warning.main" 
+                                    sx={{ display: 'flex', alignItems: 'center', mt: 1 }}
+                                  >
+                                    <WarningIcon fontSize="small" sx={{ mr: 0.5 }} />
+                                    You've reached your account limit
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Grid>
+                          </Grid>
+                          
+                          <Divider sx={{ my: 3 }} />
+                          
+                          {/* Plan Features */}
+                          <Typography variant="h6" sx={{ mb: 2 }}>
+                            Plan Features
+                          </Typography>
+                          
+                          <Grid container spacing={2}>
+                            {currentPlan.features.map((feature, index) => (
+                              <Grid item xs={12} sm={6} key={index}>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <CheckCircleRoundedIcon 
+                                    sx={{ 
+                                      color: 'success.main', 
+                                      mr: 1.5, 
+                                      fontSize: 20 
+                                    }} 
+                                  />
+                                  <Typography variant="body2">
+                                    {feature.title}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                            ))}
+                          </Grid>
+                          
+                          <Box sx={{ mt: 4, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                            <Button 
+                              variant="outlined" 
+                              color="primary"
+                              href="https://buy.stripe.com/5kA6qP9YoaN5g92aEE"
+                              target="_blank"
+                            >
+                              Change Plan
+                            </Button>
+                            
+                            <Button 
+                              variant="text" 
+                              color="error"
+                            >
+                              Cancel Subscription
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    
+                    {/* Billing Cycle & Upcoming Events */}
+                    <Grid item xs={12} md={4}>
+                      <Stack spacing={3} sx={{ height: '100%' }}>
+                        {/* Billing Cycle Card */}
+                        <Card 
+                          elevation={0}
+                          variant="outlined"
+                          sx={{ borderRadius: 2 }}
+                        >
+                          <CardContent sx={{ p: 2.5 }}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>
+                              Billing Cycle
+                            </Typography>
+                            
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                              <Button 
+                                variant={billingCycle === "monthly" ? "contained" : "outlined"}
+                                color="primary"
+                                fullWidth
+                                onClick={() => setBillingCycle("monthly")}
+                                sx={{ justifyContent: "space-between", px: 2 }}
+                              >
+                                Monthly
+                                <Typography variant="body2" component="span">
+                                  €{currentPlan.priceDetails.monthly}/mo
+                                </Typography>
+                              </Button>
+                              
+                              <Button 
+                                variant={billingCycle === "yearly" ? "contained" : "outlined"}
+                                color="primary"
+                                fullWidth
+                                onClick={() => setBillingCycle("yearly")}
+                                sx={{ justifyContent: "space-between", px: 2, display: 'flex', alignItems: 'center', flexDirection: 'row' }}
+                              >
+                                Yearly
+                                {currentPlan.savings && (
+                                    <Typography 
+                                      variant="caption" 
+                                      component="div"
+                                      sx={{ 
+                                        color: 'success.main',
+                                        bgcolor: alpha(theme.palette.success.main, 0.1),
+                                        px: 1,
+                                        py: 0.25,
+                                        borderRadius: 1,
+                                      }}
+                                    >
+                                      Save {currentPlan.savings}
+                                    </Typography>
+                                  )}
+                                <Box sx={{ textAlign: 'right' }}>
+                                  <Typography variant="body2" component="span">
+                                    €{currentPlan.priceDetails.yearly}/yr
+                                  </Typography>
+                                </Box>
+                              </Button>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Upcoming Events */}
+                        <Card 
+                          elevation={0}
+                          variant="outlined"
+                          sx={{ borderRadius: 2, flexGrow: 1 }}
+                        >
+                          <CardContent sx={{ p: 2.5 }}>
+                            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                              <EventIcon sx={{ mr: 1 }} />
+                              Upcoming Events
+                            </Typography>
+                            
+                            <Stack spacing={2}>
+                              <Paper 
+                                elevation={0}
+                                sx={{ 
+                                  p: 1.5, 
+                                  borderRadius: 1.5,
+                                  backgroundColor: alpha(theme.palette.info.main, 0.08),
+                                  border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                <NotificationsIcon color="info" />
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    New feature release
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDate('2025-04-01')}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                              <Paper 
+                                elevation={0}
+                                sx={{ 
+                                  p: 1.5, 
+                                  borderRadius: 1.5,
+                                  backgroundColor: alpha(theme.palette.warning.main, 0.08),
+                                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                <EventIcon color="warning" />
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    Scheduled maintenance
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDate('2025-04-10')}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                              <Paper 
+                                elevation={0}
+                                sx={{ 
+                                  p: 1.5, 
+                                  borderRadius: 1.5,
+                                  backgroundColor: alpha(theme.palette.success.main, 0.08),
+                                  border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                <CheckCircleRoundedIcon color="success" />
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    Payment received
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDate('2025-04-15')}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                              <Paper 
+                                elevation={0}
+                                sx={{ 
+                                  p: 1.5, 
+                                  borderRadius: 1.5,
+                                  backgroundColor: alpha(theme.palette.error.main, 0.08),
+                                  border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                <RemoveCircleOutlineIcon color="error" />
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    Payment failed
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatDate('2025-04-20')}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </motion.div>
+              )}
+              {tabValue === 1 && (
+                <motion.div 
+                  key="payment-history"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: '100%'}}
+                >
+                  <Card elevation={0} variant='outlined' sx={{ borderRadius: 2 }}>
+                    <CardContent sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 2 }}>
+                      <Typography variant="h6" sx={{ mb: 2 }}>
+                        Payment History
+                      </Typography>
+                      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 1 , bgcolor: 'background.default' }}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Transaction ID</TableCell>
+                              <TableCell>Date</TableCell>
+                              <TableCell>Amount</TableCell>
+                              <TableCell>Status</TableCell>
+                              <TableCell>Payment Method</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {paymentHistory.map((row) => (
+                              <TableRow key={row.id}>
+                                <TableCell>{row.id}</TableCell>
+                                <TableCell>{formatDate(row.date)}</TableCell>
+                                <TableCell>{row.amount}</TableCell>
+                                <TableCell>
+                                  {row.status === 'Paid' ? (
+                                    <Chip label={row.status} color="success" size="small" />
+                                  ) : (
+                                    <Chip label={row.status} color="error" size="small" />
+                                  )}
+                                </TableCell>
+                                <TableCell>{row.method}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Box>
-        <Footer />
+          <Footer />
         </Box>
       </Box>
     </AppTheme>
