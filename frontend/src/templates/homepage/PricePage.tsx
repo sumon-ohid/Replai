@@ -725,7 +725,7 @@ export default function PricePage(props: { disableCustomTheme?: boolean }) {
                         <Box sx={{ mt: 4 }}>
                           <Button
                             fullWidth
-                            variant={plan.buttonVariant}
+                            variant={plan.buttonVariant as any}
                             color={isPopular ? "primary" : "primary"}
                             size="large"
                             sx={{
