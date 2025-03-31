@@ -50,8 +50,8 @@ export default function usePayments() {
         `${API_URL}/payments/create-checkout-session`,
         {
           priceId,
-          successUrl: `${window.location.origin}/dashboard/billing?success=true`,
-          cancelUrl: `${window.location.origin}/dashboard/billing?canceled=true`,
+          successUrl: `${window.location.origin}/billing?success=true`,
+          cancelUrl: `${window.location.origin}/billing?canceled=true`,
         },
         {
           headers: {
@@ -154,11 +154,17 @@ export default function usePayments() {
     setError(null);
 
     try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("No token found in local storage");
+            setError("No token found. Please log in again.");
+            return [];
+        }
       const response = await axios.get<PaymentHistoryItem[]>(
         `${API_URL}/payments/payment-history`,
         {
           withCredentials: true,
-        }
+        },
       );
 
       return response.data;

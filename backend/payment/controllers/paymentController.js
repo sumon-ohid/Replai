@@ -26,8 +26,8 @@ export const createCheckoutSession = async (req, res) => {
     const session = await stripeService.createCheckoutSession(
       customerId, 
       priceId, 
-      successUrl || `${process.env.FRONTEND_URL}/dashboard/billing?success=true`,
-      cancelUrl || `${process.env.FRONTEND_URL}/dashboard/billing?canceled=true`
+      successUrl || `${process.env.FRONTEND_URL}/billing?success=true`,
+      cancelUrl || `${process.env.FRONTEND_URL}/billing?canceled=true`
     );
     
     res.status(200).json({ sessionId: session.id, url: session.url });

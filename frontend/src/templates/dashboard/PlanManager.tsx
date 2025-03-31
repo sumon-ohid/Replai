@@ -73,13 +73,13 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-// Sample data for payment history
-const paymentHistory = [
-  { id: '923456', date: '2025-03-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
-  { id: '856234', date: '2025-02-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
-  { id: '723954', date: '2025-01-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
-  { id: '612487', date: '2024-12-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
-];
+// // Sample data for payment history
+// const paymentHistory = [
+//   { id: '923456', date: '2025-03-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+//   { id: '856234', date: '2025-02-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+//   { id: '723954', date: '2025-01-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+//   { id: '612487', date: '2024-12-15', amount: '€19.99', status: 'Paid', method: 'Visa ****2345' },
+// ];
 
 // Pricing tiers
 const tiers = [
@@ -828,17 +828,17 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                           </TableHead>
                           {/* Use the fetched payment history data */}
                           <TableBody>
-                            {paymentHistory.map((row) => (
+                          {Array.isArray(paymentHistory) && paymentHistory.map((row) => (
                               <TableRow key={row.id}>
                                 <TableCell>{row.id}</TableCell>
                                 <TableCell>{formatDate(row.date)}</TableCell>
                                 <TableCell>{row.amount}</TableCell>
                                 <TableCell>
-                                  {row.status === 'Paid' ? (
-                                    <Chip label={row.status} color="success" size="small" />
-                                  ) : (
-                                    <Chip label={row.status} color="error" size="small" />
-                                  )}
+                                  <Chip 
+                                    label={row.status} 
+                                    color={row.status === 'Paid' ? 'success' : 'error'} 
+                                    size="small" 
+                                  />
                                 </TableCell>
                                 <TableCell>{row.method}</TableCell>
                               </TableRow>
