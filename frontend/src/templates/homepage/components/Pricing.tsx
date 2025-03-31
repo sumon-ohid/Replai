@@ -27,51 +27,50 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 const tiers = [
-  {
-    title: "Free",
-    icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
-    price: "0",
-    priceDetails: {
-      monthly: "0",
-      yearly: "0",
-    },
-    buttonText: "Get Started",
-    buttonVariant: "outlined",
-    buttonColor: "primary",
-    highlighted: false,
-    features: [
-      { title: "1 email account", included: true },
-      { title: "10 emails per month", included: true },
-      { title: "Basic AI responses", included: true },
-      { title: "Help center access", included: true },
-      { title: "Email support", included: true },
-      { title: "Advanced analytics", included: false },
-      { title: "Customizable templates", included: false },
-      { title: "Priority support", included: false },
-    ],
-  },
+  // {
+  //   title: "Free",
+  //   icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
+  //   price: "0",
+  //   priceDetails: {
+  //     monthly: "0",
+  //     yearly: "0",
+  //   },
+  //   buttonText: "Get Started",
+  //   buttonVariant: "outlined",
+  //   buttonColor: "primary",
+  //   highlighted: false,
+  //   features: [
+  //     { title: "1 email account", included: true },
+  //     { title: "10 emails per month", included: true },
+  //     { title: "Basic AI responses", included: true },
+  //     { title: "Help center access", included: true },
+  //     { title: "Email support", included: true },
+  //     { title: "Advanced analytics", included: false },
+  //     { title: "Customizable templates", included: false },
+  //     { title: "Priority support", included: false },
+  //   ],
+  // },
   {
     title: "Pro",
     icon: <DiamondOutlinedIcon sx={{ fontSize: 28 }} />,
     subheader: "Most Popular",
-    price: "5",
+    price: "10",
     priceDetails: {
-      monthly: "19.99",
-      yearly: "180",
+      monthly: "12",
+      yearly: "100",
     },
-    savings: "€60",
+    savings: "€20",
     buttonText: "Start Pro Plan",
     buttonVariant: "contained",
     buttonColor: "primary",
     highlighted: true,
     features: [
       { title: "2 email accounts", included: true },
-      { title: "1000 emails", included: true },
+      { title: "1000 AI email replies", included: true },
       { title: "Advanced AI responses", included: true },
       { title: "Custom email signatures", included: true },
       { title: "Priority email support", included: true },
       { title: "Advanced analytics", included: true },
-      { title: "Customizable templates", included: true },
     ],
   },
   {
@@ -392,8 +391,8 @@ export default function Pricing() {
               mx: "auto",
             }}
           >
-            Choose the plan that works best for you. All plans include a 14-day
-            free trial.
+            {/* Choose the plan that works best for you. All plans include a 14-day
+            free trial. */}
           </Typography>
 
           {/* Billing Toggle */}
@@ -461,7 +460,7 @@ export default function Pricing() {
                     fontWeight: 600,
                   }}
                 >
-                  Save 25%
+                  Save 17%
                 </Box>
               )}
             </Box>
@@ -1208,7 +1207,7 @@ export default function Pricing() {
           }}
         >
           <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-            All plans include a 14-day free trial. No credit card required.
+            {/* All plans include a 3-days free trial. Credit card required. */}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Need something specific?{" "}

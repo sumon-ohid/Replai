@@ -83,51 +83,50 @@ const xThemeComponents = {
 
 // Pricing tiers
 const tiers = [
-  {
-    title: "Free",
-    icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
-    price: "0",
-    priceDetails: {
-      monthly: "0",
-      yearly: "0",
-    },
-    buttonText: "Get Started",
-    buttonVariant: "outlined",
-    buttonColor: "primary",
-    highlighted: false,
-    features: [
-      { title: "1 email account", included: true },
-      { title: "10 emails per month", included: true },
-      { title: "Basic AI responses", included: true },
-      { title: "Help center access", included: true },
-      { title: "Email support", included: true },
-      { title: "Advanced analytics", included: false },
-      { title: "Customizable templates", included: false },
-      { title: "Priority support", included: false },
-    ],
-  },
+  // {
+  //   title: "Free",
+  //   icon: <EmojiEventsOutlinedIcon sx={{ fontSize: 28 }} />,
+  //   price: "0",
+  //   priceDetails: {
+  //     monthly: "0",
+  //     yearly: "0",
+  //   },
+  //   buttonText: "Get Started",
+  //   buttonVariant: "outlined",
+  //   buttonColor: "primary",
+  //   highlighted: false,
+  //   features: [
+  //     { title: "1 email account", included: true },
+  //     { title: "10 emails per month", included: true },
+  //     { title: "Basic AI responses", included: true },
+  //     { title: "Help center access", included: true },
+  //     { title: "Email support", included: true },
+  //     { title: "Advanced analytics", included: false },
+  //     { title: "Customizable templates", included: false },
+  //     { title: "Priority support", included: false },
+  //   ],
+  // },
   {
     title: "Pro",
     icon: <DiamondOutlinedIcon sx={{ fontSize: 28 }} />,
     subheader: "Most Popular",
     price: "5",
     priceDetails: {
-      monthly: "19.99",
-      yearly: "180",
+      monthly: "12",
+      yearly: "100",
     },
-    savings: "€60",
+    savings: "€20",
     buttonText: "Start Pro Plan",
     buttonVariant: "contained",
     buttonColor: "primary",
     highlighted: true,
     features: [
       { title: "2 email accounts", included: true },
-      { title: "1000 emails", included: true },
+      { title: "1000 AI email replies", included: true },
       { title: "Advanced AI responses", included: true },
       { title: "Custom email signatures", included: true },
       { title: "Priority email support", included: true },
       { title: "Advanced analytics", included: true },
-      { title: "Customizable templates", included: true },
     ],
   },
   {
@@ -701,7 +700,7 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                           <CardContent sx={{ p: 2.5 }}>
                             <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                               <EventIcon sx={{ mr: 1 }} />
-                              Upcoming Events
+                              Recent Events
                             </Typography>
                             
                             <Stack spacing={2}>
@@ -723,7 +722,7 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                                     New feature release
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
-                                    {formatDate('2025-04-01')}
+                                    {formatDate('2025-03-01')}
                                   </Typography>
                                 </Box>
                               </Paper>
@@ -745,7 +744,7 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                                     Scheduled maintenance
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
-                                    {formatDate('2025-04-10')}
+                                    {formatDate('2025-03-10')}
                                   </Typography>
                                 </Box>
                               </Paper>
@@ -764,35 +763,14 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                                 <CheckCircleRoundedIcon color="success" />
                                 <Box>
                                   <Typography variant="body2" fontWeight="medium">
-                                    Payment received
+                                    New payment method added
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
-                                    {formatDate('2025-04-15')}
+                                    {formatDate('2025-02-15')}
                                   </Typography>
                                 </Box>
                               </Paper>
-                              <Paper 
-                                elevation={0}
-                                sx={{ 
-                                  p: 1.5, 
-                                  borderRadius: 1.5,
-                                  backgroundColor: alpha(theme.palette.error.main, 0.08),
-                                  border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1
-                                }}
-                              >
-                                <RemoveCircleOutlineIcon color="error" />
-                                <Box>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    Payment failed
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {formatDate('2025-04-20')}
-                                  </Typography>
-                                </Box>
-                              </Paper>
+                              
                             </Stack>
                           </CardContent>
                         </Card>
