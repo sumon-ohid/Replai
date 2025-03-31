@@ -90,9 +90,14 @@ async function handleInvoicePaid(invoice) {
       // This is a subscription invoice payment
       const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
       
-      user.subscriptionStatus = subscription.status;
+      user.subscriptionStartDate = subscription.status;
       user.subscriptionEndDate = new Date(subscription.current_period_end * 1000);
       
+      // Reset the period counter when subscription renews
+      user.emailsSentCount = 0;
+      user.emailsSentThisPeriod = 0;
+      user.lastPeriodReset = new Date();
+
       await user.save();
       console.log(`Subscription renewed until ${user.subscriptionEndDate} for user ${user.email}`);
     }

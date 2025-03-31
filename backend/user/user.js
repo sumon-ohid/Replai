@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import usageController from '../usage/usageController.js';
 
 const router = express.Router();
 
@@ -99,5 +100,7 @@ router.delete('/account/delete', auth, async (req, res) => {
     res.status(500).json({ message: 'Error deleting user', error: error.message });
   }
 });
+
+router.get('/usage', auth, usageController.getUserUsageStats);
 
 export default router;

@@ -35,12 +35,47 @@ const userSchema = new mongoose.Schema({
     },
   ],
   googleAuth: {
-    accessToken: String,
     refreshToken: String,
+    accessToken: String,
     expiryDate: Number,
     email: String,
     name: String
   },
+  status: {
+    type: String,
+    enum: ['active', 'error', 'paused', 'disconnected'],
+    default: 'active'
+  },
+  lastConnected: {
+    type: Date,
+    default: Date.now
+  },
+  // Email usage tracking
+  connectedEmailsCount: {
+    type: Number,
+    default: 0
+  },
+  emailsSentCount: {
+    type: Number,
+    default: 0
+  },
+  emailsSentThisPeriod: {
+    type: Number,
+    default: 0
+  },
+  lastPeriodReset: {
+    type: Date,
+    default: Date.now
+  },
+  
+  // Subscription fields
+  subscriptionPlan: {
+    type: String, 
+    enum: ['free', 'pro_monthly', 'pro_yearly', 'business'],
+    default: 'free'
+  },
+  subscriptionStartDate: Date,
+  subscriptionEndDate: Date,
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

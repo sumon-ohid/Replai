@@ -1,21 +1,10 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import authRoutes from "./routes/auth.js";
 import dotenv from "dotenv";
-import emailRoutes from "./emails/routes/emailRoutes.js";
-import emailAuthRoutes from "./emails/routes/authRoutes.js";
-import emailStatsRoutes from "./emails/routes/statsRoutes.js";
-import connectionManager from "./emails/managers/connectionManager.js";
-import user from "./user/user.js";
-import blocklist from "./routes/blocklist.js";
 import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
-import data from "./routes/data.js";
-import googleAuth from "./routes/googleAuth.js";
-import feedback from "./routes/feedback.js";
-import googleCalendar from "./calendar/googleCalendar.js";
 import { SitemapStream } from 'sitemap';
 import { createGzip } from 'zlib';
 import { streamToPromise } from 'sitemap';
@@ -23,6 +12,19 @@ import fs from 'fs';
 import compression from 'compression';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+
+import authRoutes from "./routes/auth.js";
+import emailRoutes from "./emails/routes/emailRoutes.js";
+import emailAuthRoutes from "./emails/routes/authRoutes.js";
+import emailStatsRoutes from "./emails/routes/statsRoutes.js";
+import connectionManager from "./emails/managers/connectionManager.js";
+import user from "./user/user.js";
+import data from "./routes/data.js";
+import googleAuth from "./routes/googleAuth.js";
+import feedback from "./routes/feedback.js";
+import googleCalendar from "./calendar/googleCalendar.js";
+import blocklist from "./routes/blocklist.js";
+
 import authConfig from './emails/config/authConfig.js';
 import { requireAuth } from './emails/middleware/emailAuthMiddleware.js';
 import connectionController from './emails/routes/connectionRoutes.js';
@@ -32,6 +34,9 @@ import notificationRoutes from './emails/routes/notificationRoutes.js';
 
 // payment routes
 import paymentRoutes from './payment/routes/paymentRoutes.js';
+
+// sync cron job to sync user emails counts
+import { initCronJobs } from './emails/cronJob/syncCronJob.js';
 
 
 // Define __dirname
@@ -308,6 +313,9 @@ app.get('/health', (req, res) => {
     }
   });
 });
+
+// Initialize cron jobs for email sync
+initCronJobs();
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, "dist"), {

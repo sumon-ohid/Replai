@@ -5,6 +5,7 @@ import ConnectedEmail from "../../models/ConnectedEmail.js";
 import { asyncHandler } from "../utils/errorHandler.js";
 import { content } from "googleapis/build/src/apis/content/index.js";
 import { read } from "fs";
+import User from '../../models/User.js';
 
 /**
  * Service to handle automated email responses
@@ -241,6 +242,17 @@ class AutomatedResponseService {
           console.error("Failed to generate AI response");
           continue;
         }
+
+        // Update user's email sent counts
+        await User.findByIdAndUpdate(
+          userId,
+          { 
+            $inc: { 
+              emailsSentCount: 1,
+              emailsSentThisPeriod: 1
+            }
+          }
+        );
 
         // Extract response content safely
         let responseContent = "";

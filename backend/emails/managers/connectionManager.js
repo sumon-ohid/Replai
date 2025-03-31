@@ -13,119 +13,120 @@ const activeConnections = new Map();
 // Cache for email service imports
 const emailServiceCache = new Map();
 
+
 /**
- * Initialize all email connections at server startup
+ * Initialize all email connections for all users
  */
 export const initializeAllConnections = async () => {
   try {
-    console.log('🔄 Initializing all email connections...');
+    console.log("Starting to initialize all email connections...");
     
-    // Find all connected emails regardless of status
-    const connectedEmails = await ConnectedEmail.find({
-      provider: 'google',
-      'tokens.refreshToken': { $exists: true }
-    }).populate('userId');
+    // Find all users who have connected emails
+    const users = await User.find({
+      "connectedEmails.0": { $exists: true } // Only users with at least one connected email
+    });
     
-    console.log(`📧 Found ${connectedEmails.length} email connections to initialize`);
-
-    for (const connectedEmail of connectedEmails) {
-      await initializeEmailConnection(connectedEmail);
+    console.log(`Found ${users.length} users with connected emails`);
+    
+    let totalConnections = 0;
+    
+    // Process each user's connected emails
+    for (const user of users) {
+      const userId = user._id.toString();
+      
+      console.log(`Processing ${user.connectedEmails.length} emails for user ${userId}`);
+      totalConnections += user.connectedEmails.length;
+      
+      // Initialize each email connection
+      for (const connectedEmail of user.connectedEmails) {
+        try {
+          if (connectedEmail.status === 'active') {
+            await initializeEmailConnection(userId, connectedEmail.email, connectedEmail);
+          }
+        } catch (error) {
+          console.error(`❌ Failed to initialize ${connectedEmail.provider} connection for ${connectedEmail.email}:`, error);
+        }
+      }
     }
     
-    console.log('✅ All email connections initialized');
-    return true;
+    console.log(`Found ${totalConnections} email connections to initialize`);
+    console.log("✅ All email connections initialization process completed");
+    
   } catch (error) {
-    console.error('❌ Failed to initialize email connections:', error);
-    return false;
+    console.error("❌ Failed to initialize email connections:", error);
+    throw error;
   }
 };
 
 /**
- * Initialize a single email connection
+ * Initialize an email connection for a user
  */
-async function initializeEmailConnection(connectedEmail) {
-  const { userId, email, provider, tokens } = connectedEmail;
-  
-  if (!tokens?.refreshToken) {
-    console.log(`⚠️ Skipping ${email} - no refresh token available`);
-    return false;
-  }
-
+export async function initializeEmailConnection(userId, email, connectedEmailData = null) {
   try {
-    console.log(`🚀 Initializing ${provider} connection for ${email}`);
-    
-    // First validate/create collections for this email
-    await validateEmailCollections(connectedEmail._id.toString());
-
-    // Initialize and validate email models
-    const emailModels = getConnectedEmailModels(connectedEmail._id.toString());
-    if (!emailModels || !emailModels.Email) {
-      throw new Error('Email models not properly initialized');
+    // Validate parameters
+    if (!userId) {
+      throw new Error('Invalid userId for email connection');
     }
-
-    // Set default AI settings if not present
-    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-      $set: {
-        status: 'active',
-        lastConnected: new Date()
-      },
-      $setOnInsert: {
-        aiSettings: {
-          enabled: true,
-          mode: 'auto'
-        }
+    
+    if (!email) {
+      throw new Error('Invalid email address for connection');
+    }
+    
+    // Get user and connected email data if not provided
+    if (!connectedEmailData) {
+      const user = await User.findById(userId);
+      
+      if (!user) {
+        throw new Error(`User not found for ID: ${userId}`);
       }
-    }, { upsert: true });
-
-    // Initialize provider connection
-    let successful = false;
-    if (provider === 'google') {
-      successful = await initializeGoogleConnection(
-        userId,
-        email,
-        tokens.refreshToken,
-        tokens.accessToken,
-        {
-          syncEnabled: true,
-          mode: 'auto',
-          aiEnabled: true,
-          markAsRead: true
-        }
-      );
+      
+      // Find the connected email in the user's array
+      connectedEmailData = user.connectedEmails.find(e => e.email === email);
+      
+      if (!connectedEmailData) {
+        throw new Error(`Connected email ${email} not found for user ${userId}`);
+      }
     }
-
-    if (!successful) {
-      throw new Error(`Failed to initialize ${provider} connection`);
-    }
-
-    // Start email checking schedule
-    console.log(`💫 Starting email checks for ${email}`);
-    const schedulingManager = (await import('./schedulingManager.js')).default;
-    await schedulingManager.scheduleEmailChecks(userId, email);
     
-    console.log(`✅ Successfully initialized ${provider} connection for ${email}`);
-    return true;
+    // Log initiation
+    console.log(`🚀 Initializing ${connectedEmailData.provider} connection for ${email}`);
+    
+    // Initialize based on provider
+    if (connectedEmailData.provider === 'google') {
+      // For Google provider
+      if (userId && email) {
+        // Get the user to access Google auth data
+        const user = await User.findById(userId);
+        
+        if (!user || !user.googleAuth || !user.googleAuth.refreshToken) {
+          throw new Error(`Google authentication data not found for user ${userId}`);
+        }
+        
+        // Use the Google auth data from the user document
+        await initializeGoogleConnection(
+          userId,
+          email,
+          user.googleAuth.refreshToken,
+          user.googleAuth.accessToken,
+          {
+            syncEnabled: connectedEmailData.syncEnabled !== false,
+            connectedEmailData: connectedEmailData
+          }
+        );
+        
+        console.log(`✅ Successfully initialized Google connection for ${email}`);
+        await notifyConnectionStatus(userId, email, 'connected');
+      }
+    } else if (connectedEmailData.provider === 'microsoft') {
+      // Add Microsoft initialization logic
+      // ...
+    } else {
+      throw new Error(`Unsupported email provider: ${connectedEmailData.provider}`);
+    }
   } catch (error) {
-    console.error(`❌ Failed to initialize ${provider} connection for ${email}:`, error);
-    
-    // Update connection status to error
-    await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
-      status: 'error',
-      lastError: {
-        message: error.message,
-        date: new Date(),
-        code: 'INIT_ERROR'
-      }
-    });
-
-    // Notify about the error
-    await notifyConnectionError({
-      userId,
-      email,
-      message: `Failed to initialize connection: ${error.message}`
-    });
-    
-    return false;
+    console.error(`❌ Failed to initialize ${connectedEmailData?.provider || 'unknown'} connection for ${email}:`, error);
+    await notifyConnectionStatus(userId, email, 'error', error.message);
+    throw error;
   }
 }
 
@@ -224,8 +225,15 @@ export const getConnection = async (userId, email) => {
           // Wait a moment for the connection to be fully established
           await new Promise(resolve => setTimeout(resolve, 1000));
           connection = activeConnections.get(key);
-          if (!connection) {
-            throw new Error('Connection initialization failed');
+          if (!connection && userId && email) {
+            try {
+              await initializeEmailConnection(userId, email);
+              // Try to get the connection again
+              return await getConnection(userId, email);
+            } catch (initError) {
+              console.error(`Failed to initialize connection for ${email}:`, initError);
+              return null;
+            }
           }
         } else {
           throw new Error('Connection initialization returned false');

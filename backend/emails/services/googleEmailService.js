@@ -545,37 +545,123 @@ export async function initializeGoogleConnection(
   config = {}
 ) {
   try {
-    console.log("Initializing Google connection:", { email });
+    // First, validate userId
+    if (!userId) {
+      console.error(`Invalid userId (${userId}) provided for email ${email}`);
+      throw new Error("Invalid user ID. Please reconnect the account.");
+    }
 
-    const oauth2Client = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-      access_token: accessToken,
-    });
-
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-    // Test connection
-    await gmail.users.getProfile({ userId: "me" });
-
-    // Get ConnectedEmail record (don't check status as it may be pending)
+    // Find the connected email record
     const connectedEmail = await ConnectedEmail.findOne({
       userId,
       email,
       provider: "google",
     });
+
+    // Check if the connected email record exists
     if (!connectedEmail) {
+      console.error(
+        `No connected email record found for ${email} (User: ${userId})`
+      );
+
+      // Try to create the record if it doesn't exist and we have tokens
+      if (userId && email && refreshToken) {
+        console.log(`Attempting to create connected email record for ${email}`);
+
+        const newConnectedEmail = new ConnectedEmail({
+          userId,
+          email,
+          provider: "google",
+          tokens: {
+            // Fixed: Put tokens in the right structure based on your schema
+            refreshToken,
+            accessToken,
+            expiryDate: accessToken ? Date.now() + 3600000 : null, // 1 hour from now if we have an access token
+          },
+          status: "active",
+          lastConnected: new Date(),
+          syncEnabled: config.syncEnabled !== false,
+          autoReplyEnabled: false,
+          aiSettings: {
+            enabled: false,
+            mode: "draft",
+          },
+        });
+
+        await newConnectedEmail.save();
+        console.log(`Created new connected email record for ${email}`);
+
+        // Continue with the newly created record
+        await ConnectedEmail.findByIdAndUpdate(newConnectedEmail._id, {
+          status: "active",
+          lastConnected: new Date(),
+        });
+
+        // Initialize the OAuth2 client
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        );
+
+        // Set credentials from the existing record - option 1 (tokens object)
+        if (connectedEmail.tokens && connectedEmail.tokens.refreshToken) {
+          oauth2Client.setCredentials({
+            refresh_token: connectedEmail.tokens.refreshToken,
+            access_token: connectedEmail.tokens.accessToken || accessToken,
+          });
+        }
+        // Option 2 (flat token fields)
+        else if (connectedEmail.refreshToken) {
+          oauth2Client.setCredentials({
+            refresh_token: connectedEmail.refreshToken,
+            access_token: connectedEmail.accessToken || accessToken,
+          });
+        } else {
+          throw new Error("No refresh token found for connected email");
+        }
+
+        // Create Gmail client
+        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+        // Initialize models
+        getConnectedEmailModels(newConnectedEmail._id.toString());
+
+        // Start sync process
+        if (config.syncEnabled !== false) {
+          // Do initial sync
+          await checkForNewGoogleEmails(gmail, userId, email, config);
+
+          // Set up interval for future checks
+          const interval = setTimeout(function runCheck() {
+            checkForNewGoogleEmails(gmail, userId, email, config)
+              .then(() => {
+                setTimeout(runCheck, 60000);
+              })
+              .catch((error) => {
+                console.error(`Error in scheduled email check: ${error}`);
+                setTimeout(runCheck, 60000);
+              });
+          }, 60000);
+
+          // Register connection
+          connectionManager.addConnection(userId, email, "google", {
+            gmail,
+            oauth2Client,
+            interval,
+            config,
+          });
+        }
+
+        return true; // Return success
+      }
+
       throw new Error(
         "Connected email record not found. Please reconnect the account."
       );
     }
 
-    // Update status to active if connection is successful
+    // Update the connected email status
     await ConnectedEmail.findByIdAndUpdate(connectedEmail._id, {
       status: "active",
       lastConnected: new Date(),
@@ -584,12 +670,28 @@ export async function initializeGoogleConnection(
     // Initialize models
     getConnectedEmailModels(connectedEmail._id.toString());
 
+    // Initialize the OAuth2 client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // Set credentials from the existing record
+    oauth2Client.setCredentials({
+      refresh_token: connectedEmail.tokens.refreshToken,
+      access_token: connectedEmail.tokens.accessToken || accessToken,
+    });
+
+    // Create Gmail client
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
     // Start sync process
     if (config.syncEnabled !== false) {
       // Do initial sync first
       await checkForNewGoogleEmails(gmail, userId, email, config);
 
-      // Then set up interval for future checks (will start after 60 seconds)
+      // Then set up interval for future checks
       const interval = setTimeout(function runCheck() {
         checkForNewGoogleEmails(gmail, userId, email, config)
           .then(() => {
@@ -601,31 +703,16 @@ export async function initializeGoogleConnection(
             // Still schedule the next check even if this one fails
             setTimeout(runCheck, 60000);
           });
-      }, 60000); // First scheduled check after 60 seconds
+      }, 60000);
 
       // Register connection
       connectionManager.addConnection(userId, email, "google", {
         gmail,
         oauth2Client,
-        interval, // Store the timeout ID instead
+        interval,
         config,
       });
     }
-
-    // Send a notification to the user
-    //  await NotificationManager.createNotification({
-    //   userId: userId,
-    //   type: "info",
-    //   title: "New Email Account Connected",
-    //   message:
-    //     `Your Google account ${email} has been successfully connected.`,
-    //   metadata: {
-    //     category: "email",
-    //     action: "connected",
-    //     url: "/email-manager",
-    //     timestamp: new Date().toISOString(),
-    //   },
-    // });
 
     return true;
   } catch (error) {

@@ -358,8 +358,17 @@ export const notifyConnectionStatus = async (params) => {
     
     // Safety check - ensure valid userId
     if (!userId) {
-      console.error('Invalid userId provided to notifyConnectionStatus');
-      return null;
+      console.warn(`Invalid userId provided to notifyConnectionStatus: ${userId}`);
+      return;
+    }
+    
+    // Find the user to check if they exist
+    const User = await import('../../models/User.js').then(m => m.default);
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      console.warn(`User not found for ID: ${userId}`);
+      return;
     }
     
     // Map status to notification type
