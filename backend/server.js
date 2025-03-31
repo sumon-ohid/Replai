@@ -30,6 +30,9 @@ import emailExtraRoutes from './emails/routes/index.js';
 import { errorMiddleware } from './emails/utils/errorHandler.js';
 import notificationRoutes from './emails/routes/notificationRoutes.js';
 
+// payment routes
+import paymentRoutes from './payment/routes/paymentRoutes.js';
+
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -388,6 +391,21 @@ try {
 } catch (error) {
   console.error('❌ Failed to generate sitemap:', error);
 }
+
+// Stripe webhook handling
+// Important: Parse raw body for Stripe webhooks but use JSON parser for other routes
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    // Skip body parsing for webhook route
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
+
+// Payment processing routes
+app.use("/api/payments", paymentRoutes);
+
 
 // Graceful shutdown handler for SIGTERM (for container environments)
 process.on('SIGTERM', async () => {
