@@ -641,7 +641,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
               </Box>
               
               {/* Team Section */}
-              <Box 
+              {/* <Box 
                 component={motion.div}
                 variants={itemVariants}
                 sx={{ mb: 10 }}
@@ -852,7 +852,7 @@ export default function AboutPage(props: { disableCustomTheme?: boolean }) {
                     </Grid>
                   ))}
                 </Grid>
-              </Box>
+              </Box> */}
               
               {/* Contact Section */}
               <Box 
