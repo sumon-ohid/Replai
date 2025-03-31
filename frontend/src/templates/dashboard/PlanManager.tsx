@@ -57,6 +57,15 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import EventIcon from '@mui/icons-material/Event';
 import WarningIcon from '@mui/icons-material/Warning';
 
+// payment data
+import usePayments, { PaymentHistoryItem, SubscriptionDetails } from './hooks/usePayments';
+
+// Price IDs from Stripe
+const STRIPE_PRICE_IDS = {
+  PRO_MONTHLY: 'price_1R7exXFQrwy1FRGCuHlPz15w', 
+  PRO_YEARLY: 'price_1R8cAXFQrwy1FRGCZVC85y4P',
+};
+
 const xThemeComponents = {
   ...chartsCustomizations,
   ...dataGridCustomizations,
@@ -151,9 +160,153 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
   const [tabValue, setTabValue] = React.useState(0);
   const [billingCycle, setBillingCycle] = React.useState<"monthly" | "yearly">("monthly");
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { search } = window.location;
+  const queryParams = new URLSearchParams(search);
   
+  // States for subscription and payment data
+  const [subscription, setSubscription] = React.useState<SubscriptionDetails | null>(null);
+  const [paymentHistory, setPaymentHistory] = React.useState<PaymentHistoryItem[]>([]);
+  const [currentPlan, setCurrentPlan] = React.useState(tiers[0]); // Default to Free plan
+  
+  // Get the payment hooks
+  const { 
+    loading, 
+    error, 
+    createCheckoutSession, 
+    getSubscription, 
+    cancelSubscription, 
+    updateSubscription,
+    getPaymentHistory 
+  } = usePayments();
+
+
+  // Show success/error messages from URL params
+  React.useEffect(() => {
+    const success = queryParams.get('success');
+    const canceled = queryParams.get('canceled');
+    
+    if (success === 'true') {
+      // Show success message using your preferred notification system
+      console.log('Payment successful!');
+      // After successful payment, fetch the updated subscription
+      fetchSubscriptionData();
+    }
+    
+    if (canceled === 'true') {
+      // Show canceled message
+      console.log('Payment was canceled.');
+    }
+  }, [queryParams]);
+
+   // Function to fetch payment history
+   const fetchPaymentHistory = async () => {
+    const history = await getPaymentHistory();
+    
+    if (history.length > 0) {
+      setPaymentHistory(history);
+    }
+  };
+
+  // Fetch subscription data on component mount
+  React.useEffect(() => {
+    fetchSubscriptionData();
+    fetchPaymentHistory();
+  }, []);
+
+  
+    // Function to fetch subscription data
+  const fetchSubscriptionData = async () => {
+    const subscriptionData = await getSubscription();
+    
+    if (subscriptionData) {
+      setSubscription(subscriptionData);
+      
+      // Add an additional check for plan property
+      if (subscriptionData.plan && 
+          (subscriptionData.plan.id === STRIPE_PRICE_IDS.PRO_MONTHLY ||
+           subscriptionData.plan.id === STRIPE_PRICE_IDS.PRO_YEARLY)) {
+        setCurrentPlan(tiers[1]); // Pro plan
+        
+        // Set billing cycle based on subscription interval
+        if (subscriptionData.plan.interval === 'year') {
+          setBillingCycle('yearly');
+        } else {
+          setBillingCycle('monthly');
+        }
+      } else {
+        setCurrentPlan(tiers[0]); // Free plan
+      }
+    }
+  };
+
+  // Handle subscription purchase/update
+  const handleSubscriptionPurchase = async () => {
+    // Select price ID based on current billing cycle preference
+    const priceId = billingCycle === 'monthly' 
+      ? STRIPE_PRICE_IDS.PRO_MONTHLY 
+      : STRIPE_PRICE_IDS.PRO_YEARLY;
+      
+    await createCheckoutSession(priceId);
+  };
+
+  // Handle subscription cancellation
+  const handleCancelSubscription = async () => {
+    if (window.confirm('Are you sure you want to cancel your subscription?')) {
+      const success = await cancelSubscription();
+      
+      if (success) {
+        // Show success message
+        console.log('Subscription successfully canceled');
+        // Refresh subscription data
+        fetchSubscriptionData();
+      }
+    }
+  };
+
+  // Handle billing cycle change
+  const handleBillingCycleChange = async (cycle: 'monthly' | 'yearly') => {
+    setBillingCycle(cycle);
+    
+    // If user already has an active subscription, update it
+    if (subscription && subscription.status === 'active') {
+      const newPriceId = cycle === 'monthly' 
+        ? STRIPE_PRICE_IDS.PRO_MONTHLY 
+        : STRIPE_PRICE_IDS.PRO_YEARLY;
+        
+      const success = await updateSubscription(newPriceId);
+      
+      if (success) {
+        // Show success message
+        console.log('Subscription successfully updated');
+        // Refresh subscription data
+        fetchSubscriptionData();
+      }
+    }
+  };
+
+  // Calculate next billing date from subscription
+  const getNextBillingDate = () => {
+    if (subscription && subscription.current_period_end) {
+      return new Date(subscription.current_period_end * 1000);
+    }
+    return new Date(); // Default to current date
+  };
+
+   // Format date
+   const formatDate = (dateString: string | number) => {
+    const date = typeof dateString === 'string' 
+      ? new Date(dateString) 
+      : new Date(dateString * 1000);
+      
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+  };
+
+
   // Current subscription data (in a real app, this would come from an API)
-  const currentPlan = tiers[1]; // Pro plan
   const usageData = {
     emails: {
       used: 746,
@@ -174,15 +327,6 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
     setTabValue(newValue);
   };
   
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
-  };
 
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
@@ -222,14 +366,16 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
               </Box>
               
               <Box sx={{ mt: { xs: 2, sm: 0 } }}>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  startIcon={<ReceiptIcon />}
-                  sx={{ mr: 2 }}
-                >
-                  View Invoices
-                </Button>
+                 <Button 
+                    variant="outlined" 
+                    color="primary" 
+                    startIcon={<ReceiptIcon />}
+                    sx={{ mr: 2 }}
+                    onClick={() => window.open(subscription?.invoice_pdf, '_blank')}
+                    disabled={!subscription?.invoice_pdf}
+                  >
+                    View Invoices
+                  </Button>
                 <Button 
                   variant="contained" 
                   color="primary" 
@@ -460,21 +606,23 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                           </Grid>
                           
                           <Box sx={{ mt: 4, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                            <Button 
+                          <Button 
                               variant="outlined" 
                               color="primary"
-                              href="https://buy.stripe.com/5kA6qP9YoaN5g92aEE"
-                              target="_blank"
+                              onClick={handleSubscriptionPurchase}
+                              disabled={loading}
                             >
-                              Change Plan
+                              {loading ? 'Processing...' : 'Change Plan'}
                             </Button>
                             
                             <Button 
-                              variant="text" 
-                              color="error"
-                            >
-                              Cancel Subscription
-                            </Button>
+                                variant="text" 
+                                color="error"
+                                onClick={handleCancelSubscription}
+                                disabled={loading || !subscription || subscription.status !== 'active'}
+                              >
+                                {loading ? 'Processing...' : 'Cancel Subscription'}
+                              </Button>
                           </Box>
                         </CardContent>
                       </Card>
@@ -495,12 +643,13 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                             </Typography>
                             
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                              <Button 
+                            <Button 
                                 variant={billingCycle === "monthly" ? "contained" : "outlined"}
                                 color="primary"
                                 fullWidth
-                                onClick={() => setBillingCycle("monthly")}
+                                onClick={() => handleBillingCycleChange("monthly")}
                                 sx={{ justifyContent: "space-between", px: 2 }}
+                                disabled={loading}
                               >
                                 Monthly
                                 <Typography variant="body2" component="span">
@@ -512,31 +661,33 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                                 variant={billingCycle === "yearly" ? "contained" : "outlined"}
                                 color="primary"
                                 fullWidth
-                                onClick={() => setBillingCycle("yearly")}
+                                onClick={() => handleBillingCycleChange("yearly")}
                                 sx={{ justifyContent: "space-between", px: 2, display: 'flex', alignItems: 'center', flexDirection: 'row' }}
+                                disabled={loading}
                               >
                                 Yearly
                                 {currentPlan.savings && (
-                                    <Typography 
-                                      variant="caption" 
-                                      component="div"
-                                      sx={{ 
-                                        color: 'success.main',
-                                        bgcolor: alpha(theme.palette.success.main, 0.1),
-                                        px: 1,
-                                        py: 0.25,
-                                        borderRadius: 1,
-                                      }}
-                                    >
-                                      Save {currentPlan.savings}
-                                    </Typography>
-                                  )}
+                                  <Typography 
+                                    variant="caption" 
+                                    component="div"
+                                    sx={{ 
+                                      color: 'success.main',
+                                      bgcolor: alpha(theme.palette.success.main, 0.1),
+                                      px: 1,
+                                      py: 0.25,
+                                      borderRadius: 1,
+                                    }}
+                                  >
+                                    Save {currentPlan.savings}
+                                  </Typography>
+                                )}
                                 <Box sx={{ textAlign: 'right' }}>
                                   <Typography variant="body2" component="span">
                                     €{currentPlan.priceDetails.yearly}/yr
                                   </Typography>
                                 </Box>
                               </Button>
+
                             </Box>
                           </CardContent>
                         </Card>
@@ -675,6 +826,7 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                               <TableCell>Payment Method</TableCell>
                             </TableRow>
                           </TableHead>
+                          {/* Use the fetched payment history data */}
                           <TableBody>
                             {paymentHistory.map((row) => (
                               <TableRow key={row.id}>
@@ -692,6 +844,14 @@ export default function PlanBillingManagement(props: { disableCustomTheme?: bool
                               </TableRow>
                             ))}
                           </TableBody>
+
+                            {/* Show loading or error states */}
+                            {loading && <LinearProgress />}
+                            {error && (
+                              <Typography color="error" sx={{ mt: 2 }}>
+                                {error}
+                              </Typography>
+                            )}
                         </Table>
                       </TableContainer>
                     </CardContent>
