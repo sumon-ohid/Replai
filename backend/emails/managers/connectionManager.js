@@ -28,33 +28,41 @@ export const initializeAllConnections = async () => {
     
     console.log(`Found ${users.length} users with connected emails`);
     
-    let totalConnections = 0;
+    let totalConnectionsInitialized = 0;
+    let totalConnectionsAttempted = 0;
     
-    // Process each user's connected emails
+    // Process each user's connections
     for (const user of users) {
       const userId = user._id.toString();
       
-      console.log(`Processing ${user.connectedEmails.length} emails for user ${userId}`);
-      totalConnections += user.connectedEmails.length;
-      
-      // Initialize each email connection
-      for (const connectedEmail of user.connectedEmails) {
+      for (const connectedEmail of (user.connectedEmails || [])) {
+        totalConnectionsAttempted++;
+        
         try {
-          if (connectedEmail.status === 'active') {
+          if (connectedEmail.status !== 'disconnected' && connectedEmail.email) {
             await initializeEmailConnection(userId, connectedEmail.email, connectedEmail);
+            totalConnectionsInitialized++;
           }
         } catch (error) {
-          console.error(`❌ Failed to initialize ${connectedEmail.provider} connection for ${connectedEmail.email}:`, error);
+          console.error(`❌ Failed to initialize ${connectedEmail.provider || 'unknown'} connection for ${connectedEmail.email}:`, error);
+          // Don't rethrow - we want to continue with other connections
         }
       }
     }
     
-    console.log(`Found ${totalConnections} email connections to initialize`);
-    console.log("✅ All email connections initialization process completed");
+    console.log(`Found ${totalConnectionsAttempted} email connections to initialize`);
+    console.log(`Successfully initialized ${totalConnectionsInitialized} connections`);
     
+    if (totalConnectionsInitialized < totalConnectionsAttempted) {
+      console.warn(`⚠️ Some email connections could not be initialized (${totalConnectionsAttempted - totalConnectionsInitialized} failed)`);
+    } else {
+      console.log("✅ All email connections initialization process completed");
+    }
+
+  return true;
   } catch (error) {
     console.error("❌ Failed to initialize email connections:", error);
-    throw error;
+    return false;
   }
 };
 
@@ -135,6 +143,12 @@ export async function initializeEmailConnection(userId, email, connectedEmailDat
  */
 export const addConnection = async (userId, email, provider, connection) => {
   try {
+
+    if (!userId) {
+      console.warn('Missing userId in addConnection');
+      return null;
+    }
+
     const connectedEmail = await ConnectedEmail.findOne({ userId, email });
     if (!connectedEmail) {
       throw new Error('Connected email not found');
@@ -156,7 +170,9 @@ export const addConnection = async (userId, email, provider, connection) => {
       provider,
       connection,
       startTime: new Date(),
-      emailModels
+      emailModels,
+      status: 'active',
+      lastActive: new Date(),
     });
 
     console.log(`Added ${provider} connection for ${email}`);
@@ -205,6 +221,12 @@ export const updateConnectionConfig = async (userId, email, config) => {
  * Get a specific connection
  */
 export const getConnection = async (userId, email) => {
+
+  if (!userId || !email) {
+    console.warn('getConnection called without userId or email');
+    return null;
+  }
+
   const key = `${userId}:${email}`;
   let connection = activeConnections.get(key);
   
