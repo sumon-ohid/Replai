@@ -77,6 +77,7 @@ const userSchema = new mongoose.Schema({
   subscriptionEndDate: Date,
 }, { timestamps: true });
 
+
 // Add a pre-save middleware to automatically update connectedEmailsCount
 userSchema.pre('save', function(next) {
   // Update connectedEmailsCount to match the array length
@@ -86,56 +87,66 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-// Add static methods to the User model
-userSchema.statics.updateConnectedEmailsCount = async function(userId) {
-  try {
-    // If userId is provided, update only that user
-    if (userId) {
-      const user = await this.findById(userId);
-      if (!user) return { updated: 0 };
-      
-      const emailCount = Array.isArray(user.connectedEmails) ? user.connectedEmails.length : 0;
-      
-      if (user.connectedEmailsCount !== emailCount) {
-        await this.findByIdAndUpdate(userId, { 
-          $set: { connectedEmailsCount: emailCount } 
-        });
-        return { updated: 1, userId };
-      }
-      
-      return { updated: 0 };
+// Add proper middleware for findOneAndUpdate to update connectedEmailsCount
+userSchema.pre('findOneAndUpdate', async function(next) {
+  const update = this.getUpdate();
+  
+  // Check if connectedEmails is being modified in any way
+  if (update.$set?.connectedEmails || update.$push?.connectedEmails || update.$pull?.connectedEmails) {
+    // Get the document that is being updated
+    const docToUpdate = await this.model.findOne(this.getQuery());
+    if (!docToUpdate) return next();
+    
+    let updatedEmails = [...docToUpdate.connectedEmails];
+    
+    // Handle $set operations
+    if (update.$set?.connectedEmails) {
+      updatedEmails = update.$set.connectedEmails;
     }
     
-    // Otherwise update all users
-    const users = await this.find({});
-    let updated = 0;
-    
-    for (const user of users) {
-      const emailCount = Array.isArray(user.connectedEmails) ? user.connectedEmails.length : 0;
-      
-      if (user.connectedEmailsCount !== emailCount) {
-        await this.findByIdAndUpdate(user._id, {
-          $set: { connectedEmailsCount: emailCount }
-        });
-        updated++;
+    // Handle $push operations
+    if (update.$push?.connectedEmails) {
+      if (Array.isArray(update.$push.connectedEmails.$each)) {
+        updatedEmails = [...updatedEmails, ...update.$push.connectedEmails.$each];
+      } else {
+        updatedEmails.push(update.$push.connectedEmails);
       }
     }
     
-    return { updated };
-  } catch (error) {
-    console.error('Error updating connected emails count:', error);
-    throw error;
+    // Handle $pull operations
+    if (update.$pull?.connectedEmails) {
+      const criteria = update.$pull.connectedEmails;
+      updatedEmails = updatedEmails.filter(email => {
+        // Simple equality check for string criteria
+        if (typeof criteria === 'string') return email !== criteria;
+        // For object criteria, check each property
+        if (typeof criteria === 'object') {
+          return !Object.entries(criteria).every(([key, value]) => email[key] === value);
+        }
+        return true;
+      });
+    }
+    
+    // Update the count in the same update operation
+    if (!update.$set) update.$set = {};
+    update.$set.connectedEmailsCount = Array.isArray(updatedEmails) ? updatedEmails.length : 0;
   }
-};
-
-// Add middleware for findOneAndUpdate to update connectedEmailsCount
-// This is a bit tricky since findOneAndUpdate bypasses document middleware
-userSchema.pre('save', function(next) {
-  if (this.isModified('connectedEmails')) {
-    this.connectedEmailsCount = Array.isArray(this.connectedEmails) ? this.connectedEmails.length : 0;
-  }
+  
   next();
 });
+
+// Add static methods to the User model
+userSchema.statics.updateConnectedEmailsCount = async function(userId) {
+  // ...existing code...
+};
+
+// REMOVE THIS DUPLICATE MIDDLEWARE
+// userSchema.pre('save', function(next) {
+//   if (this.isModified('connectedEmails')) {
+//     this.connectedEmailsCount = Array.isArray(this.connectedEmails) ? this.connectedEmails.length : 0;
+//   }
+//   next();
+// });
 
 // Create the model
 const User = mongoose.model('User', userSchema);
