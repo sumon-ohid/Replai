@@ -4,20 +4,19 @@ show collections
 db.sentemails.find().pretty()
 db.tokens.find().pretty()
 
-// Delete all users
+# Delete all users
 db.users.deleteMany({})
 
-// Delete particular user
+# Delete particular user
 db.users.deleteOne({ email: "user@example.com" })
 
-// To remove section
+# To remove section
 db.collectionName.drop()
 
-// website performance test
+# website performance test
 npx lighthouse https://replai.tech --view
 
-// Create demo account
-
+# Create demo account
 db.users.insertOne({
   _id: ObjectId('67d4bad66bbe375d34eee376'),
   name: 'Test User',
@@ -31,3 +30,7 @@ db.users.insertOne({
   __v: 0,
   profilePicture: ''
 })
+
+
+# Manually update subscription plan
+node updateSubscription.js 67ec21aa9710c7178cdc3482 pro_yearly

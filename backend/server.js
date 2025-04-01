@@ -52,7 +52,7 @@ app.use(compression());
 
 // Connect to MongoDB with improved error handling
 mongoose
-  .connect(process.env.MONGO_URL, {
+  .connect(process.env.MONGODB_URI, {
     // useNewUrlParser: true, // These options are now default in newer versions
     // useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000 // Give up initial connection after 5 seconds
@@ -120,7 +120,7 @@ app.use(session({
     maxAge: authConfig.session.cookie.maxAge
   },
   store: MongoStore.create({ 
-    mongoUrl: process.env.MONGO_URL,
+    mongoUrl: process.env.MONGODB_URI,
     ttl: 14 * 24 * 60 * 60, // 14 days
     autoRemove: 'native', // Use MongoDB TTL index for expired sessions cleanup
     crypto: {

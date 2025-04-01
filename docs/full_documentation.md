@@ -225,7 +225,7 @@ The system implements a structured error handling approach:
 ### Backend Configuration
 1. **Database Configuration**
 ```ini
-MONGO_URL='' # MongoDB connection string
+MONGODB_URI='' # MongoDB connection string
 ```
 
 2. **AI Configuration**

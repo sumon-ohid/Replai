@@ -11,10 +11,12 @@ import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { useSnackbar } from 'notistack';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export default function HighlightedCard() {
+  const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const [loading, setLoading] = React.useState(false);
   const [emailProvider, setEmailProvider] = React.useState(0);
@@ -46,6 +48,15 @@ export default function HighlightedCard() {
       window.location.href = authUrl;
     } catch (error) {
       console.error('Error connecting to Gmail:', error);
+
+      // use snackbar or toast to show error message
+      enqueueSnackbar('Free plan users cannot connect email account. Please upgrade to a Pro plan.', {
+        variant: 'error',
+        autoHideDuration: 3000,
+        preventDuplicate: true
+      });
+      // or use a custom alert component
+
       setLoading(false);
     }
   };
@@ -54,6 +65,8 @@ export default function HighlightedCard() {
     setLoading(true);
     window.location.href = '/dashboard';
     return;
+
+    // remove return statement above when implementing
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('No token found');

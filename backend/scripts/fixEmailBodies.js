@@ -24,17 +24,17 @@ import ConnectedEmail from '../models/ConnectedEmail.js';
 import getConnectedEmailModels from '../models/ConnectedEmailModels.js';
 
 // Get MongoDB URI from environment variables
-const MONGO_URL = process.env.MONGO_URL || process.env.MONGO_URI;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
-if (!MONGO_URL) {
+if (!MONGODB_URI) {
   console.error('MongoDB URI not found in environment variables.');
-  console.error('Please set MONGO_URL in your .env file or environment.');
+  console.error('Please set MONGODB_URI in your .env file or environment.');
   process.exit(1);
 }
 
 // Connect to MongoDB
 console.log('Connecting to MongoDB...');
-mongoose.connect(MONGO_URL)
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
     fixEmailBodies()

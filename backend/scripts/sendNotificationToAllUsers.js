@@ -20,9 +20,9 @@ if (fs.existsSync(envPath)) {
 }
 
 // Check if MongoDB URI is set
-if (!process.env.MONGO_URL) {
-  console.error('Error: MONGO_URL environment variable is not set');
-  console.log('Please make sure your .env file contains MONGO_URL=your_mongodb_connection_string');
+if (!process.env.MONGODB_URI) {
+  console.error('Error: MONGODB_URI environment variable is not set');
+  console.log('Please make sure your .env file contains MONGODB_URI=your_mongodb_connection_string');
   process.exit(1);
 }
 
@@ -33,9 +33,9 @@ let User, NotificationManager;
 async function connectToDatabase() {
   try {
     console.log('Connecting to MongoDB...');
-    console.log(`Using connection string: ${process.env.MONGO_URL.substring(0, 20)}...`);
+    console.log(`Using connection string: ${process.env.MONGODB_URI.substring(0, 20)}...`);
     
-    await mongoose.connect(process.env.MONGO_URL, {
+    await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });

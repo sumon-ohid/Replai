@@ -22,7 +22,7 @@ const config = {
   
   // Database settings
   mongo: {
-    uri: process.env.MONGO_URL || 'mongodb://localhost:27017/replai',
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/replai',
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true
@@ -84,7 +84,7 @@ const config = {
 
 // Environment-specific overrides
 if (config.nodeEnv === 'test') {
-  config.mongo.uri = process.env.MONGO_URL || 'mongodb://localhost:27017/replai-test';
+  config.mongo.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/replai-test';
   config.logging.level = 'error';
 } else if (config.nodeEnv === 'production') {
   config.logging.level = process.env.LOG_LEVEL || 'warn';

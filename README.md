@@ -36,7 +36,7 @@ npm run start
 ## 🔧 Configuration
 Set up your Google OAuth 2.0 credentials and AI parameters in the `.env` file:
 ```ini
-MONGO_URL='' # Database provider
+MONGODB_URI='' # Database provider
 GENERATIVE_AI_API_KEY='' # Gemini API key
 AUTHORIZATION_CODE="" # Figure it out
 JWT_SECRET='' # Random string for JWT token genaration
