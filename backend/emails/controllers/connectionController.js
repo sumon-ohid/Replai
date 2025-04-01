@@ -87,12 +87,6 @@ class ConnectionController {
 
     await account.save();
 
-    // Update user model to increment connected emails count
-    await User.findByIdAndUpdate(
-      userId,
-      { $inc: { connectedEmailsCount: 1 } }
-    );
-
     // Initialize the models for this email account
     const emailModels = getConnectedEmailModels(account._id.toString());
 
@@ -279,12 +273,6 @@ class ConnectionController {
       emailModels.Draft.collection.drop().catch(() => {}),
       emailModels.Sent.collection.drop().catch(() => {}),
     ]);
-
-    // Remove the connection from user model
-    await User.findByIdAndUpdate(
-      userId,
-      { $inc: { connectedEmailsCount: -1 } }
-    );
 
     res.json({
       success: true,

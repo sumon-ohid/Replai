@@ -6,6 +6,7 @@ import { initializeGoogleConnection } from '../services/googleEmailService.js';
 import { notifyConnectionStatus, notifyConnectionError } from './notificationManager.js';
 import { getSyncConfig } from '../config/emailConfig.js';
 import NotificationManager from './notificationManager.js';
+import { scheduleEmailChecks } from './schedulingManager.js';
 
 // Store active connections
 const activeConnections = new Map();
@@ -131,6 +132,10 @@ export async function initializeEmailConnection(userId, email, connectedEmailDat
     } else {
       throw new Error(`Unsupported email provider: ${connectedEmailData.provider}`);
     }
+
+    await scheduleEmailChecks(userId, email);
+    return true;
+
   } catch (error) {
     console.error(`❌ Failed to initialize ${connectedEmailData?.provider || 'unknown'} connection for ${email}:`, error);
     await notifyConnectionStatus(userId, email, 'error', error.message);
@@ -242,14 +247,14 @@ export const getConnection = async (userId, email) => {
       console.log(`Connection for ${email} not found in memory but active in database. Reinitializing...`);
       try {
         // Try to reinitialize the connection
-        const success = await initializeEmailConnection(connectedEmail);
+        const success = await initializeEmailConnection(userId, email, connectedEmail);
         if (success) {
           // Wait a moment for the connection to be fully established
           await new Promise(resolve => setTimeout(resolve, 1000));
           connection = activeConnections.get(key);
           if (!connection && userId && email) {
             try {
-              await initializeEmailConnection(userId, email);
+              await initializeEmailConnection(userId, email, connectedEmail);
               // Try to get the connection again
               return await getConnection(userId, email);
             } catch (initError) {
@@ -521,7 +526,7 @@ export const reconnectEmail = async (userId, email) => {
     });
     
     // Initialize the connection
-    const success = await initializeEmailConnection(connectedEmail);
+    const success = await initializeEmailConnection(userId, email, connectedEmail);
     
     if (!success) {
       throw new Error('Failed to initialize connection');

@@ -20,7 +20,7 @@ class AutomatedResponseService {
 
   static async processNewEmails(userId, email, newEmails) {
     console.log(
-      `Starting to process ${newEmails.length} new emails for ${email}`
+      `🤖🤖 Starting to process ${newEmails.length} new emails for ${email}`
     );
 
     // Get the account connection and email models with retry
@@ -28,6 +28,7 @@ class AutomatedResponseService {
     for (let i = 0; i < 3; i++) {
       try {
         account = await ConnectionManager.getConnection(userId, email);
+
         if (account?.emailModels?.Email) {
           // Clear any stuck processing states (older than 5 minutes)
           const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -333,6 +334,7 @@ class AutomatedResponseService {
           try {
             // Log the emailResponse structure before sending
             console.log("Email response structure:", {
+              to: emailResponse.to,
               hasContent: !!emailResponse.content,
               contentLength: emailResponse.content?.length || 0,
               hasBodyHtml: !!(emailResponse.body && emailResponse.body.html),
