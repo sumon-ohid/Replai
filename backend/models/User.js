@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-// Add a pre-save middleware to automatically update connectedEmailsCount
+// pre-save middleware to automatically update connectedEmailsCount
 userSchema.pre('save', function(next) {
   // Update connectedEmailsCount to match the array length
   if (this.isModified('connectedEmails')) {
@@ -92,7 +92,7 @@ userSchema.pre('findOneAndUpdate', async function(next) {
   const update = this.getUpdate();
   
   // Check if connectedEmails is being modified in any way
-  if (update.$set?.connectedEmails || update.$push?.connectedEmails || update.$pull?.connectedEmails) {
+  if (update.$set?.connectedEmails || update.$push?.connectedEmails || update.$pull?.connectedEmails || update.$unset?.connectedEmails) {
     // Get the document that is being updated
     const docToUpdate = await this.model.findOne(this.getQuery());
     if (!docToUpdate) return next();
@@ -127,33 +127,57 @@ userSchema.pre('findOneAndUpdate', async function(next) {
       });
     }
     
+    // Handle $unset operations - if connectedEmails is unset, treat as empty array
+    if (update.$unset?.connectedEmails) {
+      updatedEmails = [];
+    }
+    
     // Update the count in the same update operation
     if (!update.$set) update.$set = {};
     update.$set.connectedEmailsCount = Array.isArray(updatedEmails) ? updatedEmails.length : 0;
   }
   
+  // Always ensure connectedEmailsCount is set to 0 if connectedEmails is empty
+  if (update.$set?.connectedEmails && Array.isArray(update.$set.connectedEmails) && update.$set.connectedEmails.length === 0) {
+    if (!update.$set) update.$set = {};
+    update.$set.connectedEmailsCount = 0;
+  }
+  
   next();
 });
 
-// Add static methods to the User model
-userSchema.statics.updateConnectedEmailsCount = async function(userId) {
-  // ...existing code...
+// Add a utility method to reset connectedEmailsCount to 0 for a specific user
+userSchema.statics.resetConnectedEmailsCount = async function(userId) {
+  return await this.findByIdAndUpdate(
+    userId,
+    { $set: { connectedEmailsCount: 0 } },
+    { new: true }
+  );
 };
 
-// REMOVE THIS DUPLICATE MIDDLEWARE
-// userSchema.pre('save', function(next) {
-//   if (this.isModified('connectedEmails')) {
-//     this.connectedEmailsCount = Array.isArray(this.connectedEmails) ? this.connectedEmails.length : 0;
-//   }
-//   next();
-// });
+// Add static methods to the User model
+userSchema.statics.updateConnectedEmailsCount = async function(userId) {
+  const user = await this.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
-// Create the model
-const User = mongoose.model('User', userSchema);
+  user.connectedEmailsCount = Array.isArray(user.connectedEmails) ? user.connectedEmails.length : 0;
+  await user.save();
+  return user.connectedEmailsCount;
+};
 
 // Helper function to fix all users' counts
 export const fixAllConnectedEmailsCounts = async () => {
-  return await User.updateConnectedEmailsCount();
+  const users = await User.find({});
+  for (const user of users) {
+    user.connectedEmailsCount = Array.isArray(user.connectedEmails) ? user.connectedEmails.length : 0;
+    await user.save();
+  }
+  return "All users' connected emails counts have been updated";
 };
+
+// Create the model
+const User = mongoose.model('User', userSchema);
 
 export default User;
