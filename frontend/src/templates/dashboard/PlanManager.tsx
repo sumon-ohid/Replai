@@ -56,6 +56,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import EventIcon from "@mui/icons-material/Event";
 import WarningIcon from "@mui/icons-material/Warning";
+import BallotIcon from '@mui/icons-material/Ballot';
 
 import PaymentNotification from "./components/PaymentNotifications";
 
@@ -65,6 +66,7 @@ import usePayments, {
   SubscriptionDetails,
 } from "./hooks/usePayments";
 import useUsageStats from "./hooks/useUsageStats";
+import Pricing from "./components/Pricing";
 
 // Price IDs from Stripe
 const STRIPE_PRICE_IDS = {
@@ -446,12 +448,17 @@ export default function PlanBillingManagement(props: {
               <Tab
                 icon={<CreditScoreIcon />}
                 iconPosition="start"
-                label="Current Subscription"
+                label="Subscription"
               />
               <Tab
                 icon={<HistoryIcon />}
                 iconPosition="start"
                 label="Payment History"
+              />
+              <Tab
+                icon={<BallotIcon />}
+                iconPosition="start"
+                label="View All Plans"
               />
             </Tabs>
 
@@ -1088,6 +1095,19 @@ export default function PlanBillingManagement(props: {
                   </Card>
                 </motion.div>
               )}
+              {tabValue === 2 && (
+                <motion.div
+                  key="view-all-plans"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: "100%" }}
+                >
+                  <Pricing/>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           </Box>
           {/* Notifications for payment success, cancellation, or errors */}
