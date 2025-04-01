@@ -92,7 +92,7 @@ export const markEmailsAsProcessed = async (
 export const scheduleEmailChecks = async (userId, email) => {
   console.log(`[${email}] Setting up email check schedule...`);
   const key = `${userId}:${email}`;
-
+  
   try {
     // Clear existing interval if any
     removeInterval(key);

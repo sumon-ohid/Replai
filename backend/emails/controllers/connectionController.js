@@ -144,6 +144,9 @@ class ConnectionController {
           status: "active",
         },
       });
+
+      
+
     } catch (error) {
       console.error("Connection initialization error:", error);
 

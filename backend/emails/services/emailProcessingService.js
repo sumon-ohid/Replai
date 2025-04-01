@@ -774,6 +774,7 @@ function convertHtmlToText(html) {
     .trim();
 }
 
+
 /**
  * Process new emails
  */
@@ -800,40 +801,110 @@ export const processEmails = async (userId, email) => {
     if (!emailModels || !emailModels.Email) {
       throw new Error('Email models not properly initialized');
     }
-    const unprocessedEmails = await emailModels.Email.find({
-      processed: { $ne: true },
-      messageId: { $exists: true }
-    }).limit(20);
+    
+    // Tracking set for this batch to avoid processing duplicates
+    const processedInThisBatchIds = new Set();
+    
+    // Find unprocessed emails - with smart query for handling both new emails and replies
+    const unprocessedQuery = {
+      $or: [
+        // Standard unprocessed emails
+        { processed: { $ne: true }, messageId: { $exists: true } },
+        
+        // Emails that are replies to threads we've participated in
+        {
+          inReplyTo: { $exists: true, $ne: null },
+          replied: { $ne: true },
+          // Only include emails we haven't already processed or replied to
+          $or: [
+            { processed: { $ne: true } },
+            { 
+              processed: true,
+              // The email is recent (to avoid reprocessing very old emails)
+              receivedAt: { $gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } 
+            }
+          ]
+        }
+      ]
+    };
+    
+    // Find emails that match our criteria
+    const emailsToProcess = await emailModels.Email.find(unprocessedQuery)
+      .sort({ receivedAt: -1 }) // Process newest first
+      .limit(20);
 
-    console.log(`Found ${unprocessedEmails.length} unprocessed emails to process`);
+    console.log(`Found ${emailsToProcess.length} emails to process`);
 
-    // Process each email
-    const processedEmails = await Promise.all(
-      unprocessedEmails.map(async (unprocessedEmail) => {
+    // Process each email, avoiding duplicates
+    const processedEmails = [];
+    
+    for (const emailToProcess of emailsToProcess) {
+      try {
+        const emailId = emailToProcess._id.toString();
+        
+        // Skip if we've already processed this email in the current batch
+        if (processedInThisBatchIds.has(emailId)) {
+          console.log(`Skipping duplicate email ID in current batch: ${emailId}`);
+          continue;
+        }
+        
+        // Add to tracking set
+        processedInThisBatchIds.add(emailId);
+        
+        // Check if this email is already replied to (double-check)
+        if (emailToProcess.replied === true) {
+          console.log(`Email ${emailId} is already marked as replied, skipping`);
+          continue;
+        }
+        
+        // Check if this is a reply to an email we sent
+        const isReplyToOurEmail = emailToProcess.inReplyTo && 
+                                  await emailModels.Sent.findOne({ 
+                                    $or: [
+                                      { messageId: emailToProcess.inReplyTo },
+                                      { externalMessageId: emailToProcess.inReplyTo }
+                                    ]
+                                  });
+        
+        // Process the email content
         const processed = await processEmailContent({
-          ...unprocessedEmail.toObject(),
+          ...emailToProcess.toObject(),
           userId,
-          userEmail: email
+          userEmail: email,
+          isReply: !!isReplyToOurEmail
         });
+        
+        // Update requiresResponse for replies - replies to our emails usually need responses
+        if (isReplyToOurEmail && !processed.requiresResponse) {
+          processed.requiresResponse = true;
+          console.log(`Marking email ${emailId} as requiring response because it's a reply to our email`);
+        }
 
-        // Update the email with processed data
-        await emailModels.Email.findByIdAndUpdate(unprocessedEmail._id, {
+        // Update the email with processed data in the database
+        await emailModels.Email.findByIdAndUpdate(emailToProcess._id, {
           $set: {
-            // COMMENTED OUT: No longer marking emails as processed here - handled in schedulingManager
-            // processed: true,
-            // processedAt: new Date(),
+            // Mark as processed but don't mark as replied yet - that happens during response
+            processed: true,
+            processedAt: new Date(),
             category: processed.category,
             keywords: processed.keywords,
             actionItems: processed.actionItems,
             requiresResponse: processed.requiresResponse,
             priority: processed.priority,
-            sentiment: processed.sentiment
+            sentiment: processed.sentiment,
+            isReply: !!isReplyToOurEmail
           }
         });
 
-        return processed;
-      })
-    );
+        // Add to processed emails list
+        processedEmails.push(processed);
+        
+        console.log(`Successfully processed email ${emailId}, requiresResponse: ${processed.requiresResponse}`);
+      } catch (error) {
+        console.error(`Error processing individual email ${emailToProcess._id}:`, error);
+        // Continue with next email
+      }
+    }
 
     return processedEmails.filter(e => e); // Filter out any nulls
   } catch (error) {

@@ -6,7 +6,6 @@ import { initializeGoogleConnection } from '../services/googleEmailService.js';
 import { notifyConnectionStatus, notifyConnectionError } from './notificationManager.js';
 import { getSyncConfig } from '../config/emailConfig.js';
 import NotificationManager from './notificationManager.js';
-import { scheduleEmailChecks } from './schedulingManager.js';
 
 // Store active connections
 const activeConnections = new Map();
@@ -133,7 +132,10 @@ export async function initializeEmailConnection(userId, email, connectedEmailDat
       throw new Error(`Unsupported email provider: ${connectedEmailData.provider}`);
     }
 
+    // load dynamic import for scheduling
+    const { scheduleEmailChecks } = await import('./schedulingManager.js');
     await scheduleEmailChecks(userId, email);
+
     return true;
 
   } catch (error) {
