@@ -16,6 +16,7 @@ import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSnackbar } from 'notistack';
+import Alert from '@mui/material/Alert';
 
 // Icons
 import EmailIcon from '@mui/icons-material/EmailRounded';
@@ -49,6 +50,8 @@ import {
 import axios from 'axios';
 import Footer from './components/Footer';
 import Skeleton from '@mui/material/Skeleton';
+import Snackbar from '@mui/material/Snackbar';
+import { n } from 'framer-motion/dist/types.d-B50aGbjN';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -135,7 +138,7 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
   };
 
    // Updated the handleAuthProvider function
-  const handleAuthProvider = async (provider: 'google' | 'microsoft') => {
+    const handleAuthProvider = async (provider: 'google' | 'microsoft') => {
     setLoading({...loading, [provider]: true});
     const token = localStorage.getItem('token');
     if (!token) {
@@ -146,12 +149,11 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
   
     try {
       const endpoint = provider === 'google' ? 'google' : 'outlook';
-      console.log(`Connecting to ${provider} using endpoint: /api/emails/auth/${endpoint}`);
       
       interface AuthResponse {
         authUrl: string;
       }
-
+  
       const response = await axios.get<AuthResponse>(`${apiBaseUrl}/api/emails/auth/${endpoint}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -167,11 +169,29 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
       // show success message
       window.location.href = authUrl;
       enqueueSnackbar(`Redirecting to ${provider} for authentication`, { variant: 'info' });
-      setLoading({...loading, [provider]: false});
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error connecting to ${provider}:`, error);
-      let errorMessage = `Failed to connect to ${provider}`;
-      enqueueSnackbar(errorMessage, { variant: 'error' });
+      
+      // Check for specific subscription error
+      if (error.response && error.response.status === 403) {
+        if (error.response.data?.error === 'subscription_required') {
+          enqueueSnackbar(error.response.data.message || 'Free plan users cannot connect email account. Please upgrade to a Pro plan.', {
+            variant: 'error',
+            autoHideDuration: 3000,
+            preventDuplicate: true
+          });
+        } else {
+          enqueueSnackbar(`Permission denied: ${error.response.data?.message || 'Unable to connect email'}`, {
+            variant: 'error'
+          });
+        }
+      } else {
+        // Generic error handling
+        enqueueSnackbar(`Failed to connect to ${provider}: ${error.message || 'Unknown error'}`, {
+          variant: 'error'
+        });
+      }
+    } finally {
       setLoading({...loading, [provider]: false});
     }
   };
@@ -480,6 +500,8 @@ export default function EmailManager(props: { disableCustomTheme?: boolean }) {
           <Footer />
         </Box>
       </Box>
+
+      
       
       {/* Custom Email Connection Dialog */}
       <React.Suspense fallback={null}>

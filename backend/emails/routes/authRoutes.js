@@ -50,8 +50,26 @@ async function setupEmailCollections(userId, email, connectedEmailId) {
 /**
  * Google OAuth routes
  */
-router.get('/google', requireAuth, (req, res) => {
+router.get('/google', requireAuth, async (req, res) => {
   try {
+    // Get the user with connectedEmails count
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Check if user has a Pro plan
+    const isPro = ['pro_monthly', 'pro_yearly', 'business'].includes(user.subscriptionPlan);
+    const emailCount = user.connectedEmailsCount || 0;
+    
+    // Free users can only connect one email
+    if (!isPro && emailCount >= 0) {
+      return res.status(403).json({ 
+        error: 'subscription_required', 
+        message: 'Free plan users can not connect email account. Please upgrade to a Pro plan.'
+      });
+    }
+
     const oauth2Client = new google.auth.OAuth2(
       authConfig.google.clientId,
       authConfig.google.clientSecret,
