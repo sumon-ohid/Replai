@@ -13,7 +13,8 @@ const router = express.Router();
 router.get('/me', auth, async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId).select('name email profilePicture');
+    // Add subscriptionPlan, subscriptionStartDate, and subscriptionEndDate to the selected fields
+    const user = await User.findById(userId).select('name email profilePicture subscriptionPlan subscriptionStartDate subscriptionEndDate connectedEmailsCount');
 
     // if user picture contains http, then it is a google picture
     if (user.profilePicture) {

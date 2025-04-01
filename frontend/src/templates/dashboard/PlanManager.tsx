@@ -41,6 +41,8 @@ import {
 } from "@mui/material";
 import Footer from "./components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
+import { useState } from "react";
 
 // Icons
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
@@ -67,6 +69,9 @@ import usePayments, {
 } from "./hooks/usePayments";
 import useUsageStats from "./hooks/useUsageStats";
 import Pricing from "./components/Pricing";
+import { useNavigate } from "react-router-dom";
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 // Price IDs from Stripe
 const STRIPE_PRICE_IDS = {
@@ -228,8 +233,48 @@ export default function PlanBillingManagement(props: {
     }
   };
 
+  interface UserData {
+    _id: string;
+    name: string;
+    email: string;
+    profilePicture?: string;
+    connectedEmailsCount?: number;
+    subscriptionPlan?: string;
+    subscriptionStartDate?: string;
+    subscriptionEndDate?: string;
+  }
+  
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+      const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        console.log('Fetching user data...');
+        
+        interface UserApiResponse {
+          user: UserData;
+        }
+
+        const response = await axios.get<UserApiResponse>(`${apiBaseUrl}/api/user/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        
+        if (response.data) {
+          setUserData(response.data as any);
+        } else {
+          console.error('Invalid user data format:', response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      }
+    };
+
   // Fetch subscription data  and usage stats on component mount
   React.useEffect(() => {
+    fetchUserData();
     fetchSubscriptionData();
     fetchPaymentHistory();
     fetchUsageStats();
@@ -317,11 +362,28 @@ export default function PlanBillingManagement(props: {
   };
 
   // Calculate next billing date from subscription
-  const getNextBillingDate = () => {
-    if (subscription && subscription.current_period_end) {
-      return new Date(subscription.current_period_end * 1000);
+    const getNextBillingDate = () => {
+    
+    // First check if we have a direct end date from the user model
+    if (userData?.subscriptionEndDate) {
+      try {
+        return new Date(userData.subscriptionEndDate);
+      } catch (e) {
+        console.error("Failed to parse subscription end date:", e);
+      }
     }
-    return new Date(); // Default to current date
+    
+    // Fall back to Stripe data if available
+    if (subscription && subscription.current_period_end) {
+      try {
+        return new Date(subscription.current_period_end * 1000);
+      } catch (e) {
+        console.error("Failed to parse Stripe period end:", e);
+      }
+    }
+    
+    // Default to current date if no subscription data found
+    return new Date();
   };
 
   // Format date
@@ -351,9 +413,6 @@ export default function PlanBillingManagement(props: {
   //     percentage: 100
   //   }
   // };
-
-  // Next billing date
-  const nextBillingDate = new Date("2025-04-15");
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -586,28 +645,18 @@ export default function PlanBillingManagement(props: {
                                 </Typography>
                               </Box>
 
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  mt: 1,
-                                }}
-                              >
-                                <CalendarTodayIcon
-                                  fontSize="small"
-                                  color="action"
-                                  sx={{ mr: 1 }}
-                                />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  Next billing:{" "}
-                                  {nextBillingDate.toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
+                              <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                                <CalendarTodayIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+                                <Typography variant="body2" color="text.secondary">
+                                  {userData?.subscriptionEndDate ? (
+                                    <>Next billing: {getNextBillingDate().toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}</>
+                                  ) : (
+                                    <>No active subscription</>
+                                  )}
                                 </Typography>
                               </Box>
                             </Box>

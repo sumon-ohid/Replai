@@ -55,7 +55,7 @@ export default function useUsageStats() {
       setUsageData(response.data as UsageData);
     } catch (err) {
       console.error('Error fetching usage statistics:', err);
-      setError('Failed to load usage statistics');
+      setError('No usage statistics available. Please try again later.');
     } finally {
       setLoading(false);
     }
