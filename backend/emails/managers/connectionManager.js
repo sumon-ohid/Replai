@@ -184,6 +184,10 @@ export const addConnection = async (userId, email, provider, connection) => {
 
     console.log(`Added ${provider} connection for ${email}`);
 
+    // add scheduled checks
+    const { scheduleEmailChecks } = await import('./schedulingManager.js');
+    await scheduleEmailChecks(userId, email);
+
     return key;
   } catch (error) {
     console.error(`Error adding connection for ${email}:`, error);

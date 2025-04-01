@@ -130,60 +130,11 @@ userSchema.statics.updateConnectedEmailsCount = async function(userId) {
 
 // Add middleware for findOneAndUpdate to update connectedEmailsCount
 // This is a bit tricky since findOneAndUpdate bypasses document middleware
-userSchema.pre('findOneAndUpdate', async function(next) {
-  try {
-    const update = this.getUpdate();
-    
-    // If connectedEmails array is being modified, update the count
-    if (update.$set?.connectedEmails || update.$push?.connectedEmails || update.$pull?.connectedEmails) {
-      // Get the current document
-      const docToUpdate = await this.model.findOne(this.getQuery());
-      if (!docToUpdate) return next();
-      
-      let newCount = docToUpdate.connectedEmailsCount;
-      
-      // Calculate new count based on the operation
-      if (update.$set?.connectedEmails) {
-        // Direct set - use the new array's length
-        newCount = Array.isArray(update.$set.connectedEmails) ? update.$set.connectedEmails.length : 0;
-      } else if (update.$push?.connectedEmails) {
-        // Adding one or more emails
-        const pushCount = Array.isArray(update.$push.connectedEmails.$each) 
-          ? update.$push.connectedEmails.$each.length 
-          : 1;
-        newCount += pushCount;
-      } else if (update.$pull?.connectedEmails) {
-        // Removing emails - we need to check how many match the pull condition
-        const pullQuery = update.$pull.connectedEmails;
-        const currentEmails = docToUpdate.connectedEmails || [];
-        
-        // Count how many emails match the pull criteria
-        const removedCount = currentEmails.filter(email => {
-          // Simple equality check for string conditions
-          if (typeof pullQuery === 'string') {
-            return email === pullQuery;
-          }
-          
-          // Object condition matching
-          return Object.entries(pullQuery).every(([key, value]) => email[key] === value);
-        }).length;
-        
-        newCount -= removedCount;
-      }
-      
-      // Ensure count is not negative
-      if (newCount < 0) newCount = 0;
-      
-      // Update the count in the same update operation
-      if (!update.$set) update.$set = {};
-      update.$set.connectedEmailsCount = newCount;
-    }
-    
-    next();
-  } catch (error) {
-    console.error('Error in findOneAndUpdate middleware:', error);
-    next(error);
+userSchema.pre('save', function(next) {
+  if (this.isModified('connectedEmails')) {
+    this.connectedEmailsCount = Array.isArray(this.connectedEmails) ? this.connectedEmails.length : 0;
   }
+  next();
 });
 
 // Create the model
