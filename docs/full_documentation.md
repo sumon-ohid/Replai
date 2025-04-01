@@ -366,7 +366,7 @@ npx lighthouse https://replai.tech --view
 ```bash
 # Database management
 mongosh
-use easy-email
+use replai
 
 # Common operations
 db.users.find().pretty()

@@ -1,5 +1,5 @@
 mongosh
-use easy-email
+use replai
 show collections
 db.sentemails.find().pretty()
 db.tokens.find().pretty()
