@@ -89,7 +89,7 @@ class ConnectionController {
 
     // Update user model to increment connected emails count
     await User.findByIdAndUpdate(
-      req.user.id,
+      userId,
       { $inc: { connectedEmailsCount: 1 } }
     );
 
@@ -282,7 +282,7 @@ class ConnectionController {
 
     // Remove the connection from user model
     await User.findByIdAndUpdate(
-      req.user.id,
+      userId,
       { $inc: { connectedEmailsCount: -1 } }
     );
 
